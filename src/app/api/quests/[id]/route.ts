@@ -8,11 +8,11 @@ export async function GET(
   const { id } = await params;
   const supabase = await createClient();
   const { data, error } = await supabase
-    .from('challenges')
-    .select('*')
+    .from('quests')
+    .select('*, category:categories(*)')
     .eq('id', id)
     .single();
 
-  if (error) return NextResponse.json({ error: 'Challenge bulunamadı' }, { status: 404 });
+  if (error) return NextResponse.json({ error: 'Görev bulunamadı' }, { status: 404 });
   return NextResponse.json(data);
 }
