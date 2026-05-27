@@ -1,8 +1,6 @@
 'use client';
 
-import { useRef, useEffect, useState, useCallback } from 'react';
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import { useEffect, useRef, useCallback } from 'react';
 
 interface Props {
   onLocationSelect: (lat: number, lng: number) => void;
@@ -14,68 +12,103 @@ interface Props {
 
 export default function MapPicker({
   onLocationSelect,
-  initialLat = 41.015,
-  initialLng = 28.979,
+  initialLat = 39.9208,
+  initialLng = 32.8541,
   readOnly = false,
-  markerColor = '#f97316',
 }: Props) {
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
-  const marker = useRef<mapboxgl.Marker | null>(null);
-  const [hasPin, setHasPin] = useState(false);
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<unknown>(null);
+  const markerRef = useRef<unknown>(null);
 
-  const placeMarker = useCallback((lng: number, lat: number) => {
-    if (!map.current) return;
-    if (marker.current) marker.current.remove();
-    marker.current = new mapboxgl.Marker({ color: markerColor, draggable: !readOnly })
-      .setLngLat([lng, lat])
-      .addTo(map.current);
+  const placeMarker = useCallback(async (lat: number, lng: number) => {
+    const L = (await import('leaflet')).default;
+    const map = mapInstanceRef.current as ReturnType<typeof L.map>;
+    if (!map) return;
 
+    if (markerRef.current) {
+      (markerRef.current as ReturnType<typeof L.marker>).remove();
+    }
+
+    const icon = L.divIcon({
+      className: '',
+      html: `<div style="width:28px;height:28px;background:#f97316;border:3px solid white;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 2px 8px rgba(0,0,0,0.3)"></div>`,
+      iconSize: [28, 28],
+      iconAnchor: [14, 28],
+    });
+
+    const m = L.marker([lat, lng], { icon, draggable: !readOnly }).addTo(map);
     if (!readOnly) {
-      marker.current.on('dragend', () => {
-        const pos = marker.current!.getLngLat();
+      m.on('dragend', () => {
+        const pos = m.getLatLng();
         onLocationSelect(pos.lat, pos.lng);
       });
     }
-
-    setHasPin(true);
+    markerRef.current = m;
     onLocationSelect(lat, lng);
-  }, [markerColor, readOnly, onLocationSelect]);
+  }, [readOnly, onLocationSelect]);
 
   useEffect(() => {
-    if (!mapContainer.current) return;
-    mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!;
+    if (!mapRef.current || mapInstanceRef.current) return;
 
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
-      center: [initialLng, initialLat],
-      zoom: 13,
-    });
+    let map: ReturnType<import('leaflet').Map['addLayer']> | unknown;
 
-    map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+    const init = async () => {
+      const L = (await import('leaflet')).default;
 
-    if (!readOnly) {
-      map.current.on('click', (e) => {
-        placeMarker(e.lngLat.lng, e.lngLat.lat);
+      // Fix default icon paths
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      delete (L.Icon.Default.prototype as any)._getIconUrl;
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
       });
-    } else {
-      placeMarker(initialLng, initialLat);
-    }
+
+      map = L.map(mapRef.current!, {
+        center: [initialLat, initialLng],
+        zoom: 13,
+        zoomControl: true,
+      });
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap',
+        maxZoom: 19,
+      }).addTo(map as ReturnType<typeof L.map>);
+
+      mapInstanceRef.current = map;
+
+      if (readOnly) {
+        placeMarker(initialLat, initialLng);
+      } else {
+        (map as ReturnType<typeof L.map>).on('click', (e: { latlng: { lat: number; lng: number } }) => {
+          placeMarker(e.latlng.lat, e.latlng.lng);
+        });
+      }
+    };
+
+    init();
 
     return () => {
-      map.current?.remove();
+      if (mapInstanceRef.current) {
+        (mapInstanceRef.current as { remove: () => void }).remove();
+        mapInstanceRef.current = null;
+        markerRef.current = null;
+      }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
-    <div className="relative w-full h-full rounded-xl overflow-hidden">
-      <div ref={mapContainer} className="w-full h-full" />
-      {!readOnly && !hasPin && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="bg-black/60 text-white text-sm px-4 py-2 rounded-full backdrop-blur-sm">
-            Haritaya tıkla → pin bırak
+    <div className="relative w-full h-full">
+      <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      />
+      <div ref={mapRef} className="w-full h-full rounded-xl" />
+      {!readOnly && (
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-[1000] pointer-events-none">
+          <div className="bg-black/60 text-white text-xs px-3 py-1.5 rounded-full backdrop-blur-sm">
+            Haritaya tıkla → konum seç
           </div>
         </div>
       )}
