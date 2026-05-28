@@ -19,6 +19,17 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Giriş yapmalısın' }, { status: 401 });
 
+  // Sadece admin veya işletme hesabı görev ekleyebilir
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('is_admin, is_business')
+    .eq('id', user.id)
+    .single();
+
+  if (!profile?.is_admin && !profile?.is_business) {
+    return NextResponse.json({ error: 'Görev eklemek için işletme hesabı gerekli' }, { status: 403 });
+  }
+
   const body = await req.json();
   const {
     category_id, title, description, photo_url, hint, region,

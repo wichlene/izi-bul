@@ -20,7 +20,11 @@ export interface Profile {
   created_at: string;
   is_admin?: boolean;
   is_premium?: boolean;
+  is_business?: boolean;
   location_visible?: boolean;
+  business_name?: string;
+  business_phone?: string;
+  business_address?: string;
 }
 
 export interface Quest {
