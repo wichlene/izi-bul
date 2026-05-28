@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
 import Header from '@/components/Header';
 import FriendsClient from './FriendsClient';
@@ -25,11 +26,13 @@ export default async function FriendsPage() {
       <Header />
       <main className="max-w-2xl mx-auto px-4 py-8">
         <h1 className="text-2xl font-black text-white mb-6">Arkadaşlar</h1>
-        <FriendsClient
-          initialRequests={reqRes.data || []}
-          initialFriends={friendRes.data || []}
-          currentUserId={user.id}
-        />
+        <Suspense fallback={<div className="text-white/30">Yükleniyor...</div>}>
+          <FriendsClient
+            initialRequests={reqRes.data || []}
+            initialFriends={friendRes.data || []}
+            currentUserId={user.id}
+          />
+        </Suspense>
       </main>
     </div>
   );

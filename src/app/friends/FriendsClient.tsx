@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { UserPlus, Check, X, MessageCircle, Search, Loader2 } from 'lucide-react';
 
 interface Profile { id: string; username: string; total_finds: number }
@@ -15,12 +16,44 @@ interface Props {
 }
 
 export default function FriendsClient({ initialRequests, initialFriends, currentUserId }: Props) {
+  const params = useSearchParams();
+  const addUserId = params.get('add');
   const [requests, setRequests] = useState(initialRequests);
   const [friends, setFriends] = useState(initialFriends);
   const [search, setSearch] = useState('');
   const [searchResults, setSearchResults] = useState<Profile[]>([]);
   const [searching, setSearching] = useState(false);
   const [sentRequests, setSentRequests] = useState<Set<string>>(new Set());
+  const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+
+  useEffect(() => {
+    if (!addUserId || addUserId === currentUserId) return;
+    if (friends.some((f) => f.friend.id === addUserId)) {
+      setTimeout(() => setSuccessMsg('Bu kullanıcı zaten arkadaşın'), 0);
+      return;
+    }
+    (async () => {
+      const res = await fetch('/api/friends', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'send', to_user_id: addUserId }),
+      });
+      const ok = res.ok;
+      const d = ok ? null : await res.json().catch(() => ({}));
+      setTimeout(() => {
+        if (ok) {
+          setSuccessMsg('Arkadaşlık isteği gönderildi!');
+          setSentRequests((s) => new Set([...s, addUserId]));
+        } else {
+          const m = d?.error || '';
+          if (m.includes('duplicate') || m.includes('unique')) setError('Bu kullanıcıya zaten istek gönderilmiş');
+          else setError(m || 'İstek gönderilemedi');
+        }
+      }, 0);
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [addUserId]);
 
   const searchUsers = async () => {
     if (!search.trim()) return;
@@ -32,12 +65,20 @@ export default function FriendsClient({ initialRequests, initialFriends, current
   };
 
   const sendRequest = async (toUserId: string) => {
-    await fetch('/api/friends', {
+    setError('');
+    const res = await fetch('/api/friends', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'send', to_user_id: toUserId }),
     });
-    setSentRequests((s) => new Set([...s, toUserId]));
+    if (res.ok) {
+      setSentRequests((s) => new Set([...s, toUserId]));
+    } else {
+      const d = await res.json().catch(() => ({ error: 'Bilinmeyen hata' }));
+      const msg = d.error || '';
+      if (msg.includes('duplicate') || msg.includes('unique')) setError('Bu kullanıcıya zaten istek gönderilmiş');
+      else setError(msg || 'İstek gönderilemedi');
+    }
   };
 
   const respond = async (requestId: string, action: 'accept' | 'reject') => {
@@ -73,6 +114,16 @@ export default function FriendsClient({ initialRequests, initialFriends, current
             {searching ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
           </button>
         </div>
+        {error && (
+          <div className="mt-3 rounded-xl p-3 text-sm" style={{ background: 'rgba(239,68,68,0.1)', color: '#f87171', border: '1px solid rgba(239,68,68,0.2)' }}>
+            {error}
+          </div>
+        )}
+        {successMsg && (
+          <div className="mt-3 rounded-xl p-3 text-sm" style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.2)' }}>
+            ✓ {successMsg}
+          </div>
+        )}
         {searchResults.length > 0 && (
           <div className="mt-3 space-y-2">
             {searchResults.map((u) => {

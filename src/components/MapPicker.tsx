@@ -162,20 +162,41 @@ export default function MapPicker({
 
       // Canlı kullanıcı noktaları
       liveUsers.forEach((u) => {
+        const initial = (u.username || '?').charAt(0).toUpperCase();
         const icon = L.divIcon({
           className: '',
-          html: `<div style="
-            background:#22c55e;
-            border-radius:50%;
-            width:16px;height:16px;
-            border:3px solid white;
-            box-shadow:0 0 10px rgba(34,197,94,0.9);
-          "></div>`,
-          iconSize: [16, 16],
-          iconAnchor: [8, 8],
+          html: `<div style="position:relative">
+            <div style="
+              background:linear-gradient(135deg,#ff6b2b,#a855f7);
+              border-radius:50% 50% 50% 0;
+              width:36px;height:36px;
+              border:3px solid white;
+              box-shadow:0 4px 14px rgba(34,197,94,0.6), 0 0 0 2px rgba(34,197,94,0.4);
+              transform:rotate(-45deg);
+              display:flex;align-items:center;justify-content:center;
+            ">
+              <span style="transform:rotate(45deg);color:white;font-weight:900;font-size:14px;font-family:system-ui">${initial}</span>
+            </div>
+            <div style="
+              position:absolute;bottom:-2px;right:-2px;
+              width:10px;height:10px;border-radius:50%;
+              background:#22c55e;border:2px solid white;
+              box-shadow:0 0 8px rgba(34,197,94,1);
+              animation:pulse 1.5s infinite;
+            "></div>
+          </div>`,
+          iconSize: [36, 36],
+          iconAnchor: [18, 36],
         });
+        const popupHtml = u.username
+          ? `<div style="font-family:system-ui;text-align:center;padding:4px 0">
+              <div style="font-weight:900;font-size:14px;margin-bottom:6px">@${u.username}</div>
+              <div style="font-size:11px;color:#22c55e;margin-bottom:8px">● Çevrimiçi</div>
+              <a href="/friends?add=${u.user_id}" style="display:inline-block;background:linear-gradient(135deg,#ff6b2b,#ff3d00);color:white;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:bold;text-decoration:none">+ Arkadaş Ekle</a>
+            </div>`
+          : 'Oyuncu';
         const marker = L.marker([u.latitude, u.longitude], { icon })
-          .bindPopup(u.username ? `@${u.username}` : 'Oyuncu')
+          .bindPopup(popupHtml)
           .addTo(map);
         userMarkersRef.current.push(marker);
       });
