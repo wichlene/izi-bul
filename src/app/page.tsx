@@ -1,9 +1,9 @@
 import Link from 'next/link';
-import { MapPin, Trophy, Zap, Users, Star } from 'lucide-react';
+import { MapPin, Trophy, Users, Star } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import Header from '@/components/Header';
 import QuestCard from '@/components/QuestCard';
-import QuestFilters from '@/components/QuestFilters';
+import QuestList from '@/components/QuestList';
 import { Quest, Category } from '@/types';
 
 export const revalidate = 0;
@@ -99,20 +99,7 @@ export default async function HomePage() {
           </section>
         )}
 
-        {/* Filtreler */}
-        <QuestFilters categories={categories} />
-
-        {/* Görevler */}
-        <div className="flex items-center justify-between mt-4 mb-5">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <Zap size={18} style={{ color: '#ff6b2b' }} />
-            Tüm Görevler
-            <span className="text-sm font-normal px-2 py-0.5 rounded-full" style={{ background: 'rgba(255,107,43,0.15)', color: '#ff6b2b' }}>
-              {regular.length}
-            </span>
-          </h2>
-        </div>
-
+        {/* Filtreli görev listesi */}
         {regular.length === 0 && featured.length === 0 ? (
           <div className="text-center py-24 border border-white/5 rounded-3xl" style={{ background: 'rgba(255,255,255,0.02)' }}>
             <div className="text-6xl mb-4">🗺️</div>
@@ -122,9 +109,7 @@ export default async function HomePage() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {regular.map((q) => <QuestCard key={q.id} quest={q} />)}
-          </div>
+          <QuestList quests={regular} categories={categories} />
         )}
       </main>
     </div>

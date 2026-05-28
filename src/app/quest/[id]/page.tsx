@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Coins, Users, Trophy, MapPin } from 'lucide-react';
+import { ArrowLeft, Coins, Users, Trophy, MapPin, Share2, QrCode } from 'lucide-react';
+import ShareButtons from './ShareButtons';
 import { createClient } from '@/lib/supabase/server';
 import { Quest, DIFFICULTIES } from '@/types';
 import Header from '@/components/Header';
@@ -42,6 +43,7 @@ export default async function QuestPage({ params }: { params: Promise<{ id: stri
   const { id } = await params;
   const { quest, alreadyWon } = await getQuest(id);
   if (!quest) notFound();
+  const questUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://izibul.vercel.app'}/quest/${id}`;
 
   const diff = DIFFICULTIES[quest.difficulty];
 
@@ -143,9 +145,12 @@ export default async function QuestPage({ params }: { params: Promise<{ id: stri
             </div>
           </div>
 
-          {/* Sağ: Submission flow */}
-          <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-            <QuestSubmissionFlow quest={quest} alreadyWon={alreadyWon} />
+          {/* Sağ: Submission flow + Paylaş */}
+          <div className="space-y-4">
+            <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <QuestSubmissionFlow quest={quest} alreadyWon={alreadyWon} />
+            </div>
+            <ShareButtons questTitle={quest.title} questUrl={questUrl} />
           </div>
         </div>
       </main>

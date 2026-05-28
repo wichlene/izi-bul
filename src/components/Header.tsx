@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { MapPin, Plus, Shield } from 'lucide-react';
+import { MapPin, Plus, Shield, BarChart2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import SignOutButton from './SignOutButton';
 
@@ -11,7 +11,7 @@ export default async function Header() {
   if (user) {
     const { data } = await supabase
       .from('profiles')
-      .select('username, is_admin, is_premium')
+      .select('username, is_admin, is_premium, is_business')
       .eq('id', user.id)
       .single();
     profile = data;
@@ -47,10 +47,18 @@ export default async function Header() {
                   <span className="hidden sm:inline">Admin</span>
                 </Link>
               )}
-              <Link href="/quest/create" className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-xl transition-all hover:opacity-90" style={{ background: 'linear-gradient(135deg, #ff6b2b, #ff3d00)', color: 'white' }}>
-                <Plus size={15} />
-                <span className="hidden sm:inline">Görev Ekle</span>
-              </Link>
+              {(profile.is_business || profile.is_admin) && (
+                <Link href="/business/stats" className="hidden sm:flex items-center gap-1.5 text-white/50 hover:text-white text-sm font-medium px-3 py-2 rounded-xl transition-colors hover:bg-white/5">
+                  <BarChart2 size={15} />
+                  İstatistik
+                </Link>
+              )}
+              {(profile.is_business || profile.is_admin) && (
+                <Link href="/quest/create" className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-xl transition-all hover:opacity-90" style={{ background: 'linear-gradient(135deg, #ff6b2b, #ff3d00)', color: 'white' }}>
+                  <Plus size={15} />
+                  <span className="hidden sm:inline">Görev Ekle</span>
+                </Link>
+              )}
               <Link href="/profile" className="flex items-center gap-2 ml-1 hover:bg-white/5 px-2 py-1.5 rounded-xl transition-colors">
                 <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold" style={{ background: 'linear-gradient(135deg, #ff6b2b, #a855f7)' }}>
                   {profile.username?.charAt(0).toUpperCase()}
