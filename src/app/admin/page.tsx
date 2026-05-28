@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-import { Shield, Users, MapPin, CheckCircle, Clock, TrendingUp, Store } from 'lucide-react';
+import { Shield, Users, MapPin, CheckCircle, Clock, TrendingUp, Store, Tag } from 'lucide-react';
 import Header from '@/components/Header';
 
 export default async function AdminPage() {
@@ -57,6 +57,9 @@ export default async function AdminPage() {
             <h1 className="text-2xl font-black text-white">Admin Paneli</h1>
             <p className="text-white/30 text-sm">İzi Bul yönetim merkezi</p>
           </div>
+          <Link href="/admin/categories" className="ml-auto flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold" style={{ background: 'rgba(255,107,43,0.15)', color: '#ff6b2b', border: '1px solid rgba(255,107,43,0.25)' }}>
+            <Tag size={14} /> Kategoriler
+          </Link>
         </div>
 
         {/* İstatistikler */}

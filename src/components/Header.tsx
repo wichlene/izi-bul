@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { MapPin, Plus, Shield, BarChart2 } from 'lucide-react';
+import { MapPin, Plus, Shield, BarChart2, MessageCircle, LayoutDashboard } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import SignOutButton from './SignOutButton';
 
@@ -20,7 +20,7 @@ export default async function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-white/5" style={{ background: 'rgba(10,10,15,0.95)', backdropFilter: 'blur(20px)' }}>
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2.5">
+        <Link href={user ? '/dashboard' : '/'} className="flex items-center gap-2.5">
           <div className="relative">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #ff6b2b, #ff3d00)' }}>
               <MapPin size={18} className="text-white" />
@@ -59,6 +59,9 @@ export default async function Header() {
                   <span className="hidden sm:inline">Görev Ekle</span>
                 </Link>
               )}
+              <Link href="/messages" className="flex items-center gap-1.5 text-white/50 hover:text-white text-sm font-medium px-2 py-2 rounded-xl transition-colors hover:bg-white/5">
+                <MessageCircle size={16} />
+              </Link>
               <Link href="/profile" className="flex items-center gap-2 ml-1 hover:bg-white/5 px-2 py-1.5 rounded-xl transition-colors">
                 <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold" style={{ background: 'linear-gradient(135deg, #ff6b2b, #a855f7)' }}>
                   {profile.username?.charAt(0).toUpperCase()}
