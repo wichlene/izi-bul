@@ -99,12 +99,19 @@ function LoginForm() {
             </button>
           </form>
 
-          <p className="text-center text-sm text-white/30 mt-6">
-            Hesabın yok mu?{' '}
-            <Link href="/register" className="font-semibold" style={{ color: '#ff6b2b' }}>
-              Kayıt ol
-            </Link>
-          </p>
+          <div className="mt-6 space-y-3 text-center text-sm">
+            <div>
+              <Link href="/forgot-password" className="text-white/30 hover:text-white/60 transition-colors">
+                Şifremi Unuttum
+              </Link>
+            </div>
+            <p className="text-white/30">
+              Hesabın yok mu?{' '}
+              <Link href="/register" className="font-semibold" style={{ color: '#ff6b2b' }}>
+                Kayıt ol
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

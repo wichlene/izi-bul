@@ -4,10 +4,12 @@ import { DIFFICULTIES, Difficulty } from '@/types';
 
 export async function GET() {
   const supabase = await createClient();
+  const now = new Date().toISOString();
   const { data, error } = await supabase
     .from('quests')
     .select('*, category:categories(*)')
     .eq('is_active', true)
+    .or(`expires_at.is.null,expires_at.gt.${now}`)
     .order('created_at', { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -19,7 +21,6 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Giriş yapmalısın' }, { status: 401 });
 
-  // Sadece admin veya işletme hesabı görev ekleyebilir
   const { data: profile } = await supabase
     .from('profiles')
     .select('is_admin, is_business')
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
   const {
     category_id, title, description, photo_url, hint, region,
     latitude, longitude, difficulty, cash_reward, max_distance_meters,
-    requires_photo_proof,
+    requires_photo_proof, expires_at,
   } = body;
 
   if (!category_id || !title || !description || !photo_url || latitude == null || longitude == null) {
@@ -62,6 +63,7 @@ export async function POST(req: NextRequest) {
       requires_photo_proof: requires_photo_proof !== false,
       is_active: true,
       created_by: user.id,
+      expires_at: expires_at || null,
     })
     .select()
     .single();

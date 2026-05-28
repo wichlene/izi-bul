@@ -25,6 +25,7 @@ export default function CreateQuestForm({ categories }: Props) {
     cash_reward: '0',
     max_distance_meters: '50',
     requires_photo_proof: true,
+    expires_at: '',
   });
   const [photoUrl, setPhotoUrl] = useState('');
   const [lat, setLat] = useState<number | null>(null);
@@ -53,6 +54,7 @@ export default function CreateQuestForm({ categories }: Props) {
           longitude: lng,
           cash_reward: parseInt(form.cash_reward) || 0,
           max_distance_meters: parseInt(form.max_distance_meters),
+          expires_at: form.expires_at ? new Date(form.expires_at).toISOString() : null,
         }),
       });
       const data = await res.json();
@@ -240,6 +242,19 @@ export default function CreateQuestForm({ categories }: Props) {
           />
           <span className="text-sm text-white/50">Fotoğraf kanıtı zorunlu olsun</span>
         </label>
+        <div>
+          <h2 className="font-bold text-white mb-1">Bitiş Tarihi</h2>
+          <p className="text-white/30 text-sm mb-2">İsteğe bağlı — bu tarihten sonra görev kapanır</p>
+          <input
+            type="datetime-local"
+            value={form.expires_at}
+            onChange={(e) => set('expires_at', e.target.value)}
+            className="w-full rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none transition-all"
+            style={inputStyle}
+            onFocus={(e) => e.target.style.borderColor = 'rgba(255,107,43,0.5)'}
+            onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.08)'}
+          />
+        </div>
       </section>
 
       {error && (

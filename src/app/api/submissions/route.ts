@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { calculateDistance } from '@/lib/distance';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { isValidCoord, isInTurkey } from '@/lib/validateCoords';
+import { sendEmail, ADMIN_EMAIL } from '@/lib/email';
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -38,6 +39,10 @@ export async function POST(req: NextRequest) {
 
   if (questError || !quest) {
     return NextResponse.json({ error: 'Görev bulunamadı veya sona erdi' }, { status: 404 });
+  }
+
+  if (quest.expires_at && new Date(quest.expires_at) < new Date()) {
+    return NextResponse.json({ error: 'Bu görevin süresi doldu' }, { status: 410 });
   }
 
   // Kullanıcı zaten kazandı mı?
@@ -125,6 +130,24 @@ export async function POST(req: NextRequest) {
       .from('quests')
       .update({ total_attempts: (quest.total_attempts || 0) + 1 })
       .eq('id', quest_id);
+  }
+
+  // Fotoğraf kanıtı bekleniyorsa admine bildir
+  if (status === 'pending') {
+    const { data: sender } = await supabase.from('profiles').select('username').eq('id', user.id).single();
+    await sendEmail({
+      to: ADMIN_EMAIL,
+      subject: '📍 Yeni onay bekleyen submission',
+      html: `
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#0a0a0f;color:#fff;padding:32px;border-radius:16px">
+          <h2 style="color:#eab308;margin-bottom:8px">Onay Bekleyen Submission</h2>
+          <p style="color:rgba(255,255,255,0.7)"><strong>Kullanıcı:</strong> @${sender?.username || user.id}</p>
+          <p style="color:rgba(255,255,255,0.7)"><strong>Görev:</strong> ${quest.title}</p>
+          <p style="color:rgba(255,255,255,0.7)"><strong>Mesafe:</strong> ${distance}m</p>
+          <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://izibul.vercel.app'}/admin" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#ff6b2b;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold">Admin Paneline Git</a>
+        </div>
+      `,
+    });
   }
 
   return NextResponse.json({
