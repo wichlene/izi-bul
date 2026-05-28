@@ -22,13 +22,13 @@ export async function POST(req: NextRequest) {
   const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
   const { data, error } = await supabase.storage
-    .from('challenge-photos')
+    .from('quest-photos')
     .upload(fileName, file, { contentType: file.type });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   const { data: { publicUrl } } = supabase.storage
-    .from('challenge-photos')
+    .from('quest-photos')
     .getPublicUrl(data.path);
 
   return NextResponse.json({ url: publicUrl });
