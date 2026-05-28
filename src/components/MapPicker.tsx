@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 
 interface Props {
   onLocationSelect?: (lat: number, lng: number) => void;
@@ -24,6 +24,9 @@ export default function MapPicker({
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<unknown>(null);
   const markerRef = useRef<unknown>(null);
+  const questMarkersRef = useRef<unknown[]>([]);
+  const userMarkersRef = useRef<unknown[]>([]);
+  const [mapReady, setMapReady] = useState(false);
 
   const placeMarker = useCallback(async (lat: number, lng: number) => {
     const L = (await import('leaflet')).default;
@@ -56,6 +59,7 @@ export default function MapPicker({
     onLocationSelect?.(lat, lng);
   }, [readOnly, onLocationSelect]);
 
+  // Harita başlatma (bir kez)
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
 
@@ -77,49 +81,6 @@ export default function MapPicker({
 
       mapInstanceRef.current = map;
 
-      // Quest pinleri
-      quests.forEach((q) => {
-        const icon = L.divIcon({
-          className: '',
-          html: `<div style="
-            background:${q.category?.color || '#ff6b2b'};
-            color:white;
-            border-radius:50%;
-            width:32px;height:32px;
-            display:flex;align-items:center;justify-content:center;
-            font-size:16px;
-            border:2px solid rgba(255,255,255,0.3);
-            box-shadow:0 2px 12px rgba(0,0,0,0.4);
-            cursor:pointer;
-          ">${q.category?.icon || '📍'}</div>`,
-          iconSize: [32, 32],
-          iconAnchor: [16, 16],
-        });
-        L.marker([q.latitude, q.longitude], { icon })
-          .bindPopup(`<b>${q.title}</b>`)
-          .addTo(map);
-      });
-
-      // Canlı kullanıcılar
-      liveUsers.forEach((u) => {
-        const icon = L.divIcon({
-          className: '',
-          html: `<div style="
-            background:#22c55e;
-            border-radius:50%;
-            width:14px;height:14px;
-            border:2px solid white;
-            box-shadow:0 0 8px rgba(34,197,94,0.8);
-            animation:pulse 2s infinite;
-          "></div>`,
-          iconSize: [14, 14],
-          iconAnchor: [7, 7],
-        });
-        L.marker([u.latitude, u.longitude], { icon })
-          .bindPopup(u.username || 'Oyuncu')
-          .addTo(map);
-      });
-
       if (readOnly && initialLat !== 39.0) {
         placeMarker(initialLat, initialLng);
       } else if (!readOnly) {
@@ -127,6 +88,8 @@ export default function MapPicker({
           placeMarker(e.latlng.lat, e.latlng.lng);
         });
       }
+
+      setMapReady(true);
     };
 
     init();
@@ -136,10 +99,75 @@ export default function MapPicker({
         (mapInstanceRef.current as { remove: () => void }).remove();
         mapInstanceRef.current = null;
         markerRef.current = null;
+        setMapReady(false);
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Quest ve canlı kullanıcı işaretçileri (quests/liveUsers değişince güncelle)
+  useEffect(() => {
+    if (!mapReady || !mapInstanceRef.current) return;
+
+    const addMarkers = async () => {
+      const L = (await import('leaflet')).default;
+      const map = mapInstanceRef.current as ReturnType<typeof L.map>;
+
+      // Eski quest markerlarını kaldır
+      questMarkersRef.current.forEach((m) => (m as { remove: () => void }).remove());
+      questMarkersRef.current = [];
+
+      // Quest pinleri ekle
+      quests.forEach((q) => {
+        const icon = L.divIcon({
+          className: '',
+          html: `<div style="
+            background:${q.category?.color || '#ff6b2b'};
+            color:white;
+            border-radius:50%;
+            width:36px;height:36px;
+            display:flex;align-items:center;justify-content:center;
+            font-size:18px;
+            border:3px solid rgba(255,255,255,0.4);
+            box-shadow:0 4px 16px rgba(0,0,0,0.5);
+            cursor:pointer;
+          ">${q.category?.icon || '📍'}</div>`,
+          iconSize: [36, 36],
+          iconAnchor: [18, 18],
+        });
+        const marker = L.marker([q.latitude, q.longitude], { icon })
+          .bindPopup(`<b>${q.title}</b>`, { maxWidth: 200 })
+          .addTo(map);
+        questMarkersRef.current.push(marker);
+      });
+
+      // Eski canlı kullanıcı markerlarını kaldır
+      userMarkersRef.current.forEach((m) => (m as { remove: () => void }).remove());
+      userMarkersRef.current = [];
+
+      // Canlı kullanıcı noktaları
+      liveUsers.forEach((u) => {
+        const icon = L.divIcon({
+          className: '',
+          html: `<div style="
+            background:#22c55e;
+            border-radius:50%;
+            width:16px;height:16px;
+            border:3px solid white;
+            box-shadow:0 0 10px rgba(34,197,94,0.9);
+          "></div>`,
+          iconSize: [16, 16],
+          iconAnchor: [8, 8],
+        });
+        const marker = L.marker([u.latitude, u.longitude], { icon })
+          .bindPopup(u.username ? `@${u.username}` : 'Oyuncu')
+          .addTo(map);
+        userMarkersRef.current.push(marker);
+      });
+    };
+
+    addMarkers();
+  }, [mapReady, quests, liveUsers]);
 
   return (
     <div className="relative w-full h-full">

@@ -30,7 +30,7 @@ export default async function MapPage() {
     <div className="h-screen flex flex-col" style={{ background: '#0a0a0f' }}>
       <Header />
       <div className="flex-1 relative">
-        <MapView quests={(quests as Quest[]) || []} liveUsers={mapped} userId={user?.id} />
+        <MapView initialQuests={(quests as Quest[]) || []} userId={user?.id} />
 
         {/* Overlay info */}
         <div className="absolute top-4 left-4 z-[1000]">
