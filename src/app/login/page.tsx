@@ -31,67 +31,87 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-orange-100 flex items-center justify-center px-4">
+    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#0a0a0f' }}>
       <div className="w-full max-w-md">
         <Link href="/" className="flex items-center justify-center gap-2 mb-8">
-          <div className="bg-orange-500 text-white rounded-2xl p-2.5">
-            <MapPin size={24} />
+          <div className="rounded-2xl p-2.5 flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #ff6b2b, #ff3d00)' }}>
+            <MapPin size={24} className="text-white" />
           </div>
-          <span className="text-2xl font-bold text-gray-900">İzi Bul</span>
+          <span className="text-2xl font-black" style={{ background: 'linear-gradient(135deg, #ff6b2b, #ff8c5a)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            İzi Bul
+          </span>
         </Link>
 
-        <div className="bg-white rounded-3xl shadow-xl p-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">Tekrar hoş geldin!</h1>
-          <p className="text-gray-500 mb-6">Hesabına giriş yap, keşfe devam et.</p>
+        <div className="rounded-3xl p-8" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <h1 className="text-2xl font-black text-white mb-1">Tekrar hoş geldin!</h1>
+          <p className="text-white/40 text-sm mb-6">Hesabına giriş yap, keşfe devam et.</p>
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1.5">E-posta</label>
+              <label className="text-white/60 text-sm font-medium block mb-1.5">E-posta</label>
               <div className="relative">
-                <Mail size={18} className="absolute left-3 top-3 text-gray-400" />
+                <Mail size={16} className="absolute left-3.5 top-3.5 text-white/20" />
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                  className="w-full rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-white/20 focus:outline-none transition-all"
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
                   placeholder="ornek@email.com"
+                  onFocus={(e) => e.target.style.borderColor = 'rgba(255,107,43,0.5)'}
+                  onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.08)'}
                 />
               </div>
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1.5">Şifre</label>
+              <label className="text-white/60 text-sm font-medium block mb-1.5">Şifre</label>
               <div className="relative">
-                <Lock size={18} className="absolute left-3 top-3 text-gray-400" />
+                <Lock size={16} className="absolute left-3.5 top-3.5 text-white/20" />
                 <input
                   type="password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                  className="w-full rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-white/20 focus:outline-none transition-all"
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
                   placeholder="••••••••"
+                  onFocus={(e) => e.target.style.borderColor = 'rgba(255,107,43,0.5)'}
+                  onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.08)'}
                 />
               </div>
             </div>
 
-            {error && <p className="text-red-500 text-sm">{error}</p>}
+            {error && (
+              <div className="rounded-xl p-3 text-sm" style={{ background: 'rgba(239,68,68,0.1)', color: '#f87171', border: '1px solid rgba(239,68,68,0.2)' }}>
+                {error}
+              </div>
+            )}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-gray-200 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors"
+              className="w-full font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all text-white"
+              style={{ background: loading ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg, #ff6b2b, #ff3d00)' }}
             >
               {loading ? <><Loader2 size={16} className="animate-spin" /> Giriş yapılıyor...</> : 'Giriş Yap'}
             </button>
           </form>
 
-          <p className="text-center text-sm text-gray-500 mt-6">
-            Hesabın yok mu?{' '}
-            <Link href="/register" className="text-orange-500 font-semibold hover:text-orange-600">
-              Kayıt ol
-            </Link>
-          </p>
+          <div className="mt-6 space-y-3 text-center text-sm">
+            <div>
+              <Link href="/forgot-password" className="text-white/30 hover:text-white/60 transition-colors">
+                Şifremi Unuttum
+              </Link>
+            </div>
+            <p className="text-white/30">
+              Hesabın yok mu?{' '}
+              <Link href="/register" className="font-semibold" style={{ color: '#ff6b2b' }}>
+                Kayıt ol
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>
