@@ -105,6 +105,21 @@ export default function MapPicker({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // GPS veya dışarıdan gelen konum değişince marker güncelle + haritayı o noktaya götür
+  useEffect(() => {
+    if (!mapReady || !mapInstanceRef.current || readOnly) return;
+    if (!initialLat || !initialLng) return;
+
+    const update = async () => {
+      const L = (await import('leaflet')).default;
+      const map = mapInstanceRef.current as ReturnType<typeof L.map>;
+      await placeMarker(initialLat, initialLng);
+      map.setView([initialLat, initialLng], Math.max((map as unknown as { getZoom: () => number }).getZoom(), 13));
+    };
+    update();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapReady, initialLat, initialLng]);
+
   // Quest ve canlı kullanıcı işaretçileri (quests/liveUsers değişince güncelle)
   useEffect(() => {
     if (!mapReady || !mapInstanceRef.current) return;
