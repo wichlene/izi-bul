@@ -1,17 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { calculateDistance } from '@/lib/distance';
+import { checkRateLimit } from '@/lib/rateLimit';
+import { isValidCoord, isInTurkey } from '@/lib/validateCoords';
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Giriş yapmalısın' }, { status: 401 });
 
+  // Rate limit: kullanıcı başına 10 submission / dakika
+  if (!checkRateLimit(`sub:${user.id}`, 10, 60_000)) {
+    return NextResponse.json({ error: 'Çok fazla deneme. Bir dakika bekle.' }, { status: 429 });
+  }
+
   const body = await req.json();
   const { quest_id, latitude, longitude, photo_url } = body;
 
   if (!quest_id || latitude == null || longitude == null) {
     return NextResponse.json({ error: 'Eksik alanlar' }, { status: 400 });
+  }
+
+  // Koordinat doğrulama
+  if (!isValidCoord(latitude, longitude)) {
+    return NextResponse.json({ error: 'Geçersiz koordinat' }, { status: 400 });
+  }
+  if (!isInTurkey(latitude, longitude)) {
+    return NextResponse.json({ error: 'Konum Türkiye sınırları dışında' }, { status: 400 });
   }
 
   const { data: quest, error: questError } = await supabase
