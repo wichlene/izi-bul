@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { MapPin, Plus, Trophy, Shield, Flame } from 'lucide-react';
+import { MapPin, Plus, Shield } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import SignOutButton from './SignOutButton';
 
@@ -11,7 +11,7 @@ export default async function Header() {
   if (user) {
     const { data } = await supabase
       .from('profiles')
-      .select('username, total_points, is_admin, is_premium, level')
+      .select('username, is_admin, is_premium')
       .eq('id', user.id)
       .single();
     profile = data;
@@ -20,8 +20,7 @@ export default async function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-white/5" style={{ background: 'rgba(10,10,15,0.95)', backdropFilter: 'blur(20px)' }}>
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5 group">
+        <Link href="/" className="flex items-center gap-2.5">
           <div className="relative">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #ff6b2b, #ff3d00)' }}>
               <MapPin size={18} className="text-white" />
@@ -34,15 +33,10 @@ export default async function Header() {
           </div>
         </Link>
 
-        {/* Nav */}
         <nav className="flex items-center gap-1">
           <Link href="/map" className="hidden sm:flex items-center gap-1.5 text-white/50 hover:text-white text-sm font-medium px-3 py-2 rounded-xl transition-colors hover:bg-white/5">
             <MapPin size={15} />
             Harita
-          </Link>
-          <Link href="/leaderboard" className="hidden sm:flex items-center gap-1.5 text-white/50 hover:text-white text-sm font-medium px-3 py-2 rounded-xl transition-colors hover:bg-white/5">
-            <Trophy size={15} />
-            Sıralama
           </Link>
 
           {user && profile ? (
@@ -53,24 +47,15 @@ export default async function Header() {
                   <span className="hidden sm:inline">Admin</span>
                 </Link>
               )}
-
-              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-bold" style={{ background: 'rgba(255,107,43,0.15)', color: '#ff6b2b' }}>
-                <Flame size={13} />
-                {profile.total_points?.toLocaleString('tr-TR')}
-              </div>
-
-              <Link href="/quest/create" className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-xl transition-all hover:opacity-90 active:scale-95" style={{ background: 'linear-gradient(135deg, #ff6b2b, #ff3d00)', color: 'white' }}>
+              <Link href="/quest/create" className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-xl transition-all hover:opacity-90" style={{ background: 'linear-gradient(135deg, #ff6b2b, #ff3d00)', color: 'white' }}>
                 <Plus size={15} />
                 <span className="hidden sm:inline">Görev Ekle</span>
               </Link>
-
               <Link href="/profile" className="flex items-center gap-2 ml-1 hover:bg-white/5 px-2 py-1.5 rounded-xl transition-colors">
                 <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold" style={{ background: 'linear-gradient(135deg, #ff6b2b, #a855f7)' }}>
                   {profile.username?.charAt(0).toUpperCase()}
                 </div>
-                <span className="hidden sm:inline text-sm font-medium text-white/70">
-                  @{profile.username}
-                </span>
+                <span className="hidden sm:inline text-sm font-medium text-white/70">@{profile.username}</span>
               </Link>
               <SignOutButton />
             </>

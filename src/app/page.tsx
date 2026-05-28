@@ -54,7 +54,7 @@ export default async function HomePage() {
             </span>
           </h1>
           <p className="text-white/40 text-xl max-w-2xl mx-auto mb-10">
-            Fotoğrafa bak, konumu haritada bul, oraya git — puan ve nakit ödüller seni bekliyor.
+            Fotoğrafa bak, konumu haritada bul, oraya git — nakit ödüller seni bekliyor.
           </p>
 
           <div className="flex items-center justify-center gap-3 flex-wrap">

@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { Trophy, Target, MapPin, Calendar, Shield, Flame, Eye, EyeOff, Star } from 'lucide-react';
+import { MapPin, Calendar, Shield, Eye, EyeOff, Star, CheckCircle, Clock } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import Header from '@/components/Header';
 import { Submission, Quest } from '@/types';
@@ -21,15 +21,12 @@ export default async function ProfilePage() {
 
   const { data: submissions } = await supabase
     .from('submissions')
-    .select('*, quest:quests(id, title, photo_url, points, category:categories(*))')
+    .select('*, quest:quests(id, title, photo_url, cash_reward, category:categories(*))')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(20);
 
   const wonCount = submissions?.filter((s) => s.is_winner).length || 0;
-  const level = Math.floor((profile?.total_points || 0) / 500) + 1;
-  const nextLevelPoints = level * 500;
-  const progress = Math.min(((profile?.total_points || 0) % 500) / 500 * 100, 100);
 
   return (
     <div className="min-h-screen" style={{ background: '#0a0a0f' }}>
@@ -58,73 +55,40 @@ export default async function ProfilePage() {
               </div>
               <p className="text-white/40 text-sm">@{profile?.username}</p>
               {profile?.city && <p className="text-white/30 text-xs flex items-center gap-1 mt-1"><MapPin size={11} />{profile.city}</p>}
-
-              {/* Seviye bar */}
-              <div className="mt-4">
-                <div className="flex items-center justify-between text-xs mb-1.5">
-                  <span className="text-white/50">Seviye {level}</span>
-                  <span className="text-white/30">{profile?.total_points} / {nextLevelPoints} puan</span>
-                </div>
-                <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
-                  <div className="h-full rounded-full transition-all" style={{ width: `${progress}%`, background: 'linear-gradient(90deg, #ff6b2b, #a855f7)' }} />
-                </div>
-              </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3 hidden sm:grid">
+            <div className="grid grid-cols-2 gap-3 hidden sm:grid">
               {[
-                { icon: <Flame size={16} />, val: profile?.total_points || 0, label: 'Puan', color: '#ff6b2b' },
-                { icon: <Target size={16} />, val: profile?.total_finds || 0, label: 'Çözüm', color: '#22c55e' },
-                { icon: <Trophy size={16} />, val: wonCount, label: 'Kazanma', color: '#eab308' },
+                { val: profile?.total_finds || 0, label: 'Bulunan', color: '#22c55e' },
+                { val: wonCount, label: 'Kazanılan', color: '#eab308' },
               ].map((s, i) => (
                 <div key={i} className="rounded-xl p-3 text-center" style={{ background: 'rgba(255,255,255,0.05)' }}>
-                  <div style={{ color: s.color }} className="flex justify-center mb-1">{s.icon}</div>
-                  <div className="text-white font-black">{s.val}</div>
-                  <div className="text-white/30 text-xs">{s.label}</div>
+                  <div className="text-white font-black text-xl">{s.val}</div>
+                  <div className="text-xs mt-0.5" style={{ color: s.color }}>{s.label}</div>
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-          {/* Gizlilik Ayarları */}
-          <div className="rounded-2xl p-5 border border-white/5" style={{ background: 'rgba(255,255,255,0.02)' }}>
-            <h2 className="font-bold text-white mb-4 flex items-center gap-2">
-              <Shield size={16} className="text-purple-400" />
-              Gizlilik Ayarları
-            </h2>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-white text-sm font-medium">Canlı Konum</p>
-                  <p className="text-white/30 text-xs">Görev sırasında haritada görün</p>
-                </div>
-                <PrivacyToggle
-                  userId={user.id}
-                  field="location_visible"
-                  value={profile?.location_visible !== false}
-                  onIcon={<Eye size={14} />}
-                  offIcon={<EyeOff size={14} />}
-                />
-              </div>
+        {/* Gizlilik */}
+        <div className="rounded-2xl p-5 border border-white/5 mb-6" style={{ background: 'rgba(255,255,255,0.02)' }}>
+          <h2 className="font-bold text-white mb-4 flex items-center gap-2">
+            <Shield size={16} className="text-purple-400" />
+            Gizlilik Ayarları
+          </h2>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-white text-sm font-medium">Canlı Konum</p>
+              <p className="text-white/30 text-xs">Görev sırasında haritada görün</p>
             </div>
-          </div>
-
-          {/* Rozetler */}
-          <div className="rounded-2xl p-5 border border-white/5" style={{ background: 'rgba(255,255,255,0.02)' }}>
-            <h2 className="font-bold text-white mb-4 flex items-center gap-2">
-              <Trophy size={16} className="text-yellow-400" />
-              Rozetler
-            </h2>
-            <div className="flex flex-wrap gap-2">
-              {profile?.total_finds >= 1 && <span className="text-xl" title="İlk Keşif">🎯</span>}
-              {profile?.total_finds >= 10 && <span className="text-xl" title="Kâşif">🧭</span>}
-              {profile?.total_finds >= 100 && <span className="text-xl" title="Efsane">👑</span>}
-              {profile?.is_premium && <span className="text-xl" title="Premium">⭐</span>}
-              {profile?.is_admin && <span className="text-xl" title="Admin">🛡️</span>}
-              {wonCount === 0 && <span className="text-white/20 text-sm">Henüz rozet yok. Görev çöz!</span>}
-            </div>
+            <PrivacyToggle
+              userId={user.id}
+              field="location_visible"
+              value={profile?.location_visible !== false}
+              onIcon={<Eye size={14} />}
+              offIcon={<EyeOff size={14} />}
+            />
           </div>
         </div>
 
@@ -144,7 +108,7 @@ export default async function ProfilePage() {
             </div>
           ) : (
             <div className="divide-y divide-white/5">
-              {(submissions as unknown as (Submission & { quest: Quest })[]).map((s) => (
+              {(submissions as unknown as (Submission & { quest: Quest & { cash_reward: number } })[]).map((s) => (
                 <Link key={s.id} href={`/quest/${s.quest.id}`} className="flex items-center gap-3 px-5 py-3 hover:bg-white/2 transition-colors">
                   <img src={s.quest.photo_url} className="w-12 h-12 rounded-xl object-cover flex-shrink-0 opacity-80" alt="" />
                   <div className="flex-1 min-w-0">
@@ -155,9 +119,13 @@ export default async function ProfilePage() {
                     </div>
                   </div>
                   {s.is_winner ? (
-                    <span className="text-xs px-2.5 py-1 rounded-full font-bold" style={{ background: 'rgba(34,197,94,0.2)', color: '#22c55e' }}>+{s.points_earned}p</span>
+                    <span className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-bold" style={{ background: 'rgba(34,197,94,0.2)', color: '#22c55e' }}>
+                      <CheckCircle size={11} /> Kazandı
+                    </span>
                   ) : s.status === 'pending' ? (
-                    <span className="text-xs px-2.5 py-1 rounded-full font-bold" style={{ background: 'rgba(234,179,8,0.15)', color: '#eab308' }}>İnceleniyor</span>
+                    <span className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-bold" style={{ background: 'rgba(234,179,8,0.15)', color: '#eab308' }}>
+                      <Clock size={11} /> İnceleniyor
+                    </span>
                   ) : (
                     <span className="text-xs px-2.5 py-1 rounded-full" style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.2)' }}>Uzak</span>
                   )}

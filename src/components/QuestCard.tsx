@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Coins, Users, Zap, Star } from 'lucide-react';
+import { Users, Zap, Star } from 'lucide-react';
 import { Quest, DIFFICULTIES } from '@/types';
 
 interface Props { quest: Quest }
@@ -58,11 +58,11 @@ export default function QuestCard({ quest }: Props) {
           <p className="text-white/40 text-sm line-clamp-2 mb-4 flex-1">{quest.description}</p>
 
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1 text-sm font-bold" style={{ color: '#ff6b2b' }}>
-              <Coins size={13} />
-              {quest.points}p
-              {quest.cash_reward > 0 && (
-                <span className="text-green-400 text-xs ml-1">+{quest.cash_reward}₺</span>
+            <div className="flex items-center gap-1 text-sm font-bold" style={{ color: '#22c55e' }}>
+              {quest.cash_reward > 0 ? (
+                <span>{quest.cash_reward}₺ Ödül</span>
+              ) : (
+                <span className="text-white/30">Ödülsüz</span>
               )}
             </div>
             <div className="flex items-center gap-3 text-white/30 text-xs">
