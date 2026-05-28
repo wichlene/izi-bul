@@ -49,6 +49,7 @@ export async function POST(req: NextRequest) {
       cash_reward: cash_reward || 0,
       max_distance_meters: max_distance_meters || 50,
       requires_photo_proof: requires_photo_proof !== false,
+      is_active: true,
       created_by: user.id,
     })
     .select()

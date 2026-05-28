@@ -7,6 +7,9 @@ export const revalidate = 0;
 
 export default async function MapPage() {
   const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+
   const { data: quests } = await supabase
     .from('quests')
     .select('*, category:categories(*)')
@@ -27,7 +30,7 @@ export default async function MapPage() {
     <div className="h-screen flex flex-col" style={{ background: '#0a0a0f' }}>
       <Header />
       <div className="flex-1 relative">
-        <MapView quests={(quests as Quest[]) || []} liveUsers={mapped} />
+        <MapView quests={(quests as Quest[]) || []} liveUsers={mapped} userId={user?.id} />
 
         {/* Overlay info */}
         <div className="absolute top-4 left-4 z-[1000]">
