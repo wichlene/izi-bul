@@ -1,8 +1,9 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-import { Shield, Users, MapPin, CheckCircle, Clock, TrendingUp, Store } from 'lucide-react';
+import { Shield, Users, MapPin, Clock, TrendingUp, Store, Tag } from 'lucide-react';
 import Header from '@/components/Header';
+import { ApproveButton, BusinessToggle, FeatureToggle } from './AdminActions';
 
 export default async function AdminPage() {
   const supabase = await createClient();
@@ -57,6 +58,9 @@ export default async function AdminPage() {
             <h1 className="text-2xl font-black text-white">Admin Paneli</h1>
             <p className="text-white/30 text-sm">İzi Bul yönetim merkezi</p>
           </div>
+          <Link href="/admin/categories" className="ml-auto flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold" style={{ background: 'rgba(255,107,43,0.15)', color: '#ff6b2b', border: '1px solid rgba(255,107,43,0.25)' }}>
+            <Tag size={14} /> Kategoriler
+          </Link>
         </div>
 
         {/* İstatistikler */}
@@ -196,37 +200,3 @@ export default async function AdminPage() {
   );
 }
 
-function ApproveButton({ submissionId }: { submissionId: string }) {
-  return (
-    <form action="/api/admin/approve" method="POST">
-      <input type="hidden" name="submission_id" value={submissionId} />
-      <button type="submit" className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg font-semibold" style={{ background: 'rgba(34,197,94,0.2)', color: '#22c55e' }}>
-        <CheckCircle size={12} /> Onayla
-      </button>
-    </form>
-  );
-}
-
-function FeatureToggle({ questId, isFeatured }: { questId: string; isFeatured: boolean }) {
-  return (
-    <form action="/api/admin/feature" method="POST">
-      <input type="hidden" name="quest_id" value={questId} />
-      <input type="hidden" name="featured" value={String(!isFeatured)} />
-      <button type="submit" className="text-xs px-2 py-1 rounded-lg" style={isFeatured ? { background: 'rgba(255,215,0,0.2)', color: '#ffd700' } : { background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.3)' }}>
-        {isFeatured ? '⭐ Öne çıkan' : 'Öne çıkar'}
-      </button>
-    </form>
-  );
-}
-
-function BusinessToggle({ userId, isBusiness }: { userId: string; isBusiness: boolean }) {
-  return (
-    <form action="/api/admin/business" method="POST">
-      <input type="hidden" name="user_id" value={userId} />
-      <input type="hidden" name="is_business" value={String(!isBusiness)} />
-      <button type="submit" className="text-xs px-2 py-1 rounded-lg transition-colors" style={isBusiness ? { background: 'rgba(34,197,94,0.2)', color: '#22c55e' } : { background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.3)' }}>
-        {isBusiness ? '🏪 İşletme' : 'İşletme Yap'}
-      </button>
-    </form>
-  );
-}
