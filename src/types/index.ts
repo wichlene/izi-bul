@@ -18,6 +18,9 @@ export interface Profile {
   total_finds: number;
   level: number;
   created_at: string;
+  is_admin?: boolean;
+  is_premium?: boolean;
+  location_visible?: boolean;
 }
 
 export interface Quest {
@@ -37,6 +40,7 @@ export interface Quest {
   max_distance_meters: number;
   requires_photo_proof: boolean;
   is_active: boolean;
+  is_featured?: boolean;
   total_attempts: number;
   total_solved: number;
   created_by?: string;
@@ -56,6 +60,7 @@ export interface Submission {
   status: SubmissionStatus;
   is_winner: boolean;
   points_earned: number;
+  reviewed_at?: string;
 }
 
 export interface Badge {

@@ -49,27 +49,26 @@ export default function QuestSubmissionFlow({ quest, alreadyWon }: Props) {
     check();
   }, []);
 
-  // Giriş yapmadıysa
   if (authChecked && !user) {
     return (
       <div className="p-8 text-center">
-        <div className="bg-orange-100 text-orange-600 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-          <LogIn size={28} />
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(255,107,43,0.15)' }}>
+          <LogIn size={26} style={{ color: '#ff6b2b' }} />
         </div>
-        <h3 className="text-lg font-bold text-gray-900 mb-2">Önce giriş yap</h3>
-        <p className="text-gray-500 text-sm mb-6">
-          Görevi çözebilmek için ücretsiz bir hesap aç.
-        </p>
+        <h3 className="text-lg font-black text-white mb-2">Önce giriş yap</h3>
+        <p className="text-white/40 text-sm mb-6">Görevi çözebilmek için ücretsiz bir hesap aç.</p>
         <div className="flex gap-2">
           <Link
             href={`/login?next=/quest/${quest.id}`}
-            className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-medium py-2.5 rounded-xl transition-colors"
+            className="flex-1 font-semibold py-2.5 rounded-xl transition-all text-white text-center text-sm"
+            style={{ background: 'linear-gradient(135deg, #ff6b2b, #ff3d00)' }}
           >
             Giriş Yap
           </Link>
           <Link
             href="/register"
-            className="flex-1 border border-gray-200 hover:border-orange-300 text-gray-700 font-medium py-2.5 rounded-xl transition-colors"
+            className="flex-1 font-semibold py-2.5 rounded-xl transition-all text-sm text-center"
+            style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.08)' }}
           >
             Kayıt Ol
           </Link>
@@ -81,12 +80,13 @@ export default function QuestSubmissionFlow({ quest, alreadyWon }: Props) {
   if (alreadyWon) {
     return (
       <div className="p-8 text-center">
-        <Trophy size={48} className="mx-auto mb-3 text-yellow-400" />
-        <h3 className="text-xl font-bold text-gray-900 mb-2">Bu görev tamamlandı!</h3>
-        <p className="text-gray-500 text-sm">Yeni görevlere bak.</p>
+        <Trophy size={48} className="mx-auto mb-3" style={{ color: '#eab308' }} />
+        <h3 className="text-xl font-black text-white mb-2">Bu görev tamamlandı!</h3>
+        <p className="text-white/40 text-sm">Yeni görevlere bak.</p>
         <Link
           href="/"
-          className="inline-block mt-4 bg-orange-500 hover:bg-orange-600 text-white font-medium px-6 py-2.5 rounded-xl transition-colors"
+          className="inline-block mt-4 px-6 py-2.5 rounded-xl font-semibold text-white text-sm"
+          style={{ background: 'linear-gradient(135deg, #ff6b2b, #ff3d00)' }}
         >
           Görev Bul
         </Link>
@@ -99,17 +99,18 @@ export default function QuestSubmissionFlow({ quest, alreadyWon }: Props) {
       return (
         <div className="p-8 text-center">
           <div className="text-6xl mb-4 animate-bounce">🎉</div>
-          <h3 className="text-2xl font-extrabold text-green-600 mb-2">Tebrikler, buldun!</h3>
-          <p className="text-gray-600 mb-4">
-            Konuma sadece <strong>{formatDistance(result.distance)}</strong> uzaktaydın.
+          <h3 className="text-2xl font-black mb-2" style={{ color: '#22c55e' }}>Tebrikler, buldun!</h3>
+          <p className="text-white/50 mb-4">
+            Konuma sadece <strong className="text-white">{formatDistance(result.distance)}</strong> uzaktaydın.
           </p>
-          <div className="bg-orange-50 rounded-2xl p-4 mb-4">
-            <p className="text-orange-600 font-semibold text-sm mb-1">Kazandın</p>
-            <p className="text-orange-800 font-bold text-2xl">+{result.pointsEarned} puan</p>
+          <div className="rounded-2xl p-4 mb-4" style={{ background: 'rgba(255,107,43,0.1)', border: '1px solid rgba(255,107,43,0.2)' }}>
+            <p className="text-sm mb-1" style={{ color: '#ff6b2b' }}>Kazandın</p>
+            <p className="font-black text-3xl text-white">+{result.pointsEarned} puan</p>
           </div>
           <button
             onClick={() => router.push('/profile')}
-            className="bg-orange-500 hover:bg-orange-600 text-white font-medium px-6 py-2.5 rounded-xl transition-colors"
+            className="px-6 py-2.5 rounded-xl font-semibold text-white text-sm"
+            style={{ background: 'linear-gradient(135deg, #ff6b2b, #ff3d00)' }}
           >
             Profilime Git
           </button>
@@ -120,15 +121,16 @@ export default function QuestSubmissionFlow({ quest, alreadyWon }: Props) {
     if (result.status === 'pending') {
       return (
         <div className="p-8 text-center">
-          <Clock size={48} className="mx-auto mb-3 text-blue-500" />
-          <h3 className="text-xl font-bold text-gray-900 mb-2">İncelemeye gönderildi</h3>
-          <p className="text-gray-500 mb-4">
+          <Clock size={48} className="mx-auto mb-3" style={{ color: '#3b82f6' }} />
+          <h3 className="text-xl font-black text-white mb-2">İncelemeye gönderildi</h3>
+          <p className="text-white/40 text-sm mb-4">
             Doğru konumdaydın ({formatDistance(result.distance)}). Fotoğrafın onaylanırsa
             puanın hesabına eklenecek.
           </p>
           <Link
             href="/"
-            className="inline-block bg-orange-500 hover:bg-orange-600 text-white font-medium px-6 py-2.5 rounded-xl transition-colors"
+            className="inline-block px-6 py-2.5 rounded-xl font-semibold text-white text-sm"
+            style={{ background: 'linear-gradient(135deg, #ff6b2b, #ff3d00)' }}
           >
             Diğer Görevler
           </Link>
@@ -139,14 +141,15 @@ export default function QuestSubmissionFlow({ quest, alreadyWon }: Props) {
     return (
       <div className="p-8 text-center">
         <div className="text-5xl mb-4">📍</div>
-        <h3 className="text-xl font-bold text-gray-700 mb-2">Yeterince yakın değildin</h3>
-        <p className="text-gray-500 mb-4">
-          Konuma <strong className="text-red-500">{formatDistance(result.distance)}</strong> uzaktaydın.
+        <h3 className="text-xl font-black text-white/70 mb-2">Yeterince yakın değildin</h3>
+        <p className="text-white/40 text-sm mb-4">
+          Konuma <strong style={{ color: '#f87171' }}>{formatDistance(result.distance)}</strong> uzaktaydın.
           Maksimum: {formatDistance(quest.max_distance_meters)}.
         </p>
         <button
           onClick={() => { setResult(null); setLat(null); setLng(null); setProofPhoto(''); }}
-          className="bg-orange-500 hover:bg-orange-600 text-white font-medium px-6 py-2.5 rounded-xl transition-colors"
+          className="px-6 py-2.5 rounded-xl font-semibold text-white text-sm"
+          style={{ background: 'linear-gradient(135deg, #ff6b2b, #ff3d00)' }}
         >
           Tekrar Dene
         </button>
@@ -205,41 +208,39 @@ export default function QuestSubmissionFlow({ quest, alreadyWon }: Props) {
   if (!authChecked) {
     return (
       <div className="p-8 flex items-center justify-center">
-        <Loader2 size={24} className="animate-spin text-gray-400" />
+        <Loader2 size={24} className="animate-spin text-white/20" />
       </div>
     );
   }
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-4 border-b border-gray-100">
-        <h2 className="font-bold text-gray-900 mb-1">Konumu Belirle</h2>
-        <p className="text-gray-500 text-sm">
-          GPS&apos;ini aç veya haritadan pin bırak.
-        </p>
+      <div className="p-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <h2 className="font-black text-white mb-0.5">Konumu Belirle</h2>
+        <p className="text-white/30 text-sm">GPS&apos;ini aç veya haritadan pin bırak.</p>
       </div>
 
-      {/* GPS butonu */}
-      <div className="p-4 border-b border-gray-100">
+      <div className="p-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
         <button
           onClick={handleUseGps}
           disabled={gpsLoading}
-          className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-200 text-white font-medium py-2.5 rounded-xl flex items-center justify-center gap-2 transition-colors"
+          className="w-full font-semibold py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all text-white text-sm"
+          style={{ background: gpsLoading ? 'rgba(255,255,255,0.05)' : 'rgba(59,130,246,0.2)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.2)' }}
         >
           {gpsLoading ? (
-            <><Loader2 size={16} className="animate-spin" /> Konum alınıyor...</>
+            <><Loader2 size={15} className="animate-spin" /> Konum alınıyor...</>
           ) : (
-            <><Navigation size={16} /> Mevcut Konumumu Kullan</>
+            <><Navigation size={15} /> Mevcut Konumumu Kullan</>
           )}
         </button>
         {useGps && lat && (
-          <p className="flex items-center gap-1.5 text-green-600 text-xs mt-2">
+          <p className="flex items-center gap-1.5 text-xs mt-2" style={{ color: '#22c55e' }}>
             <MapPin size={11} /> GPS konumu alındı
           </p>
         )}
       </div>
 
-      <div className="h-64 border-b border-gray-100">
+      <div className="h-64" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
         <MapPicker
           onLocationSelect={(la, ln) => { setLat(la); setLng(ln); setUseGps(false); }}
           initialLat={lat || undefined}
@@ -247,25 +248,22 @@ export default function QuestSubmissionFlow({ quest, alreadyWon }: Props) {
         />
       </div>
 
-      {/* Fotoğraf kanıtı */}
       {quest.requires_photo_proof && (
-        <div className="p-4 border-b border-gray-100">
+        <div className="p-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <div className="flex items-center gap-2 mb-2">
-            <Camera size={16} className="text-gray-600" />
-            <h3 className="font-bold text-gray-900 text-sm">Konum Fotoğrafı</h3>
-            <span className="text-red-500 text-xs">*</span>
+            <Camera size={15} className="text-white/40" />
+            <h3 className="font-bold text-white text-sm">Konum Fotoğrafı</h3>
+            <span className="text-xs" style={{ color: '#f87171' }}>*</span>
           </div>
-          <p className="text-gray-500 text-xs mb-3">
-            Konuma vardığını kanıtlamak için orada çekilmiş bir fotoğraf yükle.
-          </p>
+          <p className="text-white/30 text-xs mb-3">Konuma vardığını kanıtlamak için orada çekilmiş bir fotoğraf yükle.</p>
           <PhotoUpload onUpload={setProofPhoto} />
         </div>
       )}
 
       <div className="p-4 space-y-3">
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex items-start gap-2 text-red-700 text-sm">
-            <AlertCircle size={16} className="shrink-0 mt-0.5" />
+          <div className="rounded-xl p-3 flex items-start gap-2 text-sm" style={{ background: 'rgba(239,68,68,0.1)', color: '#f87171', border: '1px solid rgba(239,68,68,0.2)' }}>
+            <AlertCircle size={15} className="shrink-0 mt-0.5" />
             <span>{error}</span>
           </div>
         )}
@@ -273,16 +271,17 @@ export default function QuestSubmissionFlow({ quest, alreadyWon }: Props) {
         <button
           onClick={handleSubmit}
           disabled={loading || !lat}
-          className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors"
+          className="w-full font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all text-white"
+          style={{ background: (loading || !lat) ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg, #ff6b2b, #ff3d00)', color: (loading || !lat) ? 'rgba(255,255,255,0.2)' : 'white' }}
         >
           {loading ? (
             <><Loader2 size={16} className="animate-spin" /> Kontrol ediliyor...</>
           ) : (
-            <><Send size={16} /> Tahmini Gönder</>
+            <><Send size={15} /> Tahmini Gönder</>
           )}
         </button>
 
-        <p className="text-gray-400 text-xs text-center">
+        <p className="text-white/20 text-xs text-center">
           Konuma {formatDistance(quest.max_distance_meters)} içinde olman gerekiyor.
         </p>
       </div>

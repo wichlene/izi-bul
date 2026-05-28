@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { MapPin, Plus, Trophy, User, LogIn } from 'lucide-react';
+import { MapPin, Plus, Trophy, Shield, Flame } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import SignOutButton from './SignOutButton';
 
@@ -11,46 +11,64 @@ export default async function Header() {
   if (user) {
     const { data } = await supabase
       .from('profiles')
-      .select('username, avatar_url, total_points')
+      .select('username, total_points, is_admin, is_premium, level')
       .eq('id', user.id)
       .single();
     profile = data;
   }
 
   return (
-    <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
-      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="bg-orange-500 text-white rounded-xl p-1.5">
-            <MapPin size={20} />
+    <header className="sticky top-0 z-50 border-b border-white/5" style={{ background: 'rgba(10,10,15,0.95)', backdropFilter: 'blur(20px)' }}>
+      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+        {/* Logo */}
+        <Link href="/" className="flex items-center gap-2.5 group">
+          <div className="relative">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #ff6b2b, #ff3d00)' }}>
+              <MapPin size={18} className="text-white" />
+            </div>
+            <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-black animate-pulse" />
           </div>
-          <span className="text-xl font-bold text-gray-900">İzi Bul</span>
+          <div>
+            <span className="text-lg font-black text-white tracking-tight">İZİ BUL</span>
+            <div className="text-xs text-white/30 -mt-0.5 font-medium">Türkiye&apos;yi Keşfet</div>
+          </div>
         </Link>
 
-        <nav className="flex items-center gap-2">
-          <Link href="/leaderboard" className="hidden sm:flex items-center gap-1.5 text-gray-600 hover:text-gray-900 text-sm font-medium px-3 py-2 rounded-xl transition-colors">
-            <Trophy size={16} />
-            Liderlik
+        {/* Nav */}
+        <nav className="flex items-center gap-1">
+          <Link href="/map" className="hidden sm:flex items-center gap-1.5 text-white/50 hover:text-white text-sm font-medium px-3 py-2 rounded-xl transition-colors hover:bg-white/5">
+            <MapPin size={15} />
+            Harita
+          </Link>
+          <Link href="/leaderboard" className="hidden sm:flex items-center gap-1.5 text-white/50 hover:text-white text-sm font-medium px-3 py-2 rounded-xl transition-colors hover:bg-white/5">
+            <Trophy size={15} />
+            Sıralama
           </Link>
 
           {user && profile ? (
             <>
-              <div className="hidden sm:flex items-center gap-1.5 bg-orange-50 text-orange-700 px-3 py-1.5 rounded-full text-sm font-semibold">
-                <span>{profile.total_points}</span>
-                <span className="text-xs">puan</span>
+              {profile.is_admin && (
+                <Link href="/admin" className="flex items-center gap-1.5 text-purple-400 hover:text-purple-300 text-sm font-medium px-3 py-2 rounded-xl transition-colors hover:bg-purple-500/10">
+                  <Shield size={15} />
+                  <span className="hidden sm:inline">Admin</span>
+                </Link>
+              )}
+
+              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-bold" style={{ background: 'rgba(255,107,43,0.15)', color: '#ff6b2b' }}>
+                <Flame size={13} />
+                {profile.total_points?.toLocaleString('tr-TR')}
               </div>
-              <Link
-                href="/quest/create"
-                className="flex items-center gap-1.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium px-3 py-2 rounded-xl transition-colors"
-              >
-                <Plus size={16} />
+
+              <Link href="/quest/create" className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-xl transition-all hover:opacity-90 active:scale-95" style={{ background: 'linear-gradient(135deg, #ff6b2b, #ff3d00)', color: 'white' }}>
+                <Plus size={15} />
                 <span className="hidden sm:inline">Görev Ekle</span>
               </Link>
-              <Link href="/profile" className="flex items-center gap-2 hover:bg-gray-100 px-2 py-1.5 rounded-xl transition-colors">
-                <div className="w-8 h-8 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center font-bold text-sm">
-                  {profile.username.charAt(0).toUpperCase()}
+
+              <Link href="/profile" className="flex items-center gap-2 ml-1 hover:bg-white/5 px-2 py-1.5 rounded-xl transition-colors">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold" style={{ background: 'linear-gradient(135deg, #ff6b2b, #a855f7)' }}>
+                  {profile.username?.charAt(0).toUpperCase()}
                 </div>
-                <span className="hidden sm:inline text-sm font-medium text-gray-700">
+                <span className="hidden sm:inline text-sm font-medium text-white/70">
                   @{profile.username}
                 </span>
               </Link>
@@ -58,19 +76,11 @@ export default async function Header() {
             </>
           ) : (
             <>
-              <Link
-                href="/login"
-                className="flex items-center gap-1.5 text-gray-700 hover:bg-gray-100 text-sm font-medium px-3 py-2 rounded-xl transition-colors"
-              >
-                <LogIn size={16} />
+              <Link href="/login" className="text-white/60 hover:text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors hover:bg-white/5">
                 Giriş
               </Link>
-              <Link
-                href="/register"
-                className="flex items-center gap-1.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors"
-              >
-                <User size={16} />
-                <span className="hidden sm:inline">Kayıt Ol</span>
+              <Link href="/register" className="text-sm font-semibold px-4 py-2 rounded-xl transition-all hover:opacity-90" style={{ background: 'linear-gradient(135deg, #ff6b2b, #ff3d00)', color: 'white' }}>
+                Kayıt Ol
               </Link>
             </>
           )}

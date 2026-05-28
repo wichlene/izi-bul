@@ -40,95 +40,72 @@ export default function RegisterPage() {
     }
   };
 
+  const inputStyle = {
+    background: 'rgba(255,255,255,0.05)',
+    border: '1px solid rgba(255,255,255,0.08)',
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-orange-100 flex items-center justify-center px-4 py-8">
+    <div className="min-h-screen flex items-center justify-center px-4 py-8" style={{ background: '#0a0a0f' }}>
       <div className="w-full max-w-md">
-        <Link href="/" className="flex items-center justify-center gap-2 mb-6">
-          <div className="bg-orange-500 text-white rounded-2xl p-2.5">
-            <MapPin size={24} />
+        <Link href="/" className="flex items-center justify-center gap-2 mb-8">
+          <div className="rounded-2xl p-2.5" style={{ background: 'linear-gradient(135deg, #ff6b2b, #ff3d00)' }}>
+            <MapPin size={24} className="text-white" />
           </div>
-          <span className="text-2xl font-bold text-gray-900">İzi Bul</span>
+          <span className="text-2xl font-black" style={{ background: 'linear-gradient(135deg, #ff6b2b, #ff8c5a)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            İzi Bul
+          </span>
         </Link>
 
-        <div className="bg-white rounded-3xl shadow-xl p-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">Maceraya başla!</h1>
-          <p className="text-gray-500 mb-6">Ücretsiz hesap aç, keşfe çık, ödülleri topla.</p>
+        <div className="rounded-3xl p-8" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <h1 className="text-2xl font-black text-white mb-1">Maceraya başla!</h1>
+          <p className="text-white/40 text-sm mb-6">Ücretsiz hesap aç, keşfe çık, ödülleri topla.</p>
 
           <form onSubmit={handleRegister} className="space-y-3">
-            <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1.5">Adın Soyadın</label>
-              <div className="relative">
-                <User size={18} className="absolute left-3 top-3 text-gray-400" />
-                <input
-                  type="text"
-                  required
-                  value={form.full_name}
-                  onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-                  className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-                  placeholder="Ahmet Yılmaz"
-                />
+            {[
+              { label: 'Adın Soyadın', icon: <User size={16} />, key: 'full_name', type: 'text', placeholder: 'Ahmet Yılmaz' },
+              { label: 'Kullanıcı Adı', icon: <AtSign size={16} />, key: 'username', type: 'text', placeholder: 'ahmetylmz' },
+              { label: 'E-posta', icon: <Mail size={16} />, key: 'email', type: 'email', placeholder: 'ornek@email.com' },
+              { label: 'Şifre', icon: <Lock size={16} />, key: 'password', type: 'password', placeholder: 'En az 6 karakter' },
+            ].map(({ label, icon, key, type, placeholder }) => (
+              <div key={key}>
+                <label className="text-white/60 text-sm font-medium block mb-1.5">{label}</label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-3.5 text-white/20">{icon}</span>
+                  <input
+                    type={type}
+                    required
+                    value={form[key as keyof typeof form]}
+                    onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                    className="w-full rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-white/20 focus:outline-none transition-all"
+                    style={inputStyle}
+                    placeholder={placeholder}
+                    onFocus={(e) => e.target.style.borderColor = 'rgba(255,107,43,0.5)'}
+                    onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.08)'}
+                  />
+                </div>
               </div>
-            </div>
+            ))}
 
-            <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1.5">Kullanıcı Adı</label>
-              <div className="relative">
-                <AtSign size={18} className="absolute left-3 top-3 text-gray-400" />
-                <input
-                  type="text"
-                  required
-                  value={form.username}
-                  onChange={(e) => setForm({ ...form, username: e.target.value })}
-                  className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-                  placeholder="ahmetylmz"
-                />
+            {error && (
+              <div className="rounded-xl p-3 text-sm" style={{ background: 'rgba(239,68,68,0.1)', color: '#f87171', border: '1px solid rgba(239,68,68,0.2)' }}>
+                {error}
               </div>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1.5">E-posta</label>
-              <div className="relative">
-                <Mail size={18} className="absolute left-3 top-3 text-gray-400" />
-                <input
-                  type="email"
-                  required
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-                  placeholder="ornek@email.com"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1.5">Şifre</label>
-              <div className="relative">
-                <Lock size={18} className="absolute left-3 top-3 text-gray-400" />
-                <input
-                  type="password"
-                  required
-                  value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-                  placeholder="En az 6 karakter"
-                />
-              </div>
-            </div>
-
-            {error && <p className="text-red-500 text-sm">{error}</p>}
+            )}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-gray-200 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors mt-2"
+              className="w-full font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all text-white mt-2"
+              style={{ background: loading ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg, #ff6b2b, #ff3d00)' }}
             >
               {loading ? <><Loader2 size={16} className="animate-spin" /> Kayıt yapılıyor...</> : 'Hesabımı Oluştur'}
             </button>
           </form>
 
-          <p className="text-center text-sm text-gray-500 mt-6">
+          <p className="text-center text-sm text-white/30 mt-6">
             Zaten hesabın var mı?{' '}
-            <Link href="/login" className="text-orange-500 font-semibold hover:text-orange-600">
+            <Link href="/login" className="font-semibold" style={{ color: '#ff6b2b' }}>
               Giriş yap
             </Link>
           </p>
