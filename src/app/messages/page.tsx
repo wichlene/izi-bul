@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import Header from '@/components/Header';
+import AppShell from '@/components/AppShell';
 import ChatClient from './ChatClient';
 
 export const revalidate = 0;
@@ -37,14 +37,13 @@ export default async function MessagesPage({ searchParams }: { searchParams: Pro
   }
 
   return (
-    <div className="min-h-screen" style={{ background: '#0a0a0f' }}>
-      <Header />
+    <AppShell>
       <ChatClient
         currentUserId={user.id}
         friends={(friends || []).map((f) => f.friend as unknown as { id: string; username: string })}
         initialMessages={initialMessages as { id: string; from_user_id: string; to_user_id: string; content: string; created_at: string }[]}
         chatWith={chatWith}
       />
-    </div>
+    </AppShell>
   );
 }
