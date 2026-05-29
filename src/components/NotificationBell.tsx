@@ -44,15 +44,15 @@ export default function NotificationBell() {
   }, []);
 
   const count = data?.counts.total || 0;
-  const card = { background: 'rgba(255,255,255,0.03)' };
 
   return (
     <div className="relative" ref={ref}>
       <button onClick={() => setOpen((o) => !o)}
-        className="relative flex items-center justify-center w-9 h-9 rounded-xl text-white/60 hover:text-white hover:bg-white/5 transition-colors">
+        className="relative flex items-center justify-center w-9 h-9 rounded-xl transition-colors hover:bg-gray-100"
+        style={{ color: '#262626' }}>
         <Bell size={18} />
         {count > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-black flex items-center justify-center text-white border-2 border-black"
+          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-black flex items-center justify-center text-white border-2 border-white"
             style={{ background: '#ff3d00' }}>
             {count > 9 ? '9+' : count}
           </span>
@@ -60,11 +60,11 @@ export default function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 rounded-2xl shadow-2xl overflow-hidden z-[100]"
-          style={{ background: '#15151c', border: '1px solid rgba(255,255,255,0.08)' }}>
-          <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between">
-            <h3 className="font-bold text-white text-sm">Bildirimler</h3>
-            <button onClick={() => setOpen(false)} className="text-white/30 hover:text-white">
+        <div className="absolute right-0 top-full mt-2 w-80 rounded-2xl overflow-hidden z-[100]"
+          style={{ background: '#fff', border: '1px solid #efefef', boxShadow: '0 8px 40px rgba(0,0,0,0.12)' }}>
+          <div className="px-4 py-3 border-b flex items-center justify-between" style={{ borderColor: '#efefef' }}>
+            <h3 className="font-bold text-sm" style={{ color: '#262626' }}>Bildirimler</h3>
+            <button onClick={() => setOpen(false)} style={{ color: '#8e8e8e' }}>
               <X size={14} />
             </button>
           </div>
@@ -72,25 +72,25 @@ export default function NotificationBell() {
           <div className="max-h-96 overflow-y-auto">
             {!data || count === 0 ? (
               <div className="p-8 text-center">
-                <Bell size={28} className="text-white/10 mx-auto mb-2" />
-                <p className="text-white/30 text-sm">Yeni bildirim yok</p>
+                <Bell size={28} className="mx-auto mb-2" style={{ color: '#d4d4d4' }} />
+                <p className="text-sm" style={{ color: '#8e8e8e' }}>Yeni bildirim yok</p>
               </div>
             ) : (
               <>
                 {data.friend_requests.length > 0 && (
                   <div>
-                    <div className="px-4 py-2 text-xs font-bold text-white/40 uppercase tracking-wider">Arkadaşlık İstekleri</div>
+                    <div className="px-4 py-2 text-xs font-bold uppercase tracking-wider" style={{ color: '#8e8e8e' }}>Arkadaşlık İstekleri</div>
                     {data.friend_requests.map((r) => {
                       const u = pick(r.from_user);
                       return (
                         <Link key={r.id} href="/friends" onClick={() => setOpen(false)}
-                          className="flex items-center gap-3 px-4 py-3 hover:bg-white/3 transition-colors">
+                          className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors">
                           <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold" style={{ background: 'linear-gradient(135deg,#a855f7,#ec4899)' }}>
                             <UserPlus size={14} className="text-white" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-white text-sm font-medium truncate">@{u?.username}</p>
-                            <p className="text-white/40 text-xs">arkadaş olmak istiyor</p>
+                            <p className="text-sm font-semibold truncate" style={{ color: '#262626' }}>@{u?.username}</p>
+                            <p className="text-xs" style={{ color: '#8e8e8e' }}>arkadaş olmak istiyor</p>
                           </div>
                         </Link>
                       );
@@ -99,19 +99,19 @@ export default function NotificationBell() {
                 )}
 
                 {data.unread_messages.length > 0 && (
-                  <div className="border-t border-white/5">
-                    <div className="px-4 py-2 text-xs font-bold text-white/40 uppercase tracking-wider">Yeni Mesajlar</div>
+                  <div style={{ borderTop: '1px solid #efefef' }}>
+                    <div className="px-4 py-2 text-xs font-bold uppercase tracking-wider" style={{ color: '#8e8e8e' }}>Yeni Mesajlar</div>
                     {data.unread_messages.map((m) => {
                       const u = pick(m.from_user);
                       return (
                         <Link key={m.id} href={`/messages?with=${u?.id}`} onClick={() => setOpen(false)}
-                          className="flex items-center gap-3 px-4 py-3 hover:bg-white/3 transition-colors">
+                          className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors">
                           <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold" style={{ background: 'linear-gradient(135deg,#22c55e,#10b981)' }}>
                             <MessageCircle size={14} className="text-white" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-white text-sm font-medium truncate">@{u?.username}</p>
-                            <p className="text-white/40 text-xs truncate">{m.content}</p>
+                            <p className="text-sm font-semibold truncate" style={{ color: '#262626' }}>@{u?.username}</p>
+                            <p className="text-xs truncate" style={{ color: '#8e8e8e' }}>{m.content}</p>
                           </div>
                         </Link>
                       );
@@ -120,19 +120,19 @@ export default function NotificationBell() {
                 )}
 
                 {data.active_quests.length > 0 && (
-                  <div className="border-t border-white/5">
-                    <div className="px-4 py-2 text-xs font-bold text-white/40 uppercase tracking-wider">Devam Eden Görevler</div>
+                  <div style={{ borderTop: '1px solid #efefef' }}>
+                    <div className="px-4 py-2 text-xs font-bold uppercase tracking-wider" style={{ color: '#8e8e8e' }}>Devam Eden Görevler</div>
                     {data.active_quests.map((p) => {
                       const q = pick(p.quests);
                       return (
                         <Link key={p.id} href={`/quest/${q?.id}`} onClick={() => setOpen(false)}
-                          className="flex items-center gap-3 px-4 py-3 hover:bg-white/3 transition-colors">
+                          className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors">
                           <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold" style={{ background: 'linear-gradient(135deg,#ff6b2b,#ff3d00)' }}>
                             <Target size={14} className="text-white" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-white text-sm font-medium truncate">{q?.title}</p>
-                            <p className="text-white/40 text-xs">Adım {p.current_step} · Devam et →</p>
+                            <p className="text-sm font-semibold truncate" style={{ color: '#262626' }}>{q?.title}</p>
+                            <p className="text-xs" style={{ color: '#8e8e8e' }}>Adım {p.current_step} · Devam et →</p>
                           </div>
                         </Link>
                       );
@@ -143,11 +143,15 @@ export default function NotificationBell() {
             )}
           </div>
 
-          <div className="border-t border-white/5 grid grid-cols-2">
-            <Link href="/friends" onClick={() => setOpen(false)} className="px-4 py-2.5 text-xs text-center text-white/60 hover:bg-white/5 transition-colors">
+          <div className="grid grid-cols-2" style={{ borderTop: '1px solid #efefef' }}>
+            <Link href="/friends" onClick={() => setOpen(false)}
+              className="px-4 py-2.5 text-xs text-center font-semibold hover:bg-gray-50 transition-colors"
+              style={{ color: '#262626' }}>
               Arkadaşlar
             </Link>
-            <Link href="/messages" onClick={() => setOpen(false)} className="px-4 py-2.5 text-xs text-center text-white/60 hover:bg-white/5 transition-colors border-l border-white/5">
+            <Link href="/messages" onClick={() => setOpen(false)}
+              className="px-4 py-2.5 text-xs text-center font-semibold hover:bg-gray-50 transition-colors"
+              style={{ color: '#262626', borderLeft: '1px solid #efefef' }}>
               Mesajlar
             </Link>
           </div>
