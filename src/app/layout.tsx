@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { createClient } from '@/lib/supabase/server';
 import LocationSync from '@/components/LocationSync';
+import ServiceWorkerRegister from '@/components/ServiceWorkerRegister';
 
 export const viewport: Viewport = {
   themeColor: '#ff6b2b',
@@ -18,9 +19,17 @@ export const metadata: Metadata = {
     type: 'website',
   },
   manifest: '/manifest.json',
+  icons: {
+    icon: [
+      { url: '/favicon-32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+  },
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'black-translucent',
+    statusBarStyle: 'default',
     title: 'İzi Bul',
   },
 };
@@ -33,6 +42,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="tr" className="h-full">
       <body className="min-h-full flex flex-col" style={{ background: '#f7f8f8' }}>
         {children}
+        <ServiceWorkerRegister />
         {user && <LocationSync userId={user.id} />}
       </body>
     </html>
