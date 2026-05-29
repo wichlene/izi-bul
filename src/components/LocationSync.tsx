@@ -1,41 +1,52 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 export default function LocationSync({ userId }: { userId: string }) {
+  const supabase = useRef(createClient());
+
   useEffect(() => {
     if (!navigator.geolocation) return;
 
-    const supabase = createClient();
-    let watchId: number;
+    let watchId: number | null = null;
 
-    const start = () => {
+    const saveLocation = async (pos: GeolocationPosition) => {
+      const { error } = await supabase.current.from('live_locations').upsert({
+        user_id: userId,
+        latitude: pos.coords.latitude,
+        longitude: pos.coords.longitude,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' });
+
+      if (error) {
+        // Session might not be ready yet, retry after re-auth check
+        const { data: { session } } = await supabase.current.auth.getSession();
+        if (!session) return;
+        await supabase.current.from('live_locations').upsert({
+          user_id: userId,
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id' });
+      }
+    };
+
+    const startWatch = () => {
       watchId = navigator.geolocation.watchPosition(
-        (pos) => {
-          supabase.from('live_locations').upsert({
-            user_id: userId,
-            latitude: pos.coords.latitude,
-            longitude: pos.coords.longitude,
-            updated_at: new Date().toISOString(),
-          }, { onConflict: 'user_id' });
-        },
-        () => {},
-        { enableHighAccuracy: true, maximumAge: 15000, timeout: 10000 }
+        saveLocation,
+        () => {}, // permission denied or unavailable — silent
+        { enableHighAccuracy: false, maximumAge: 20000, timeout: 15000 }
       );
     };
 
-    // Önce permission durumunu kontrol et, varsa direkt başlat
-    navigator.permissions?.query({ name: 'geolocation' }).then((result) => {
-      if (result.state === 'granted' || result.state === 'prompt') start();
-      result.addEventListener('change', () => {
-        if (result.state === 'granted') start();
-      });
-    }).catch(() => start());
+    // Small delay so Supabase auth cookies are ready
+    const timer = setTimeout(startWatch, 1000);
 
     return () => {
-      if (watchId) navigator.geolocation.clearWatch(watchId);
-      supabase.from('live_locations').delete().eq('user_id', userId);
+      clearTimeout(timer);
+      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+      supabase.current.from('live_locations').delete().eq('user_id', userId);
     };
   }, [userId]);
 

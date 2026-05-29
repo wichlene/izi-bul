@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Quest } from '@/types';
 import { createClient } from '@/lib/supabase/client';
-import LiveLocationTracker from '@/components/LiveLocationTracker';
 
 const MapPicker = dynamic(() => import('@/components/MapPicker'), { ssr: false });
 
@@ -18,10 +17,10 @@ interface LiveUser {
 interface Props {
   initialQuests: Quest[];
   initialLiveUsers?: LiveUser[];
-  userId?: string;
+  questCount?: number;
 }
 
-export default function MapView({ initialQuests, initialLiveUsers = [], userId }: Props) {
+export default function MapView({ initialQuests, initialLiveUsers = [], questCount = 0 }: Props) {
   const [quests] = useState<Quest[]>(initialQuests);
   const [liveUsers, setLiveUsers] = useState<LiveUser[]>(initialLiveUsers);
 
@@ -30,7 +29,7 @@ export default function MapView({ initialQuests, initialLiveUsers = [], userId }
     const { data } = await supabase
       .from('live_locations')
       .select('user_id, latitude, longitude, profiles(username)')
-      .limit(100);
+      .limit(200);
 
     if (data) {
       const mapped = data.map((u) => {
@@ -38,21 +37,31 @@ export default function MapView({ initialQuests, initialLiveUsers = [], userId }
         const prof = Array.isArray(raw.profiles) ? raw.profiles[0] : raw.profiles;
         return { user_id: raw.user_id, latitude: raw.latitude, longitude: raw.longitude, username: prof?.username };
       });
-      setTimeout(() => setLiveUsers(mapped), 0);
+      setLiveUsers(mapped);
     }
   };
 
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    fetchLiveUsers();
-    const interval = setInterval(() => { void fetchLiveUsers(); }, 10000);
+    void fetchLiveUsers();
+    const interval = setInterval(() => void fetchLiveUsers(), 8000);
     return () => clearInterval(interval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
-    <div className="w-full h-full">
-      {userId && <LiveLocationTracker userId={userId} />}
+    <div className="w-full h-full relative">
+      {/* Overlay — client-side güncel sayı */}
+      <div className="absolute top-4 left-4 z-[1000]">
+        <div className="rounded-2xl px-4 py-3 shadow-lg" style={{ background: '#ffffff', border: '1px solid #eff3f4' }}>
+          <div className="font-bold text-sm mb-1" style={{ color: '#0f1419' }}>🗺️ Türkiye Haritası</div>
+          <div className="text-xs" style={{ color: '#536471' }}>{questCount} aktif görev</div>
+          <div className="text-xs flex items-center gap-1.5 mt-0.5" style={{ color: '#22c55e' }}>
+            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse inline-block" />
+            {liveUsers.length} oyuncu online
+          </div>
+        </div>
+      </div>
+
       <MapPicker
         readOnly
         initialLat={39.0}

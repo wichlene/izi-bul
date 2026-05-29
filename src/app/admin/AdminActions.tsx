@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CheckCircle, Loader2 } from 'lucide-react';
+import { CheckCircle, Loader2, Trash2 } from 'lucide-react';
 
 export function ApproveButton({ submissionId }: { submissionId: string }) {
   const router = useRouter();
@@ -91,6 +91,33 @@ export function FeatureToggle({ questId, isFeatured }: { questId: string; isFeat
         ? { background: 'rgba(255,215,0,0.2)', color: '#ffd700' }
         : { background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.3)' }}>
       {loading ? '...' : current ? '⭐ Öne çıkan' : 'Öne çıkar'}
+    </button>
+  );
+}
+
+export function DeletePostButton({ postId }: { postId: string }) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [deleted, setDeleted] = useState(false);
+
+  const del = async () => {
+    if (!confirm('Bu gönderiyi silmek istediğine emin misin?')) return;
+    setLoading(true);
+    const res = await fetch(`/api/admin/posts?id=${postId}`, { method: 'DELETE' });
+    if (res.ok) {
+      setDeleted(true);
+      router.refresh();
+    }
+    setLoading(false);
+  };
+
+  if (deleted) return <span className="text-xs" style={{ color: '#22c55e' }}>Silindi</span>;
+
+  return (
+    <button onClick={del} disabled={loading}
+      className="p-1.5 rounded-lg transition-colors hover:bg-red-50 disabled:opacity-50 flex-shrink-0"
+      style={{ color: '#ef4444' }}>
+      {loading ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
     </button>
   );
 }

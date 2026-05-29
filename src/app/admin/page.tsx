@@ -1,9 +1,9 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-import { Shield, Users, MapPin, Clock, TrendingUp, Store, Tag } from 'lucide-react';
+import { Shield, Users, MapPin, Clock, TrendingUp, Store, Tag, FileText } from 'lucide-react';
 import Header from '@/components/Header';
-import { ApproveButton, BusinessToggle, FeatureToggle } from './AdminActions';
+import { ApproveButton, BusinessToggle, FeatureToggle, DeletePostButton } from './AdminActions';
 
 export default async function AdminPage() {
   const supabase = await createClient();
@@ -19,6 +19,12 @@ export default async function AdminPage() {
     supabase.from('submissions').select('id', { count: 'exact', head: true }),
     supabase.from('submissions').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
   ]);
+
+  const { data: recentPosts } = await supabase
+    .from('posts')
+    .select('id, content, created_at, profiles(username)')
+    .order('created_at', { ascending: false })
+    .limit(20);
 
   const { data: allUsers } = await supabase
     .from('profiles')
@@ -193,6 +199,33 @@ export default async function AdminPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+
+        {/* Gönderiler — silme */}
+        <div className="rounded-2xl overflow-hidden mt-6" style={{ background: '#ffffff', border: '1px solid #eff3f4' }}>
+          <div className="px-5 py-4" style={{ borderBottom: '1px solid #eff3f4' }}>
+            <h2 className="font-bold flex items-center gap-2" style={{ color: '#0f1419' }}>
+              <FileText size={16} style={{ color: '#ff6b2b' }} />
+              Son Gönderiler ({recentPosts?.length || 0})
+            </h2>
+          </div>
+          <div>
+            {!recentPosts?.length ? (
+              <div className="p-8 text-center text-sm" style={{ color: '#536471' }}>Gönderi yok</div>
+            ) : recentPosts.map((post) => {
+              const u = post.profiles as unknown as { username?: string } | null;
+              return (
+                <div key={post.id} className="flex items-start gap-3 px-5 py-3" style={{ borderBottom: '1px solid #eff3f4' }}>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold" style={{ color: '#0f1419' }}>@{u?.username}</div>
+                    <div className="text-sm truncate mt-0.5" style={{ color: '#536471' }}>{post.content}</div>
+                    <div className="text-xs mt-0.5" style={{ color: '#8e8e8e' }}>{new Date(post.created_at).toLocaleString('tr-TR')}</div>
+                  </div>
+                  <DeletePostButton postId={post.id} />
+                </div>
+              );
+            })}
           </div>
         </div>
       </main>
