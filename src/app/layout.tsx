@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import { createClient } from '@/lib/supabase/server';
+import LocationSync from '@/components/LocationSync';
 
 export const viewport: Viewport = {
   themeColor: '#ff6b2b',
@@ -23,10 +25,16 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
   return (
     <html lang="tr" className="h-full">
-      <body className="min-h-full flex flex-col" style={{ background: '#0a0a0f' }}>{children}</body>
+      <body className="min-h-full flex flex-col" style={{ background: '#f7f8f8' }}>
+        {children}
+        {user && <LocationSync userId={user.id} />}
+      </body>
     </html>
   );
 }
