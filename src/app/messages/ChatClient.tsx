@@ -49,58 +49,58 @@ export default function ChatClient({ currentUserId, friends, initialMessages, ch
     setSending(false);
   };
 
-  const cardStyle = { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' };
-
   return (
-    <div className="max-w-5xl mx-auto flex h-[calc(100vh-64px)]">
+    <div className="max-w-5xl mx-auto flex h-[calc(100vh-64px)]" style={{ background: '#f7f8f8' }}>
       {/* Sidebar - arkadaş listesi */}
-      <div className="w-64 border-r border-white/5 flex flex-col">
-        <div className="px-4 py-4 border-b border-white/5">
-          <h2 className="font-bold text-white text-sm">Mesajlar</h2>
+      <div className="w-64 flex flex-col" style={{ background: '#ffffff', borderRight: '1px solid #eff3f4' }}>
+        <div className="px-4 py-4" style={{ borderBottom: '1px solid #eff3f4' }}>
+          <h2 className="font-bold text-sm" style={{ color: '#0f1419' }}>Mesajlar</h2>
         </div>
         <div className="flex-1 overflow-y-auto">
           {friends.length === 0 ? (
-            <div className="p-6 text-center text-white/20 text-xs">Arkadaş yok</div>
+            <div className="p-6 text-center text-xs" style={{ color: '#536471' }}>Arkadaş yok</div>
           ) : friends.map((f) => (
             <button key={f.id} onClick={() => router.push(`/messages?with=${f.id}`)}
-              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-left"
-              style={chatWith?.id === f.id ? { background: 'rgba(255,107,43,0.1)' } : {}}>
-              <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0" style={{ background: 'linear-gradient(135deg, #ff6b2b, #a855f7)' }}>
+              className="w-full flex items-center gap-3 px-4 py-3 transition-colors text-left"
+              style={chatWith?.id === f.id
+                ? { background: 'rgba(255,107,43,0.08)', borderLeft: '3px solid #ff6b2b' }
+                : { background: 'transparent' }}>
+              <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 text-white" style={{ background: 'linear-gradient(135deg, #ff6b2b, #ff3d00)' }}>
                 {f.username.charAt(0).toUpperCase()}
               </div>
-              <span className="text-sm text-white/70 font-medium">@{f.username}</span>
+              <span className="text-sm font-medium" style={{ color: chatWith?.id === f.id ? '#ff6b2b' : '#0f1419' }}>@{f.username}</span>
             </button>
           ))}
         </div>
       </div>
 
       {/* Mesaj alanı */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col" style={{ background: '#ffffff' }}>
         {!chatWith ? (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
-              <MessageCircle size={40} className="text-white/10 mx-auto mb-3" />
-              <p className="text-white/20">Bir arkadaşını seç</p>
+              <MessageCircle size={40} className="mx-auto mb-3" style={{ color: '#eff3f4' }} />
+              <p style={{ color: '#536471' }}>Bir arkadaşını seç</p>
             </div>
           </div>
         ) : (
           <>
-            <div className="px-5 py-4 border-b border-white/5 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold" style={{ background: 'linear-gradient(135deg, #ff6b2b, #a855f7)' }}>
+            <div className="px-5 py-4 flex items-center gap-3" style={{ borderBottom: '1px solid #eff3f4' }}>
+              <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white" style={{ background: 'linear-gradient(135deg, #ff6b2b, #ff3d00)' }}>
                 {chatWith.username.charAt(0).toUpperCase()}
               </div>
-              <span className="text-white font-semibold">@{chatWith.username}</span>
+              <span className="font-semibold" style={{ color: '#0f1419' }}>@{chatWith.username}</span>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3" style={{ background: '#f7f8f8' }}>
               {messages.map((msg) => {
                 const isMe = msg.from_user_id === currentUserId;
                 return (
                   <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                     <div className="max-w-xs px-4 py-2.5 rounded-2xl text-sm"
                       style={isMe
-                        ? { background: 'linear-gradient(135deg, #ff6b2b, #ff3d00)', color: 'white' }
-                        : { background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.85)' }
+                        ? { background: '#ff6b2b', color: '#ffffff' }
+                        : { background: '#ffffff', color: '#0f1419', border: '1px solid #eff3f4' }
                       }>
                       {msg.content}
                     </div>
@@ -110,16 +110,16 @@ export default function ChatClient({ currentUserId, friends, initialMessages, ch
               <div ref={bottomRef} />
             </div>
 
-            <div className="px-4 py-3 border-t border-white/5 flex gap-3">
+            <div className="px-4 py-3 flex gap-3" style={{ borderTop: '1px solid #eff3f4', background: '#ffffff' }}>
               <input value={input} onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && send()}
                 placeholder="Mesajını yaz..."
                 maxLength={500}
-                className="flex-1 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none"
-                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }} />
+                className="flex-1 rounded-xl px-4 py-2.5 text-sm focus:outline-none"
+                style={{ background: '#f7f8f8', border: '1px solid #eff3f4', color: '#0f1419' }} />
               <button onClick={send} disabled={sending || !input.trim()}
                 className="px-4 py-2.5 rounded-xl text-white transition-all"
-                style={{ background: input.trim() ? 'linear-gradient(135deg, #ff6b2b, #ff3d00)' : 'rgba(255,255,255,0.05)' }}>
+                style={{ background: input.trim() ? '#ff6b2b' : '#eff3f4', color: input.trim() ? '#ffffff' : '#536471' }}>
                 <Send size={16} />
               </button>
             </div>

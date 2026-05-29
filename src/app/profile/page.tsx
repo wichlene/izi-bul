@@ -29,20 +29,19 @@ export default async function ProfilePage() {
   const wonCount = submissions?.filter((s) => s.is_winner).length || 0;
 
   return (
-    <div className="min-h-screen" style={{ background: '#0a0a0f' }}>
+    <div className="min-h-screen" style={{ background: '#f7f8f8' }}>
       <Header />
       <main className="max-w-4xl mx-auto px-4 py-8">
 
         {/* Profil Hero */}
-        <div className="relative rounded-3xl overflow-hidden mb-6 p-6" style={{ background: 'linear-gradient(135deg, rgba(255,107,43,0.15), rgba(168,85,247,0.15))', border: '1px solid rgba(255,255,255,0.08)' }}>
-          <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 0% 0%, rgba(255,107,43,0.1), transparent 60%)' }} />
+        <div className="relative rounded-3xl overflow-hidden mb-6 p-6" style={{ background: '#ffffff', border: '1px solid #eff3f4' }}>
           <div className="relative flex items-start gap-5">
             <div className="relative">
-              <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-3xl font-black" style={{ background: 'linear-gradient(135deg, #ff6b2b, #a855f7)' }}>
+              <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-3xl font-black text-white" style={{ background: 'linear-gradient(135deg, #ff6b2b, #ff3d00)' }}>
                 {profile?.username?.charAt(0).toUpperCase()}
               </div>
               {profile?.is_premium && (
-                <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center" style={{ background: '#a855f7' }}>
+                <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center" style={{ background: '#ff6b2b' }}>
                   <Star size={10} className="text-white" fill="white" />
                 </div>
               )}
@@ -50,20 +49,24 @@ export default async function ProfilePage() {
 
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-0.5">
-                <h1 className="text-2xl font-black text-white">{profile?.full_name || profile?.username}</h1>
-                {profile?.is_admin && <Shield size={16} className="text-purple-400" />}
+                <h1 className="text-2xl font-black" style={{ color: '#0f1419' }}>{profile?.full_name || profile?.username}</h1>
+                {profile?.is_admin && <Shield size={16} style={{ color: '#ff6b2b' }} />}
               </div>
-              <p className="text-white/40 text-sm">@{profile?.username}</p>
-              {profile?.city && <p className="text-white/30 text-xs flex items-center gap-1 mt-1"><MapPin size={11} />{profile.city}</p>}
+              <p className="text-sm" style={{ color: '#536471' }}>@{profile?.username}</p>
+              {profile?.city && (
+                <p className="text-xs flex items-center gap-1 mt-1" style={{ color: '#536471' }}>
+                  <MapPin size={11} />{profile.city}
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-3 hidden sm:grid">
               {[
                 { val: profile?.total_finds || 0, label: 'Bulunan', color: '#22c55e' },
-                { val: wonCount, label: 'Kazanılan', color: '#eab308' },
+                { val: wonCount, label: 'Kazanılan', color: '#ff6b2b' },
               ].map((s, i) => (
-                <div key={i} className="rounded-xl p-3 text-center" style={{ background: 'rgba(255,255,255,0.05)' }}>
-                  <div className="text-white font-black text-xl">{s.val}</div>
+                <div key={i} className="rounded-xl p-3 text-center" style={{ background: '#f7f8f8', border: '1px solid #eff3f4' }}>
+                  <div className="font-black text-xl" style={{ color: '#0f1419' }}>{s.val}</div>
                   <div className="text-xs mt-0.5" style={{ color: s.color }}>{s.label}</div>
                 </div>
               ))}
@@ -72,15 +75,15 @@ export default async function ProfilePage() {
         </div>
 
         {/* Gizlilik */}
-        <div className="rounded-2xl p-5 border border-white/5 mb-6" style={{ background: 'rgba(255,255,255,0.02)' }}>
-          <h2 className="font-bold text-white mb-4 flex items-center gap-2">
-            <Shield size={16} className="text-purple-400" />
+        <div className="rounded-2xl p-5 mb-6" style={{ background: '#ffffff', border: '1px solid #eff3f4' }}>
+          <h2 className="font-bold mb-4 flex items-center gap-2" style={{ color: '#0f1419' }}>
+            <Shield size={16} style={{ color: '#ff6b2b' }} />
             Gizlilik Ayarları
           </h2>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-white text-sm font-medium">Canlı Konum</p>
-              <p className="text-white/30 text-xs">Görev sırasında haritada görün</p>
+              <p className="text-sm font-medium" style={{ color: '#0f1419' }}>Canlı Konum</p>
+              <p className="text-xs" style={{ color: '#536471' }}>Görev sırasında haritada görün</p>
             </div>
             <PrivacyToggle
               userId={user.id}
@@ -93,41 +96,45 @@ export default async function ProfilePage() {
         </div>
 
         {/* Geçmiş */}
-        <div className="rounded-2xl border border-white/5 overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)' }}>
-          <div className="px-5 py-4 border-b border-white/5 flex items-center gap-2">
-            <Calendar size={16} className="text-white/40" />
-            <h2 className="font-bold text-white">Geçmiş ({submissions?.length || 0})</h2>
+        <div className="rounded-2xl overflow-hidden" style={{ background: '#ffffff', border: '1px solid #eff3f4' }}>
+          <div className="px-5 py-4 flex items-center gap-2" style={{ borderBottom: '1px solid #eff3f4' }}>
+            <Calendar size={16} style={{ color: '#536471' }} />
+            <h2 className="font-bold" style={{ color: '#0f1419' }}>Geçmiş ({submissions?.length || 0})</h2>
           </div>
 
           {!submissions?.length ? (
             <div className="p-12 text-center">
-              <p className="text-white/20 mb-4">Henüz hiç deneme yapmadın.</p>
-              <Link href="/" className="inline-block px-5 py-2.5 rounded-xl font-semibold text-white text-sm" style={{ background: 'linear-gradient(135deg, #ff6b2b, #ff3d00)' }}>
+              <p className="mb-4 text-sm" style={{ color: '#536471' }}>Henüz hiç deneme yapmadın.</p>
+              <Link href="/" className="inline-block px-5 py-2.5 rounded-xl font-semibold text-white text-sm" style={{ background: '#ff6b2b' }}>
                 Görevlere Bak
               </Link>
             </div>
           ) : (
-            <div className="divide-y divide-white/5">
+            <div style={{ borderTop: 'none' }}>
               {(submissions as unknown as (Submission & { quest: Quest & { cash_reward: number } })[]).map((s) => (
-                <Link key={s.id} href={`/quest/${s.quest.id}`} className="flex items-center gap-3 px-5 py-3 hover:bg-white/2 transition-colors">
-                  <img src={s.quest.photo_url} className="w-12 h-12 rounded-xl object-cover flex-shrink-0 opacity-80" alt="" />
+                <Link key={s.id} href={`/quest/${s.quest.id}`}
+                  className="flex items-center gap-3 px-5 py-3 transition-colors"
+                  style={{ borderBottom: '1px solid #eff3f4' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = '#f7f8f8')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}>
+                  <img src={s.quest.photo_url} className="w-12 h-12 rounded-xl object-cover flex-shrink-0" alt="" />
                   <div className="flex-1 min-w-0">
-                    <div className="text-white text-sm font-medium truncate">{s.quest.title}</div>
-                    <div className="text-white/30 text-xs">
+                    <div className="text-sm font-medium truncate" style={{ color: '#0f1419' }}>{s.quest.title}</div>
+                    <div className="text-xs" style={{ color: '#536471' }}>
                       {formatDistanceToNow(new Date(s.created_at), { addSuffix: true, locale: tr })}
                       {' · '}{s.distance_meters}m uzakta
                     </div>
                   </div>
                   {s.is_winner ? (
-                    <span className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-bold" style={{ background: 'rgba(34,197,94,0.2)', color: '#22c55e' }}>
+                    <span className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-bold" style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e' }}>
                       <CheckCircle size={11} /> Kazandı
                     </span>
                   ) : s.status === 'pending' ? (
-                    <span className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-bold" style={{ background: 'rgba(234,179,8,0.15)', color: '#eab308' }}>
+                    <span className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-bold" style={{ background: 'rgba(234,179,8,0.1)', color: '#ca8a04' }}>
                       <Clock size={11} /> İnceleniyor
                     </span>
                   ) : (
-                    <span className="text-xs px-2.5 py-1 rounded-full" style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.2)' }}>Uzak</span>
+                    <span className="text-xs px-2.5 py-1 rounded-full" style={{ background: '#f7f8f8', color: '#536471' }}>Uzak</span>
                   )}
                 </Link>
               ))}
