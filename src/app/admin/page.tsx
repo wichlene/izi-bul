@@ -47,18 +47,18 @@ export default async function AdminPage() {
   ];
 
   return (
-    <div className="min-h-screen" style={{ background: '#0a0a0f' }}>
+    <div className="min-h-screen" style={{ background: '#f7f8f8' }}>
       <Header />
       <main className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex items-center gap-3 mb-8">
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(168,85,247,0.2)' }}>
-            <Shield size={24} className="text-purple-400" />
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)' }}>
+            <Shield size={24} style={{ color: '#a855f7' }} />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-white">Admin Paneli</h1>
-            <p className="text-white/30 text-sm">İzi Bul yönetim merkezi</p>
+            <h1 className="text-2xl font-black" style={{ color: '#0f1419' }}>Admin Paneli</h1>
+            <p className="text-sm" style={{ color: '#536471' }}>İzi Bul yönetim merkezi</p>
           </div>
-          <Link href="/admin/categories" className="ml-auto flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold" style={{ background: 'rgba(255,107,43,0.15)', color: '#ff6b2b', border: '1px solid rgba(255,107,43,0.25)' }}>
+          <Link href="/admin/categories" className="ml-auto flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold" style={{ background: 'rgba(255,107,43,0.08)', color: '#ff6b2b', border: '1px solid rgba(255,107,43,0.2)' }}>
             <Tag size={14} /> Kategoriler
           </Link>
         </div>
@@ -66,43 +66,43 @@ export default async function AdminPage() {
         {/* İstatistikler */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {stats.map((s, i) => (
-            <div key={i} className="rounded-2xl p-5 border border-white/5" style={{ background: 'rgba(255,255,255,0.03)' }}>
+            <div key={i} className="rounded-2xl p-5" style={{ background: '#ffffff', border: '1px solid #eff3f4' }}>
               <div className="flex items-center justify-between mb-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: s.color + '20', color: s.color }}>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: s.color + '18', color: s.color }}>
                   {s.icon}
                 </div>
-                <TrendingUp size={14} className="text-white/20" />
+                <TrendingUp size={14} style={{ color: '#536471' }} />
               </div>
-              <div className="text-3xl font-black text-white">{s.val.toLocaleString('tr-TR')}</div>
-              <div className="text-white/40 text-sm mt-1">{s.label}</div>
+              <div className="text-3xl font-black" style={{ color: '#0f1419' }}>{s.val.toLocaleString('tr-TR')}</div>
+              <div className="text-sm mt-1" style={{ color: '#536471' }}>{s.label}</div>
             </div>
           ))}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Onay Bekleyenler */}
-          <div className="rounded-2xl border border-white/5 overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)' }}>
-            <div className="px-5 py-4 border-b border-white/5 flex items-center gap-2">
+          <div className="rounded-2xl overflow-hidden" style={{ background: '#ffffff', border: '1px solid #eff3f4' }}>
+            <div className="px-5 py-4 flex items-center gap-2" style={{ borderBottom: '1px solid #eff3f4' }}>
               <Clock size={16} className="text-yellow-400" />
-              <h2 className="font-bold text-white">Onay Bekleyenler</h2>
+              <h2 className="font-bold" style={{ color: '#0f1419' }}>Onay Bekleyenler</h2>
               {(pendingRes.count || 0) > 0 && (
-                <span className="text-xs px-2 py-0.5 rounded-full font-bold ml-1" style={{ background: 'rgba(234,179,8,0.2)', color: '#eab308' }}>
+                <span className="text-xs px-2 py-0.5 rounded-full font-bold ml-1" style={{ background: 'rgba(234,179,8,0.12)', color: '#ca8a04' }}>
                   {pendingRes.count}
                 </span>
               )}
             </div>
-            <div className="divide-y divide-white/5">
+            <div style={{ borderTop: 'none' }}>
               {!pendingSubmissions?.length ? (
-                <div className="p-8 text-center text-white/20">Bekleyen yok</div>
+                <div className="p-8 text-center" style={{ color: '#536471' }}>Bekleyen yok</div>
               ) : (
-                pendingSubmissions.map((s) => (
-                  <div key={s.id} className="p-4 flex items-center gap-3">
+                pendingSubmissions.map((s, idx) => (
+                  <div key={s.id} className="p-4 flex items-center gap-3" style={{ borderBottom: idx < pendingSubmissions.length - 1 ? '1px solid #eff3f4' : 'none' }}>
                     {s.photo_url && <img src={s.photo_url} className="w-14 h-14 rounded-xl object-cover flex-shrink-0" alt="" />}
                     <div className="flex-1 min-w-0">
-                      <div className="text-white text-sm font-semibold truncate">
+                      <div className="text-sm font-semibold truncate" style={{ color: '#0f1419' }}>
                         {(s as { profiles?: { username?: string } }).profiles?.username} → {(s as { quests?: { title?: string } }).quests?.title}
                       </div>
-                      <div className="text-white/30 text-xs">{s.distance_meters}m uzakta</div>
+                      <div className="text-xs" style={{ color: '#536471' }}>{s.distance_meters}m uzakta</div>
                     </div>
                     <ApproveButton submissionId={s.id} />
                   </div>
@@ -112,25 +112,25 @@ export default async function AdminPage() {
           </div>
 
           {/* Son Görevler */}
-          <div className="rounded-2xl border border-white/5 overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)' }}>
-            <div className="px-5 py-4 border-b border-white/5">
-              <h2 className="font-bold text-white flex items-center gap-2">
+          <div className="rounded-2xl overflow-hidden" style={{ background: '#ffffff', border: '1px solid #eff3f4' }}>
+            <div className="px-5 py-4" style={{ borderBottom: '1px solid #eff3f4' }}>
+              <h2 className="font-bold flex items-center gap-2" style={{ color: '#0f1419' }}>
                 <MapPin size={16} style={{ color: '#ff6b2b' }} />
                 Son Görevler
               </h2>
             </div>
-            <div className="divide-y divide-white/5">
-              {recentQuests?.map((q) => (
-                <div key={q.id} className="px-5 py-3 flex items-center gap-3">
+            <div>
+              {recentQuests?.map((q, idx) => (
+                <div key={q.id} className="px-5 py-3 flex items-center gap-3" style={{ borderBottom: idx < (recentQuests?.length ?? 0) - 1 ? '1px solid #eff3f4' : 'none' }}>
                   <div className="flex-1 min-w-0">
-                    <div className="text-white text-sm font-medium truncate">{q.title}</div>
-                    <div className="text-white/30 text-xs">
+                    <div className="text-sm font-medium truncate" style={{ color: '#0f1419' }}>{q.title}</div>
+                    <div className="text-xs" style={{ color: '#536471' }}>
                       {(q as { profiles?: { username?: string } }).profiles?.username} · {q.total_attempts} deneme
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <FeatureToggle questId={q.id} isFeatured={q.is_featured} />
-                    <Link href={`/quest/${q.id}`} className="text-white/30 hover:text-white text-xs transition-colors">
+                    <Link href={`/quest/${q.id}`} className="text-xs transition-colors hover:opacity-70" style={{ color: '#536471' }}>
                       Gör →
                     </Link>
                   </div>
@@ -141,47 +141,47 @@ export default async function AdminPage() {
         </div>
 
         {/* Kullanıcı Yönetimi */}
-        <div className="rounded-2xl border border-white/5 overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)' }}>
-          <div className="px-5 py-4 border-b border-white/5">
-            <h2 className="font-bold text-white flex items-center gap-2">
-              <Users size={16} className="text-purple-400" />
+        <div className="rounded-2xl overflow-hidden" style={{ background: '#ffffff', border: '1px solid #eff3f4' }}>
+          <div className="px-5 py-4" style={{ borderBottom: '1px solid #eff3f4' }}>
+            <h2 className="font-bold flex items-center gap-2" style={{ color: '#0f1419' }}>
+              <Users size={16} style={{ color: '#a855f7' }} />
               Kullanıcı Yönetimi
             </h2>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/5">
+                <tr style={{ borderBottom: '1px solid #eff3f4' }}>
                   {['Kullanıcı', 'Görev', 'Rol', 'Kayıt', 'İşlem'].map((h) => (
-                    <th key={h} className="text-left px-5 py-3 text-white/30 font-medium text-xs">{h}</th>
+                    <th key={h} className="text-left px-5 py-3 font-medium text-xs" style={{ color: '#536471' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
-                {allUsers?.map((u) => (
-                  <tr key={u.id} className="hover:bg-white/2 transition-colors">
+              <tbody>
+                {allUsers?.map((u, idx) => (
+                  <tr key={u.id} className="transition-colors hover:bg-gray-50" style={{ borderBottom: idx < (allUsers?.length ?? 0) - 1 ? '1px solid #eff3f4' : 'none' }}>
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: 'linear-gradient(135deg, #ff6b2b, #a855f7)' }}>
+                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ background: 'linear-gradient(135deg, #ff6b2b, #a855f7)' }}>
                           {u.username?.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <div className="text-white font-medium">@{u.username}</div>
-                          {u.business_name && <div className="text-white/30 text-xs">🏪 {u.business_name}</div>}
+                          <div className="font-medium" style={{ color: '#0f1419' }}>@{u.username}</div>
+                          {u.business_name && <div className="text-xs" style={{ color: '#536471' }}>🏪 {u.business_name}</div>}
                         </div>
                       </div>
                     </td>
-                    <td className="px-5 py-3 text-white/60">{u.total_finds}</td>
+                    <td className="px-5 py-3" style={{ color: '#536471' }}>{u.total_finds}</td>
                     <td className="px-5 py-3">
                       {u.is_admin ? (
-                        <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(168,85,247,0.2)', color: '#a855f7' }}>Admin</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(168,85,247,0.12)', color: '#9333ea' }}>Admin</span>
                       ) : u.is_business ? (
-                        <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(34,197,94,0.2)', color: '#22c55e' }}>İşletme</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(34,197,94,0.12)', color: '#16a34a' }}>İşletme</span>
                       ) : (
-                        <span className="text-xs text-white/20">Kullanıcı</span>
+                        <span className="text-xs" style={{ color: '#536471' }}>Kullanıcı</span>
                       )}
                     </td>
-                    <td className="px-5 py-3 text-white/30 text-xs">
+                    <td className="px-5 py-3 text-xs" style={{ color: '#536471' }}>
                       {new Date(u.created_at).toLocaleDateString('tr-TR')}
                     </td>
                     <td className="px-5 py-3">
@@ -199,4 +199,3 @@ export default async function AdminPage() {
     </div>
   );
 }
-
