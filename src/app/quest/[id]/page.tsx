@@ -1,15 +1,28 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Coins, Users, Trophy, MapPin, Share2, QrCode } from 'lucide-react';
+import { ArrowLeft, Coins, Users, Trophy, MapPin } from 'lucide-react';
 import ShareButtons from './ShareButtons';
 import { createClient } from '@/lib/supabase/server';
 import { Quest, DIFFICULTIES } from '@/types';
 import Header from '@/components/Header';
-import QuestSubmissionFlow from './QuestSubmissionFlow';
+import QuestPlay from './QuestPlay';
 
 export const revalidate = 0;
 
-async function getQuest(id: string): Promise<{ quest: Quest | null; alreadyWon: boolean }> {
+interface QuestStep {
+  id: string;
+  step_number: number;
+  step_type: 'question' | 'location' | 'image' | 'final';
+  question: string | null;
+  target_lat: number;
+  target_lng: number;
+  approach_radius_meters: number;
+  hint: string | null;
+}
+
+async function getQuest(id: string): Promise<{
+  quest: Quest | null; alreadyWon: boolean; isLoggedIn: boolean; steps: QuestStep[]; initialStep: number;
+}> {
   try {
     const supabase = await createClient();
     const { data: quest } = await supabase
@@ -18,10 +31,11 @@ async function getQuest(id: string): Promise<{ quest: Quest | null; alreadyWon: 
       .eq('id', id)
       .single();
 
-    if (!quest) return { quest: null, alreadyWon: false };
+    if (!quest) return { quest: null, alreadyWon: false, isLoggedIn: false, steps: [], initialStep: 1 };
 
     const { data: { user } } = await supabase.auth.getUser();
     let alreadyWon = false;
+    let initialStep = 1;
     if (user) {
       const { data } = await supabase
         .from('submissions')
@@ -31,17 +45,32 @@ async function getQuest(id: string): Promise<{ quest: Quest | null; alreadyWon: 
         .eq('is_winner', true)
         .maybeSingle();
       alreadyWon = !!data;
+
+      const { data: progress } = await supabase
+        .from('user_quest_progress')
+        .select('current_step, is_completed')
+        .eq('quest_id', id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (progress && !progress.is_completed) initialStep = progress.current_step;
+      if (progress?.is_completed) alreadyWon = true;
     }
 
-    return { quest: quest as Quest, alreadyWon };
+    const { data: steps } = await supabase
+      .from('quest_steps')
+      .select('id, step_number, step_type, question, target_lat, target_lng, approach_radius_meters, hint')
+      .eq('quest_id', id)
+      .order('step_number');
+
+    return { quest: quest as Quest, alreadyWon, isLoggedIn: !!user, steps: (steps as QuestStep[]) || [], initialStep };
   } catch {
-    return { quest: null, alreadyWon: false };
+    return { quest: null, alreadyWon: false, isLoggedIn: false, steps: [], initialStep: 1 };
   }
 }
 
 export default async function QuestPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { quest, alreadyWon } = await getQuest(id);
+  const { quest, alreadyWon, isLoggedIn, steps, initialStep } = await getQuest(id);
   if (!quest) notFound();
   const questUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://izibul.vercel.app'}/quest/${id}`;
 
@@ -149,7 +178,7 @@ export default async function QuestPage({ params }: { params: Promise<{ id: stri
           {/* Sağ: Submission flow + Paylaş */}
           <div className="space-y-4">
             <div className="rounded-2xl overflow-hidden" style={{ background: '#ffffff', border: '1px solid #eff3f4' }}>
-              <QuestSubmissionFlow quest={quest} alreadyWon={alreadyWon} />
+              <QuestPlay quest={quest} alreadyWon={alreadyWon} isLoggedIn={isLoggedIn} steps={steps} initialStep={initialStep} />
             </div>
             <ShareButtons questTitle={quest.title} questUrl={questUrl} />
           </div>
