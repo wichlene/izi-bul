@@ -13,14 +13,17 @@ export default async function ProfilePage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login?next=/profile');
 
-  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-  const { data: submissions } = await supabase
-    .from('submissions')
-    .select('*, quest:quests(id, title, photo_url, cash_reward, category:categories(*))')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
-    .limit(20);
+  const [profileRes, submissionsRes, followingRes, followersRes] = await Promise.all([
+    supabase.from('profiles').select('*').eq('id', user.id).single(),
+    supabase.from('submissions').select('*, quest:quests(id, title, photo_url, cash_reward, category:categories(*))').eq('user_id', user.id).order('created_at', { ascending: false }).limit(20),
+    supabase.from('friendships').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+    supabase.from('friendships').select('id', { count: 'exact', head: true }).eq('friend_id', user.id),
+  ]);
 
+  const profile = profileRes.data;
+  const submissions = submissionsRes.data;
+  const followingCount = followingRes.count || 0;
+  const followersCount = followersRes.count || 0;
   const wonCount = submissions?.filter((s) => s.is_winner).length || 0;
 
   return (
@@ -56,7 +59,13 @@ export default async function ProfilePage() {
           )}
 
           {/* Stats — X gibi */}
-          <div className="flex gap-5">
+          <div className="flex gap-5 flex-wrap">
+            <span className="text-sm cursor-pointer hover:underline" style={{ color: '#536471' }}>
+              <span className="font-black" style={{ color: '#0f1419' }}>{followingCount}</span> Takip
+            </span>
+            <span className="text-sm cursor-pointer hover:underline" style={{ color: '#536471' }}>
+              <span className="font-black" style={{ color: '#0f1419' }}>{followersCount}</span> Takipçi
+            </span>
             <span className="text-sm" style={{ color: '#536471' }}>
               <span className="font-black" style={{ color: '#0f1419' }}>{profile?.total_finds || 0}</span> Buldu
             </span>

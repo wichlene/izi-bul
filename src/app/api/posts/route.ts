@@ -3,13 +3,16 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { checkRateLimit } from '@/lib/rateLimit';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const supabase = await createClient();
-  const { data, error } = await supabase
+  const type = req.nextUrl.searchParams.get('type');
+  let query = supabase
     .from('posts')
-    .select('*, profiles(username, avatar_url), quests(title, photo_url)')
+    .select('*, profiles(username, avatar_url), quests(title, photo_url, cash_reward)')
     .order('created_at', { ascending: false })
-    .limit(30);
+    .limit(50);
+  if (type) query = query.eq('post_type', type);
+  const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(data);
 }

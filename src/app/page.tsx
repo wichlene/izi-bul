@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { MapPin, Trophy, Users, Star } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import Header from '@/components/Header';
@@ -27,6 +28,10 @@ async function getData() {
 }
 
 export default async function HomePage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) redirect('/dashboard');
+
   const { quests, categories, userCount } = await getData();
   const featured = quests.filter((q) => q.is_featured);
   const regular = quests.filter((q) => !q.is_featured);

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-import { Home, MapPin, MessageCircle, Users, User, Shield, Plus, BarChart2, MoreHorizontal } from 'lucide-react';
+import { Home, MapPin, MessageCircle, Users, User, Shield, Plus, BarChart2, Heart } from 'lucide-react';
 import SignOutButton from './SignOutButton';
 import NotificationBell from './NotificationBell';
 
@@ -14,23 +14,29 @@ export default async function AppShell({ children, aside }: Props) {
   const { data: { user } } = await supabase.auth.getUser();
 
   let profile = null;
+  let unreadMessages = 0;
+  let pendingRequests = 0;
+
   if (user) {
-    const { data } = await supabase
-      .from('profiles')
-      .select('username, is_admin, is_business')
-      .eq('id', user.id)
-      .single();
-    profile = data;
+    const [profileRes, msgRes, reqRes] = await Promise.all([
+      supabase.from('profiles').select('username, is_admin, is_business').eq('id', user.id).single(),
+      supabase.from('messages').select('id', { count: 'exact', head: true }).eq('to_user_id', user.id).eq('is_read', false),
+      supabase.from('friend_requests').select('id', { count: 'exact', head: true }).eq('to_user_id', user.id).eq('status', 'pending'),
+    ]);
+    profile = profileRes.data;
+    unreadMessages = msgRes.count || 0;
+    pendingRequests = reqRes.count || 0;
   }
 
   const nav = [
-    { href: '/dashboard', icon: <Home size={26} />, label: 'Anasayfa' },
-    { href: '/map', icon: <MapPin size={26} />, label: 'Harita' },
-    { href: '/friends', icon: <Users size={26} />, label: 'Arkadaşlar' },
-    { href: '/messages', icon: <MessageCircle size={26} />, label: 'Mesajlar' },
-    { href: '/profile', icon: <User size={26} />, label: 'Profil' },
-    ...(profile?.is_admin ? [{ href: '/admin', icon: <Shield size={26} />, label: 'Admin' }] : []),
-    ...((profile?.is_business || profile?.is_admin) ? [{ href: '/business/stats', icon: <BarChart2 size={26} />, label: 'İstatistik' }] : []),
+    { href: '/dashboard', icon: <Home size={26} />, label: 'Anasayfa', badge: 0 },
+    { href: '/map', icon: <MapPin size={26} />, label: 'Harita', badge: 0 },
+    { href: '/friends', icon: <Users size={26} />, label: 'Arkadaşlar', badge: pendingRequests },
+    { href: '/messages', icon: <MessageCircle size={26} />, label: 'Mesajlar', badge: unreadMessages },
+    { href: '/good-deed', icon: <Heart size={26} />, label: 'İyilik Hareketi', badge: 0 },
+    { href: '/profile', icon: <User size={26} />, label: 'Profil', badge: 0 },
+    ...(profile?.is_admin ? [{ href: '/admin', icon: <Shield size={26} />, label: 'Admin', badge: 0 }] : []),
+    ...((profile?.is_business || profile?.is_admin) ? [{ href: '/business/stats', icon: <BarChart2 size={26} />, label: 'İstatistik', badge: 0 }] : []),
   ];
 
   return (
@@ -53,8 +59,16 @@ export default async function AppShell({ children, aside }: Props) {
         <nav className="flex-1 flex flex-col gap-0.5 mt-1">
           {nav.map((item) => (
             <Link key={item.href} href={item.href}
-              className="flex items-center gap-5 px-3 py-3 rounded-full transition-colors w-fit xl:w-full hover:bg-gray-100">
-              <span className="flex-shrink-0" style={{ color: '#0f1419' }}>{item.icon}</span>
+              className="flex items-center gap-5 px-3 py-3 rounded-full transition-colors w-fit xl:w-full hover:bg-gray-100 relative">
+              <span className="flex-shrink-0 relative" style={{ color: '#0f1419' }}>
+                {item.icon}
+                {item.badge > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] rounded-full text-[10px] font-black text-white flex items-center justify-center px-0.5"
+                    style={{ background: '#ff6b2b' }}>
+                    {item.badge > 99 ? '99+' : item.badge}
+                  </span>
+                )}
+              </span>
               <span className="text-xl font-medium hidden xl:block" style={{ color: '#0f1419' }}>{item.label}</span>
             </Link>
           ))}
@@ -64,11 +78,6 @@ export default async function AppShell({ children, aside }: Props) {
             <NotificationBell />
             <span className="text-xl font-medium hidden xl:block" style={{ color: '#0f1419' }}>Bildirimler</span>
           </div>
-
-          <Link href="/" className="flex items-center gap-5 px-3 py-3 rounded-full transition-colors w-fit xl:w-full hover:bg-gray-100">
-            <MoreHorizontal size={26} className="flex-shrink-0" style={{ color: '#0f1419' }} />
-            <span className="text-xl font-medium hidden xl:block" style={{ color: '#0f1419' }}>Daha fazla</span>
-          </Link>
         </nav>
 
         {/* Görev Ekle butonu */}

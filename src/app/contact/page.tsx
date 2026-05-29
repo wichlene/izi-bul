@@ -1,12 +1,11 @@
-import Header from '@/components/Header';
+import AppShell from '@/components/AppShell';
 import ContactForm from './ContactForm';
 
 export const metadata = { title: 'İletişim — İzi Bul' };
 
 export default function ContactPage() {
   return (
-    <div className="min-h-screen" style={{ background: '#f7f8f8' }}>
-      <Header />
+    <AppShell>
       <main className="max-w-2xl mx-auto px-4 py-10">
         <h1 className="text-3xl font-black mb-2" style={{ color: '#0f1419' }}>İletişim & İş Birliği</h1>
         <p className="text-sm mb-6" style={{ color: '#536471' }}>
@@ -16,6 +15,6 @@ export default function ContactPage() {
           <ContactForm />
         </div>
       </main>
-    </div>
+    </AppShell>
   );
 }

@@ -3,8 +3,8 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { Shield, Users, MapPin, Clock, TrendingUp, Store, Tag, FileText, Megaphone, Mail } from 'lucide-react';
-import Header from '@/components/Header';
-import { ApproveButton, BusinessToggle, FeatureToggle, DeletePostButton, AnnouncementComposer, ContactStatusButton } from './AdminActions';
+import AppShell from '@/components/AppShell';
+import { ApproveButton, BusinessToggle, FeatureToggle, DeletePostButton, AnnouncementComposer, ContactStatusButton, QuestDeactivateButton } from './AdminActions';
 
 export default async function AdminPage() {
   const supabase = await createClient();
@@ -44,7 +44,7 @@ export default async function AdminPage() {
 
   const { data: recentQuests } = await admin
     .from('quests')
-    .select('id, title, total_attempts, total_solved, is_featured, created_at, profiles(username)')
+    .select('id, title, total_attempts, total_solved, is_featured, is_active, created_at, profiles(username)')
     .order('created_at', { ascending: false })
     .limit(10);
 
@@ -63,9 +63,8 @@ export default async function AdminPage() {
   ];
 
   return (
-    <div className="min-h-screen" style={{ background: '#f7f8f8' }}>
-      <Header />
-      <main className="max-w-7xl mx-auto px-4 py-8">
+    <AppShell>
+      <main className="max-w-4xl mx-auto px-4 py-8">
         <div className="flex items-center gap-3 mb-8">
           <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)' }}>
             <Shield size={24} style={{ color: '#a855f7' }} />
@@ -153,6 +152,7 @@ export default async function AdminPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    <QuestDeactivateButton questId={q.id} isActive={q.is_active !== false} />
                     <FeatureToggle questId={q.id} isFeatured={q.is_featured} />
                     <Link href={`/quest/${q.id}`} className="text-xs transition-colors hover:opacity-70" style={{ color: '#536471' }}>
                       Gör →
@@ -283,6 +283,6 @@ export default async function AdminPage() {
           </div>
         </div>
       </main>
-    </div>
+    </AppShell>
   );
 }

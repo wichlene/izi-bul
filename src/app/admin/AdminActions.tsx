@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CheckCircle, Loader2, Trash2, Megaphone } from 'lucide-react';
+import { CheckCircle, Loader2, Trash2, Megaphone, EyeOff } from 'lucide-react';
 
 export function AnnouncementComposer() {
   const router = useRouter();
@@ -116,9 +116,40 @@ export function BusinessToggle({ userId, isBusiness }: { userId: string; isBusin
     <button onClick={toggle} disabled={loading}
       className="text-xs px-2 py-1 rounded-lg transition-colors disabled:opacity-50"
       style={current
-        ? { background: 'rgba(34,197,94,0.2)', color: '#22c55e' }
-        : { background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.3)' }}>
+        ? { background: 'rgba(34,197,94,0.1)', color: '#16a34a' }
+        : { background: '#f7f8f8', color: '#536471', border: '1px solid #eff3f4' }}>
       {loading ? '...' : current ? '🏪 İşletme' : 'İşletme Yap'}
+    </button>
+  );
+}
+
+export function QuestDeactivateButton({ questId, isActive }: { questId: string; isActive: boolean }) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [current, setCurrent] = useState(isActive);
+
+  const toggle = async () => {
+    if (current && !confirm('Görevi siteden kaldırmak istediğine emin misin?')) return;
+    setLoading(true);
+    const res = await fetch('/api/admin/quests', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ quest_id: questId, is_active: !current }),
+    });
+    if (res.ok) {
+      setCurrent((v) => !v);
+      router.refresh();
+    }
+    setLoading(false);
+  };
+
+  return (
+    <button onClick={toggle} disabled={loading}
+      className="text-xs px-2 py-1 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1"
+      style={current
+        ? { background: 'rgba(239,68,68,0.1)', color: '#ef4444' }
+        : { background: 'rgba(34,197,94,0.1)', color: '#22c55e' }}>
+      {loading ? <Loader2 size={11} className="animate-spin" /> : current ? <><EyeOff size={11} /> Kaldır</> : '✓ Aktif et'}
     </button>
   );
 }
@@ -146,8 +177,8 @@ export function FeatureToggle({ questId, isFeatured }: { questId: string; isFeat
     <button onClick={toggle} disabled={loading}
       className="text-xs px-2 py-1 rounded-lg disabled:opacity-50"
       style={current
-        ? { background: 'rgba(255,215,0,0.2)', color: '#ffd700' }
-        : { background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.3)' }}>
+        ? { background: 'rgba(234,179,8,0.12)', color: '#ca8a04' }
+        : { background: '#f7f8f8', color: '#536471', border: '1px solid #eff3f4' }}>
       {loading ? '...' : current ? '⭐ Öne çıkan' : 'Öne çıkar'}
     </button>
   );
