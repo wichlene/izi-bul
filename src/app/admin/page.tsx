@@ -2,9 +2,9 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { Shield, Users, MapPin, Clock, TrendingUp, Store, Tag, FileText } from 'lucide-react';
+import { Shield, Users, MapPin, Clock, TrendingUp, Store, Tag, FileText, Megaphone, Mail } from 'lucide-react';
 import Header from '@/components/Header';
-import { ApproveButton, BusinessToggle, FeatureToggle, DeletePostButton } from './AdminActions';
+import { ApproveButton, BusinessToggle, FeatureToggle, DeletePostButton, AnnouncementComposer, ContactStatusButton } from './AdminActions';
 
 export default async function AdminPage() {
   const supabase = await createClient();
@@ -48,6 +48,13 @@ export default async function AdminPage() {
     .order('created_at', { ascending: false })
     .limit(10);
 
+  const { data: contactMessages } = await admin
+    .from('contact_messages')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(30);
+  const newContactCount = (contactMessages || []).filter((c) => c.status === 'new').length;
+
   const stats = [
     { icon: <Users size={20} />, val: usersRes.count || 0, label: 'Kullanıcı', color: '#a855f7' },
     { icon: <MapPin size={20} />, val: questsRes.count || 0, label: 'Görev', color: '#ff6b2b' },
@@ -70,6 +77,14 @@ export default async function AdminPage() {
           <Link href="/admin/categories" className="ml-auto flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold" style={{ background: 'rgba(255,107,43,0.08)', color: '#ff6b2b', border: '1px solid rgba(255,107,43,0.2)' }}>
             <Tag size={14} /> Kategoriler
           </Link>
+        </div>
+
+        {/* Günlük Duyuru */}
+        <div className="rounded-2xl p-5 mb-6" style={{ background: '#ffffff', border: '1px solid #eff3f4' }}>
+          <h2 className="font-bold flex items-center gap-2 mb-3" style={{ color: '#0f1419' }}>
+            <Megaphone size={16} style={{ color: '#ff6b2b' }} /> Günlük Görev Duyurusu
+          </h2>
+          <AnnouncementComposer />
         </div>
 
         {/* İstatistikler */}
@@ -226,6 +241,42 @@ export default async function AdminPage() {
                     <div className="text-xs mt-0.5" style={{ color: '#8e8e8e' }}>{new Date(post.created_at).toLocaleString('tr-TR')}</div>
                   </div>
                   <DeletePostButton postId={post.id} />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* İletişim / Yatırımcı Talepleri */}
+        <div className="rounded-2xl overflow-hidden mt-6" style={{ background: '#ffffff', border: '1px solid #eff3f4' }}>
+          <div className="px-5 py-4 flex items-center gap-2" style={{ borderBottom: '1px solid #eff3f4' }}>
+            <Mail size={16} style={{ color: '#a855f7' }} />
+            <h2 className="font-bold" style={{ color: '#0f1419' }}>İletişim & Yatırımcı Talepleri</h2>
+            {newContactCount > 0 && (
+              <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ background: 'rgba(234,179,8,0.12)', color: '#ca8a04' }}>{newContactCount} yeni</span>
+            )}
+          </div>
+          <div>
+            {!contactMessages?.length ? (
+              <div className="p-8 text-center text-sm" style={{ color: '#536471' }}>Henüz talep yok</div>
+            ) : contactMessages.map((c) => {
+              const typeLabel: Record<string, string> = { business: '🏪 İşletme', investor: '💰 Yatırımcı', general: '💬 Genel' };
+              return (
+                <div key={c.id} className="flex items-start gap-3 px-5 py-3" style={{ borderBottom: '1px solid #eff3f4' }}>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-bold" style={{ color: '#0f1419' }}>{c.name}</span>
+                      <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: '#f7f8f8', color: '#536471' }}>{typeLabel[c.type] || c.type}</span>
+                      {c.business_name && <span className="text-xs" style={{ color: '#536471' }}>· {c.business_name}</span>}
+                    </div>
+                    <div className="text-sm mt-1" style={{ color: '#0f1419' }}>{c.message}</div>
+                    <div className="text-xs mt-1 flex items-center gap-2 flex-wrap" style={{ color: '#8e8e8e' }}>
+                      {c.email && <span>✉ {c.email}</span>}
+                      {c.phone && <span>📞 {c.phone}</span>}
+                      <span>{new Date(c.created_at).toLocaleString('tr-TR')}</span>
+                    </div>
+                  </div>
+                  <ContactStatusButton id={c.id} status={c.status} />
                 </div>
               );
             })}

@@ -2,7 +2,65 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CheckCircle, Loader2, Trash2 } from 'lucide-react';
+import { CheckCircle, Loader2, Trash2, Megaphone } from 'lucide-react';
+
+export function AnnouncementComposer() {
+  const router = useRouter();
+  const [text, setText] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const post = async () => {
+    if (!text.trim() || loading) return;
+    setLoading(true);
+    const res = await fetch('/api/posts', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: text, post_type: 'announcement' }),
+    });
+    setLoading(false);
+    if (res.ok) { setText(''); router.refresh(); }
+  };
+
+  return (
+    <div className="flex gap-2">
+      <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Günlük görev duyurusu yaz..."
+        className="flex-1 rounded-xl px-4 py-2.5 text-sm focus:outline-none"
+        style={{ background: '#f7f8f8', border: '1px solid #eff3f4', color: '#0f1419' }} />
+      <button onClick={post} disabled={loading || !text.trim()}
+        className="px-4 py-2.5 rounded-xl text-sm font-bold text-white flex items-center gap-1.5 disabled:opacity-50"
+        style={{ background: 'linear-gradient(135deg,#ff6b2b,#ff3d00)' }}>
+        {loading ? <Loader2 size={14} className="animate-spin" /> : <Megaphone size={14} />} Duyur
+      </button>
+    </div>
+  );
+}
+
+export function ContactStatusButton({ id, status }: { id: string; status: string }) {
+  const router = useRouter();
+  const [current, setCurrent] = useState(status);
+  const [loading, setLoading] = useState(false);
+
+  const next = current === 'new' ? 'read' : current === 'read' ? 'replied' : current === 'replied' ? 'closed' : 'new';
+  const labels: Record<string, string> = { new: 'Yeni', read: 'Okundu', replied: 'Yanıtlandı', closed: 'Kapalı' };
+  const colors: Record<string, string> = { new: '#eab308', read: '#3b82f6', replied: '#22c55e', closed: '#536471' };
+
+  const update = async () => {
+    setLoading(true);
+    const res = await fetch('/api/contact', {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, status: next }),
+    });
+    setLoading(false);
+    if (res.ok) { setCurrent(next); router.refresh(); }
+  };
+
+  return (
+    <button onClick={update} disabled={loading}
+      className="text-xs font-bold px-2.5 py-1 rounded-full disabled:opacity-50 flex-shrink-0"
+      style={{ background: colors[current] + '18', color: colors[current] }}>
+      {loading ? '...' : labels[current]}
+    </button>
+  );
+}
 
 export function ApproveButton({ submissionId }: { submissionId: string }) {
   const router = useRouter();

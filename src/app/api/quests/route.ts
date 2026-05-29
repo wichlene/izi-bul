@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { DIFFICULTIES, Difficulty } from '@/types';
+
+// Zorluğa göre son nokta yakınlık yarıçapı (metre)
+const FINAL_RADIUS: Record<Difficulty, number> = {
+  easy: 100, medium: 60, hard: 40, legendary: 25,
+};
 
 export async function GET() {
   const supabase = await createClient();
@@ -35,7 +41,7 @@ export async function POST(req: NextRequest) {
   const {
     category_id, title, description, photo_url, hint, region,
     latitude, longitude, difficulty, cash_reward, max_distance_meters,
-    requires_photo_proof, expires_at,
+    requires_photo_proof, expires_at, steps,
   } = body;
 
   if (!category_id || !title || !description || !photo_url || latitude == null || longitude == null) {
@@ -44,6 +50,8 @@ export async function POST(req: NextRequest) {
 
   const diff = (difficulty || 'medium') as Difficulty;
   const points = DIFFICULTIES[diff]?.points || 100;
+  const finalRadius = max_distance_meters || FINAL_RADIUS[diff] || 50;
+  const isMultistep = Array.isArray(steps) && steps.length > 0;
 
   const { data, error } = await supabase
     .from('quests')
@@ -59,9 +67,10 @@ export async function POST(req: NextRequest) {
       difficulty: diff,
       points,
       cash_reward: cash_reward || 0,
-      max_distance_meters: max_distance_meters || 50,
+      max_distance_meters: finalRadius,
       requires_photo_proof: requires_photo_proof !== false,
       is_active: true,
+      is_multistep: isMultistep,
       created_by: user.id,
       expires_at: expires_at || null,
     })
@@ -69,5 +78,39 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Çok adımlı görev: ara adımlar + son nokta (görev konumu)
+  if (isMultistep) {
+    const admin = createAdminClient();
+    const stepRows = steps.map((s: {
+      step_type?: string; question?: string; correct_answer?: string;
+      latitude: number; longitude: number; approach_radius_meters?: number; hint?: string;
+    }, i: number) => ({
+      quest_id: data.id,
+      step_number: i + 1,
+      step_type: s.step_type || 'location',
+      question: s.question || null,
+      correct_answer: s.correct_answer || null,
+      target_lat: s.latitude,
+      target_lng: s.longitude,
+      approach_radius_meters: s.approach_radius_meters || 500,
+      hint: s.hint || null,
+    }));
+    // Son adım: görevin gizli konumu (zorluğa göre dar yarıçap)
+    stepRows.push({
+      quest_id: data.id,
+      step_number: steps.length + 1,
+      step_type: requires_photo_proof !== false ? 'image' : 'final',
+      question: null,
+      correct_answer: null,
+      target_lat: latitude,
+      target_lng: longitude,
+      approach_radius_meters: finalRadius,
+      hint: hint || null,
+    });
+    const { error: stepErr } = await admin.from('quest_steps').insert(stepRows);
+    if (stepErr) return NextResponse.json({ error: 'Adımlar kaydedilemedi: ' + stepErr.message }, { status: 500 });
+  }
+
   return NextResponse.json(data, { status: 201 });
 }
