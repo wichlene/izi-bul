@@ -74,10 +74,11 @@ export default async function AppShell({ children, aside }: Props) {
           ))}
 
           {/* Bildirimler */}
-          <div className="flex items-center gap-5 px-3 py-3 rounded-full transition-colors w-fit xl:w-full cursor-pointer hover:bg-gray-100">
+          <Link href="/notifications"
+            className="flex items-center gap-5 px-3 py-3 rounded-full transition-colors w-fit xl:w-full cursor-pointer hover:bg-gray-100">
             <NotificationBell />
             <span className="text-xl font-medium hidden xl:block" style={{ color: '#0f1419' }}>Bildirimler</span>
-          </div>
+          </Link>
         </nav>
 
         {/* Görev Ekle butonu */}

@@ -1,9 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import { Heart, MapPin, ImagePlus, Loader2, X } from 'lucide-react';
+import { Heart, MapPin, ImagePlus, Loader2, X, Navigation, Map as MapIcon } from 'lucide-react';
 import PhotoUpload from '@/components/PhotoUpload';
+
+const MapPicker = dynamic(() => import('@/components/MapPicker'), { ssr: false });
 
 interface Post {
   id: string;
@@ -34,6 +37,8 @@ export default function GoodDeedClient() {
   const [posting, setPosting] = useState(false);
   const [locating, setLocating] = useState(false);
   const [locError, setLocError] = useState('');
+  const [showMap, setShowMap] = useState(false);
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({ lat: 39.0, lng: 35.0 });
 
   useEffect(() => {
     fetch('/api/posts?type=good_deed')
@@ -42,9 +47,9 @@ export default function GoodDeedClient() {
       .catch(() => setLoading(false));
   }, []);
 
-  const addLocation = () => {
+  // Telefonun GPS konumunu kullan
+  const useMyLocation = () => {
     setLocError('');
-    if (coords) { setCoords(null); return; }
     if (!navigator.geolocation) {
       setLocError('Tarayıcın konumu desteklemiyor.');
       return;
@@ -52,7 +57,9 @@ export default function GoodDeedClient() {
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (p) => {
-        setCoords({ lat: p.coords.latitude, lng: p.coords.longitude });
+        const c = { lat: p.coords.latitude, lng: p.coords.longitude };
+        setCoords(c);
+        setMapCenter(c);
         setLocating(false);
       },
       (err) => {
@@ -65,6 +72,19 @@ export default function GoodDeedClient() {
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
+  };
+
+  // Haritadan seç — modal aç, mümkünse mevcut konuma odakla
+  const openMap = () => {
+    setLocError('');
+    setShowMap(true);
+    if (!coords && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (p) => setMapCenter({ lat: p.coords.latitude, lng: p.coords.longitude }),
+        () => {},
+        { timeout: 6000 }
+      );
+    }
   };
 
   const post = async () => {
@@ -115,35 +135,83 @@ export default function GoodDeedClient() {
         {showPhoto && (
           <div className="my-2"><PhotoUpload onUpload={setPhoto} /></div>
         )}
-        <div className="flex items-center justify-between mt-2">
-          <div className="flex gap-1">
-            <button onClick={() => setShowPhoto((v) => !v)}
-              className="p-2 rounded-full hover:bg-pink-50" style={{ color: '#ec4899' }}>
-              <ImagePlus size={18} />
+        {/* Konum seçenekleri */}
+        <div className="flex flex-wrap items-center gap-2 mt-2">
+          <button onClick={useMyLocation} disabled={locating}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold disabled:opacity-60"
+            style={{ background: 'rgba(34,197,94,0.1)', color: '#16a34a' }}>
+            {locating ? <Loader2 size={14} className="animate-spin" /> : <Navigation size={14} />}
+            Konumumu kullan
+          </button>
+          <button onClick={openMap}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
+            style={{ background: 'rgba(59,130,246,0.1)', color: '#2563eb' }}>
+            <MapIcon size={14} /> Haritadan seç
+          </button>
+          {coords && (
+            <button onClick={() => setCoords(null)}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-semibold"
+              style={{ background: '#f7f8f8', color: '#536471' }}>
+              <X size={12} /> Konumu kaldır
             </button>
-            <button onClick={addLocation} disabled={locating}
-              className="p-2 rounded-full hover:bg-pink-50 flex items-center gap-1.5 text-xs font-semibold disabled:opacity-60"
-              style={{ color: coords ? '#22c55e' : '#ec4899' }}>
-              {locating ? <Loader2 size={16} className="animate-spin" /> : <MapPin size={16} />}
-              {locating ? 'Konum alınıyor...' : coords ? 'Konum eklendi' : 'Konum ekle'}
-              {coords && <X size={12} />}
-            </button>
-          </div>
+          )}
+        </div>
+
+        {locError && <p className="text-xs mt-2 px-1" style={{ color: '#ef4444' }}>{locError}</p>}
+        {coords && (
+          <p className="text-xs mt-2 px-1 flex items-center gap-1" style={{ color: '#22c55e' }}>
+            <MapPin size={12} /> Konum seçildi: {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}
+          </p>
+        )}
+
+        <div className="flex items-center justify-between mt-3">
+          <button onClick={() => setShowPhoto((v) => !v)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold hover:bg-pink-50"
+            style={{ background: 'rgba(236,72,153,0.08)', color: '#ec4899' }}>
+            <ImagePlus size={16} /> {showPhoto ? 'Fotoğrafı gizle' : 'Fotoğraf ekle'}
+          </button>
           <button onClick={post} disabled={!content.trim() || posting}
             className="px-5 py-2 rounded-full text-sm font-black text-white disabled:opacity-40"
             style={{ background: 'linear-gradient(135deg,#ec4899,#a855f7)' }}>
             {posting ? <Loader2 size={15} className="animate-spin" /> : 'Paylaş 💗'}
           </button>
         </div>
-        {locError && (
-          <p className="text-xs mt-2 px-1" style={{ color: '#ef4444' }}>{locError}</p>
-        )}
-        {coords && (
-          <p className="text-xs mt-2 px-1" style={{ color: '#22c55e' }}>
-            📍 Konum eklendi: {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}
-          </p>
-        )}
       </div>
+
+      {/* Harita seçim modalı */}
+      {showMap && (
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}>
+          <div className="w-full max-w-lg rounded-2xl overflow-hidden flex flex-col" style={{ background: '#fff', maxHeight: '85vh' }}>
+            <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid #eff3f4' }}>
+              <div>
+                <h3 className="font-bold text-sm" style={{ color: '#0f1419' }}>Konumu haritadan seç</h3>
+                <p className="text-xs" style={{ color: '#536471' }}>Haritaya dokun veya işareti sürükle</p>
+              </div>
+              <button onClick={() => setShowMap(false)} className="p-1.5 rounded-full hover:bg-gray-100" style={{ color: '#536471' }}>
+                <X size={18} />
+              </button>
+            </div>
+            <div style={{ height: 380 }}>
+              <MapPicker
+                initialLat={coords?.lat ?? mapCenter.lat}
+                initialLng={coords?.lng ?? mapCenter.lng}
+                zoom={coords || mapCenter.lat !== 39.0 ? 15 : 6}
+                onLocationSelect={(lat, lng) => setCoords({ lat, lng })}
+              />
+            </div>
+            <div className="px-4 py-3 flex items-center justify-between gap-3" style={{ borderTop: '1px solid #eff3f4' }}>
+              <span className="text-xs" style={{ color: coords ? '#22c55e' : '#536471' }}>
+                {coords ? `📍 ${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}` : 'Henüz nokta seçilmedi'}
+              </span>
+              <button onClick={() => setShowMap(false)} disabled={!coords}
+                className="px-5 py-2 rounded-full text-sm font-black text-white disabled:opacity-40"
+                style={{ background: 'linear-gradient(135deg,#ec4899,#a855f7)' }}>
+                Bu konumu kullan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Feed */}
       {loading ? (
