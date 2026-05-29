@@ -42,10 +42,7 @@ export default async function AppShell({ children, aside }: Props) {
 
         {/* Logo */}
         <Link href="/dashboard"
-          className="w-12 h-12 flex items-center justify-center rounded-full transition-colors mb-1 xl:ml-1"
-          style={{ background: 'transparent' }}
-          onMouseOver={e => (e.currentTarget.style.background = '#f7f9fa')}
-          onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
+          className="w-12 h-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors mb-1 xl:ml-1">
           <div className="w-9 h-9 rounded-xl flex items-center justify-center"
             style={{ background: 'linear-gradient(135deg,#ff6b2b,#ff3d00)' }}>
             <MapPin size={18} className="text-white" />
@@ -69,7 +66,7 @@ export default async function AppShell({ children, aside }: Props) {
           </div>
 
           <Link href="/" className="flex items-center gap-5 px-3 py-3 rounded-full transition-colors w-fit xl:w-full hover:bg-gray-100">
-            <MoreHorizontal size={26} className="flex-shrink-0" style={{ color: '#0f1419' } as React.CSSProperties} />
+            <MoreHorizontal size={26} className="flex-shrink-0" style={{ color: '#0f1419' }} />
             <span className="text-xl font-medium hidden xl:block" style={{ color: '#0f1419' }}>Daha fazla</span>
           </Link>
         </nav>
