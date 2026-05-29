@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { Shield, Users, MapPin, Clock, TrendingUp, Store, Tag, FileText } from 'lucide-react';
 import Header from '@/components/Header';
 import { ApproveButton, BusinessToggle, FeatureToggle, DeletePostButton } from './AdminActions';
@@ -13,33 +14,35 @@ export default async function AdminPage() {
   const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single();
   if (!profile?.is_admin) redirect('/');
 
+  const admin = createAdminClient();
+
   const [usersRes, questsRes, subsRes, pendingRes] = await Promise.all([
-    supabase.from('profiles').select('id', { count: 'exact', head: true }),
-    supabase.from('quests').select('id', { count: 'exact', head: true }),
-    supabase.from('submissions').select('id', { count: 'exact', head: true }),
-    supabase.from('submissions').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+    admin.from('profiles').select('id', { count: 'exact', head: true }),
+    admin.from('quests').select('id', { count: 'exact', head: true }),
+    admin.from('submissions').select('id', { count: 'exact', head: true }),
+    admin.from('submissions').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
   ]);
 
-  const { data: recentPosts } = await supabase
+  const { data: recentPosts } = await admin
     .from('posts')
     .select('id, content, created_at, profiles(username)')
     .order('created_at', { ascending: false })
     .limit(20);
 
-  const { data: allUsers } = await supabase
+  const { data: allUsers } = await admin
     .from('profiles')
     .select('id, username, full_name, total_finds, created_at, is_premium, is_business, is_admin, business_name')
     .order('created_at', { ascending: false })
     .limit(20);
 
-  const { data: pendingSubmissions } = await supabase
+  const { data: pendingSubmissions } = await admin
     .from('submissions')
     .select('id, created_at, photo_url, distance_meters, profiles(username), quests(title)')
     .eq('status', 'pending')
     .order('created_at', { ascending: false })
     .limit(10);
 
-  const { data: recentQuests } = await supabase
+  const { data: recentQuests } = await admin
     .from('quests')
     .select('id, title, total_attempts, total_solved, is_featured, created_at, profiles(username)')
     .order('created_at', { ascending: false })

@@ -162,31 +162,31 @@ export default function MapPicker({
 
       // Canlı kullanıcı noktaları
       liveUsers.forEach((u) => {
-        const initial = (u.username || '?').charAt(0).toUpperCase();
         const icon = L.divIcon({
           className: '',
-          html: `<div style="position:relative">
+          html: `<div style="position:relative;width:42px;height:42px">
             <div style="
-              background:linear-gradient(135deg,#ff6b2b,#a855f7);
-              border-radius:50% 50% 50% 0;
-              width:36px;height:36px;
+              background:linear-gradient(135deg,#22c55e,#16a34a);
+              border-radius:50%;
+              width:42px;height:42px;
               border:3px solid white;
-              box-shadow:0 4px 14px rgba(34,197,94,0.6), 0 0 0 2px rgba(34,197,94,0.4);
-              transform:rotate(-45deg);
+              box-shadow:0 2px 12px rgba(34,197,94,0.5), 0 0 0 3px rgba(34,197,94,0.25);
               display:flex;align-items:center;justify-content:center;
             ">
-              <span style="transform:rotate(45deg);color:white;font-weight:900;font-size:14px;font-family:system-ui">${initial}</span>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="7" r="4" fill="white"/>
+                <path d="M4 21c0-4 3.6-7 8-7s8 3 8 7" stroke="white" stroke-width="2" stroke-linecap="round"/>
+              </svg>
             </div>
             <div style="
-              position:absolute;bottom:-2px;right:-2px;
-              width:10px;height:10px;border-radius:50%;
+              position:absolute;bottom:0;right:0;
+              width:11px;height:11px;border-radius:50%;
               background:#22c55e;border:2px solid white;
-              box-shadow:0 0 8px rgba(34,197,94,1);
               animation:pulse 1.5s infinite;
             "></div>
           </div>`,
-          iconSize: [36, 36],
-          iconAnchor: [18, 36],
+          iconSize: [42, 42],
+          iconAnchor: [21, 42],
         });
         const popupHtml = u.username
           ? `<div style="font-family:system-ui;text-align:center;padding:4px 0">

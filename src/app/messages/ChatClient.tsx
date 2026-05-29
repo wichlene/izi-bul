@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Send, MessageCircle } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
 
 interface Message { id: string; from_user_id: string; to_user_id: string; content: string; created_at: string }
 interface Friend { id: string; username: string }
@@ -20,18 +21,31 @@ export default function ChatClient({ currentUserId, friends, initialMessages, ch
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const supabase = useRef(createClient());
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
   useEffect(() => {
     if (!chatWith) return;
-    const interval = setInterval(async () => {
-      const res = await fetch(`/api/messages?with=${chatWith.id}`);
-      const data = await res.json();
-      setMessages(data);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [chatWith]);
+
+    // Realtime subscription — polling yok
+    const channel = supabase.current
+      .channel(`messages:${currentUserId}:${chatWith.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: `to_user_id=eq.${currentUserId}`,
+      }, (payload) => {
+        const msg = payload.new as Message;
+        if (msg.from_user_id === chatWith.id) {
+          setMessages((prev) => [...prev, msg]);
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.current.removeChannel(channel); };
+  }, [chatWith, currentUserId]);
 
   const send = async () => {
     if (!input.trim() || !chatWith || sending) return;

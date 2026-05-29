@@ -26,6 +26,9 @@ export async function POST(req: NextRequest) {
 
   await admin.from('submissions').update({ status: 'approved', is_winner: true, points_earned: points, reviewed_at: new Date().toISOString() }).eq('id', submissionId);
 
+  // Görevi haritadan kaldır
+  await admin.from('quests').update({ is_active: false }).eq('id', sub.quest_id);
+
   const { data: prof } = await admin.from('profiles').select('total_points, total_finds').eq('id', sub.user_id).single();
   if (prof) {
     await admin.from('profiles').update({ total_points: prof.total_points + points, total_finds: prof.total_finds + 1 }).eq('id', sub.user_id);
