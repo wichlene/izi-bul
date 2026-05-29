@@ -13,6 +13,8 @@ export default function Composer({ initial }: { initial?: string }) {
   const [showPhoto, setShowPhoto] = useState(false);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [locError, setLocError] = useState('');
 
   const post = async () => {
     if (!content.trim() || loading) return;
@@ -26,8 +28,28 @@ export default function Composer({ initial }: { initial?: string }) {
   };
 
   const addLocation = () => {
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition((p) => setCoords({ lat: p.coords.latitude, lng: p.coords.longitude }));
+    setLocError('');
+    if (coords) { setCoords(null); return; }
+    if (!navigator.geolocation) {
+      setLocError('Tarayıcın konumu desteklemiyor.');
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (p) => {
+        setCoords({ lat: p.coords.latitude, lng: p.coords.longitude });
+        setLocating(false);
+      },
+      (err) => {
+        setLocating(false);
+        setLocError(
+          err.code === err.PERMISSION_DENIED
+            ? 'Konum izni reddedildi. Tarayıcı ayarlarından izin ver.'
+            : 'Konum alınamadı, tekrar dene.'
+        );
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
   };
 
   return (
@@ -65,9 +87,10 @@ export default function Composer({ initial }: { initial?: string }) {
             <ImagePlus size={18} />
           </button>
           {type === 'good_deed' && (
-            <button onClick={addLocation} className="p-2 rounded-full hover:bg-pink-50 flex items-center gap-1 text-xs font-semibold" style={{ color: coords ? '#22c55e' : '#ec4899' }}>
-              📍 {coords ? 'Konum eklendi' : 'Konum ekle'}
-              {coords && <X size={12} onClick={(e) => { e.stopPropagation(); setCoords(null); }} />}
+            <button onClick={addLocation} disabled={locating} className="p-2 rounded-full hover:bg-pink-50 flex items-center gap-1 text-xs font-semibold disabled:opacity-60" style={{ color: coords ? '#22c55e' : '#ec4899' }}>
+              {locating ? <Loader2 size={14} className="animate-spin" /> : '📍'}
+              {locating ? 'Konum alınıyor...' : coords ? 'Konum eklendi' : 'Konum ekle'}
+              {coords && <X size={12} />}
             </button>
           )}
         </div>
@@ -77,6 +100,7 @@ export default function Composer({ initial }: { initial?: string }) {
           {loading ? <Loader2 size={15} className="animate-spin" /> : 'Paylaş'}
         </button>
       </div>
+      {locError && <p className="text-xs mt-2" style={{ color: '#ef4444' }}>{locError}</p>}
     </div>
   );
 }

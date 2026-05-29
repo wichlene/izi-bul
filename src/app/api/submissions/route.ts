@@ -121,9 +121,14 @@ export async function POST(req: NextRequest) {
       }
     });
 
+    // Görev kazanıldı → kapat, haritadan kalksın
     await supabase
       .from('quests')
-      .update({ total_solved: (quest.total_solved || 0) + 1, total_attempts: (quest.total_attempts || 0) + 1 })
+      .update({
+        total_solved: (quest.total_solved || 0) + 1,
+        total_attempts: (quest.total_attempts || 0) + 1,
+        is_active: false,
+      })
       .eq('id', quest_id);
   } else {
     await supabase

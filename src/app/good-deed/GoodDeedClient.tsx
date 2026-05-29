@@ -32,6 +32,8 @@ export default function GoodDeedClient() {
   const [showPhoto, setShowPhoto] = useState(false);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [posting, setPosting] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [locError, setLocError] = useState('');
 
   useEffect(() => {
     fetch('/api/posts?type=good_deed')
@@ -41,8 +43,28 @@ export default function GoodDeedClient() {
   }, []);
 
   const addLocation = () => {
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition((p) => setCoords({ lat: p.coords.latitude, lng: p.coords.longitude }));
+    setLocError('');
+    if (coords) { setCoords(null); return; }
+    if (!navigator.geolocation) {
+      setLocError('Tarayıcın konumu desteklemiyor.');
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (p) => {
+        setCoords({ lat: p.coords.latitude, lng: p.coords.longitude });
+        setLocating(false);
+      },
+      (err) => {
+        setLocating(false);
+        setLocError(
+          err.code === err.PERMISSION_DENIED
+            ? 'Konum izni reddedildi. Tarayıcı ayarlarından izin ver.'
+            : 'Konum alınamadı, tekrar dene.'
+        );
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
   };
 
   const post = async () => {
@@ -99,14 +121,12 @@ export default function GoodDeedClient() {
               className="p-2 rounded-full hover:bg-pink-50" style={{ color: '#ec4899' }}>
               <ImagePlus size={18} />
             </button>
-            <button onClick={addLocation}
-              className="p-2 rounded-full hover:bg-pink-50 flex items-center gap-1.5 text-xs font-semibold"
+            <button onClick={addLocation} disabled={locating}
+              className="p-2 rounded-full hover:bg-pink-50 flex items-center gap-1.5 text-xs font-semibold disabled:opacity-60"
               style={{ color: coords ? '#22c55e' : '#ec4899' }}>
-              <MapPin size={16} />
-              {coords ? 'Konum eklendi' : 'Konum ekle'}
-              {coords && (
-                <X size={12} onClick={(e) => { e.stopPropagation(); setCoords(null); }} />
-              )}
+              {locating ? <Loader2 size={16} className="animate-spin" /> : <MapPin size={16} />}
+              {locating ? 'Konum alınıyor...' : coords ? 'Konum eklendi' : 'Konum ekle'}
+              {coords && <X size={12} />}
             </button>
           </div>
           <button onClick={post} disabled={!content.trim() || posting}
@@ -115,6 +135,14 @@ export default function GoodDeedClient() {
             {posting ? <Loader2 size={15} className="animate-spin" /> : 'Paylaş 💗'}
           </button>
         </div>
+        {locError && (
+          <p className="text-xs mt-2 px-1" style={{ color: '#ef4444' }}>{locError}</p>
+        )}
+        {coords && (
+          <p className="text-xs mt-2 px-1" style={{ color: '#22c55e' }}>
+            📍 Konum eklendi: {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}
+          </p>
+        )}
       </div>
 
       {/* Feed */}
