@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { checkRateLimit } from '@/lib/rateLimit';
 
 export async function GET(req: NextRequest) {
+  // Kimlik doğrulama cookie tabanlı (RLS client)
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Giriş yapmalısın' }, { status: 401 });
@@ -10,14 +12,20 @@ export async function GET(req: NextRequest) {
   const withUserId = req.nextUrl.searchParams.get('with');
   if (!withUserId) return NextResponse.json({ error: 'with param gerekli' }, { status: 400 });
 
-  const { data } = await supabase
+  // Okuma/yazma service role ile — RLS'e takılmasın
+  const admin = createAdminClient();
+
+  const { data, error } = await admin
     .from('messages')
     .select('*')
     .or(`and(from_user_id.eq.${user.id},to_user_id.eq.${withUserId}),and(from_user_id.eq.${withUserId},to_user_id.eq.${user.id})`)
     .order('created_at', { ascending: true })
-    .limit(100);
+    .limit(200);
 
-  await supabase.from('messages').update({ is_read: true })
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Karşıdan gelen okunmamışları okundu işaretle
+  await admin.from('messages').update({ is_read: true })
     .eq('from_user_id', withUserId).eq('to_user_id', user.id).eq('is_read', false);
 
   return NextResponse.json(data || []);
@@ -36,7 +44,8 @@ export async function POST(req: NextRequest) {
   if (!to_user_id || !content?.trim()) return NextResponse.json({ error: 'Eksik alan' }, { status: 400 });
   if (content.length > 500) return NextResponse.json({ error: 'Mesaj çok uzun' }, { status: 400 });
 
-  const { data, error } = await supabase.from('messages').insert({
+  const admin = createAdminClient();
+  const { data, error } = await admin.from('messages').insert({
     from_user_id: user.id,
     to_user_id,
     content: content.trim(),

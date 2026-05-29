@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import AppShell from '@/components/AppShell';
 import ChatClient from './ChatClient';
 
@@ -12,7 +13,9 @@ export default async function MessagesPage({ searchParams }: { searchParams: Pro
 
   const { with: withUserId } = await searchParams;
 
-  const { data: friends } = await supabase
+  const admin = createAdminClient();
+
+  const { data: friends } = await admin
     .from('friendships')
     .select('friend:profiles!friendships_friend_id_fkey(id, username)')
     .eq('user_id', user.id);
@@ -21,18 +24,18 @@ export default async function MessagesPage({ searchParams }: { searchParams: Pro
   let chatWith = null;
 
   if (withUserId) {
-    const { data: msgs } = await supabase
+    const { data: msgs } = await admin
       .from('messages')
       .select('*')
       .or(`and(from_user_id.eq.${user.id},to_user_id.eq.${withUserId}),and(from_user_id.eq.${withUserId},to_user_id.eq.${user.id})`)
       .order('created_at', { ascending: true })
-      .limit(100);
+      .limit(200);
     initialMessages = msgs || [];
 
-    const { data: withProfile } = await supabase.from('profiles').select('id, username').eq('id', withUserId).single();
+    const { data: withProfile } = await admin.from('profiles').select('id, username').eq('id', withUserId).single();
     chatWith = withProfile;
 
-    await supabase.from('messages').update({ is_read: true })
+    await admin.from('messages').update({ is_read: true })
       .eq('from_user_id', withUserId).eq('to_user_id', user.id).eq('is_read', false);
   }
 

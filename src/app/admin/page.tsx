@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { Shield, Users, MapPin, Clock, TrendingUp, Store, Tag, FileText, Megaphone, Mail } from 'lucide-react';
 import AppShell from '@/components/AppShell';
-import { ApproveButton, BusinessToggle, FeatureToggle, DeletePostButton, AnnouncementComposer, ContactStatusButton, QuestDeactivateButton } from './AdminActions';
+import { ApproveButton, BusinessToggle, FeatureToggle, DeletePostButton, AnnouncementComposer, ContactStatusButton, QuestDeactivateButton, QuestDeleteButton } from './AdminActions';
 
 export default async function AdminPage() {
   const supabase = await createClient();
@@ -47,6 +47,14 @@ export default async function AdminPage() {
     .select('id, title, total_attempts, total_solved, is_featured, is_active, created_at, profiles(username)')
     .order('created_at', { ascending: false })
     .limit(10);
+
+  // Haritada görünen TÜM aktif görevler (silme/kaldırma için)
+  const { data: activeQuests } = await admin
+    .from('quests')
+    .select('id, title, cash_reward, total_attempts, created_at, profiles(username)')
+    .eq('is_active', true)
+    .order('created_at', { ascending: false })
+    .limit(200);
 
   const { data: contactMessages } = await admin
     .from('contact_messages')
@@ -161,6 +169,36 @@ export default async function AdminPage() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+
+        {/* Haritadaki Aktif Görevler — kaldır / sil */}
+        <div className="rounded-2xl overflow-hidden mb-6" style={{ background: '#ffffff', border: '1px solid #eff3f4' }}>
+          <div className="px-5 py-4 flex items-center gap-2" style={{ borderBottom: '1px solid #eff3f4' }}>
+            <MapPin size={16} style={{ color: '#ff6b2b' }} />
+            <h2 className="font-bold" style={{ color: '#0f1419' }}>Haritadaki Aktif Görevler</h2>
+            <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ background: 'rgba(255,107,43,0.1)', color: '#ff6b2b' }}>
+              {activeQuests?.length || 0}
+            </span>
+          </div>
+          <div>
+            {!activeQuests?.length ? (
+              <div className="p-8 text-center text-sm" style={{ color: '#536471' }}>Haritada aktif görev yok</div>
+            ) : activeQuests.map((q, idx) => (
+              <div key={q.id} className="flex items-center gap-3 px-5 py-3" style={{ borderBottom: idx < activeQuests.length - 1 ? '1px solid #eff3f4' : 'none' }}>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium truncate" style={{ color: '#0f1419' }}>{q.title}</div>
+                  <div className="text-xs" style={{ color: '#536471' }}>
+                    {(q as { profiles?: { username?: string } }).profiles?.username || '—'}
+                    {q.cash_reward > 0 && ` · ${q.cash_reward}₺`}
+                    {` · ${q.total_attempts || 0} deneme`}
+                  </div>
+                </div>
+                <Link href={`/quest/${q.id}`} className="text-xs hover:opacity-70 flex-shrink-0" style={{ color: '#536471' }}>Gör →</Link>
+                <QuestDeactivateButton questId={q.id} isActive={true} />
+                <QuestDeleteButton questId={q.id} />
+              </div>
+            ))}
           </div>
         </div>
 

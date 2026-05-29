@@ -20,6 +20,7 @@ export default function ChatClient({ currentUserId, friends, initialMessages, ch
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
   const supabase = useRef(createClient());
 
@@ -27,10 +28,16 @@ export default function ChatClient({ currentUserId, friends, initialMessages, ch
 
   useEffect(() => {
     if (!chatWith) return;
+    const withId = chatWith.id;
 
-    // Realtime subscription — polling yok
+    // Tekrarı önleyerek mesaj ekle
+    const addMsg = (msg: Message) => {
+      setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
+    };
+
+    // 1) Realtime (açıksa anında gelir)
     const channel = supabase.current
-      .channel(`messages:${currentUserId}:${chatWith.id}`)
+      .channel(`messages:${currentUserId}:${withId}`)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
@@ -38,27 +45,53 @@ export default function ChatClient({ currentUserId, friends, initialMessages, ch
         filter: `to_user_id=eq.${currentUserId}`,
       }, (payload) => {
         const msg = payload.new as Message;
-        if (msg.from_user_id === chatWith.id) {
-          setMessages((prev) => [...prev, msg]);
-        }
+        if (msg.from_user_id === withId) addMsg(msg);
       })
       .subscribe();
 
-    return () => { supabase.current.removeChannel(channel); };
+    // 2) Polling fallback (Realtime kapalı olsa bile mesajlar gelsin)
+    const poll = () => {
+      fetch(`/api/messages?with=${withId}`)
+        .then((r) => (r.ok ? r.json() : []))
+        .then((data: Message[]) => {
+          if (Array.isArray(data)) {
+            setMessages((prev) => {
+              const ids = new Set(prev.map((m) => m.id));
+              const fresh = data.filter((m) => !ids.has(m.id));
+              return fresh.length ? [...prev, ...fresh] : prev;
+            });
+          }
+        })
+        .catch(() => {});
+    };
+    const interval = setInterval(poll, 3500);
+
+    return () => {
+      supabase.current.removeChannel(channel);
+      clearInterval(interval);
+    };
   }, [chatWith, currentUserId]);
 
   const send = async () => {
     if (!input.trim() || !chatWith || sending) return;
     setSending(true);
-    const res = await fetch('/api/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ to_user_id: chatWith.id, content: input.trim() }),
-    });
-    if (res.ok) {
-      const msg = await res.json();
-      setMessages((prev) => [...prev, msg]);
-      setInput('');
+    setSendError('');
+    try {
+      const res = await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to_user_id: chatWith.id, content: input.trim() }),
+      });
+      if (res.ok) {
+        const msg = await res.json();
+        setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
+        setInput('');
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setSendError(err.error || 'Mesaj gönderilemedi.');
+      }
+    } catch {
+      setSendError('Bağlantı hatası, tekrar dene.');
     }
     setSending(false);
   };
@@ -124,6 +157,9 @@ export default function ChatClient({ currentUserId, friends, initialMessages, ch
               <div ref={bottomRef} />
             </div>
 
+            {sendError && (
+              <div className="px-4 py-2 text-xs text-center" style={{ background: '#fef2f2', color: '#ef4444' }}>{sendError}</div>
+            )}
             <div className="px-4 py-3 flex gap-3" style={{ borderTop: '1px solid #eff3f4', background: '#ffffff' }}>
               <input value={input} onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && send()}

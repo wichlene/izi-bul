@@ -154,6 +154,36 @@ export function QuestDeactivateButton({ questId, isActive }: { questId: string; 
   );
 }
 
+export function QuestDeleteButton({ questId }: { questId: string }) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [deleted, setDeleted] = useState(false);
+
+  const del = async () => {
+    if (!confirm('Bu görevi KALICI olarak silmek istediğine emin misin? Geri alınamaz.')) return;
+    setLoading(true);
+    const res = await fetch(`/api/admin/quests?id=${questId}`, { method: 'DELETE' });
+    if (res.ok) {
+      setDeleted(true);
+      router.refresh();
+    } else {
+      const e = await res.json().catch(() => ({}));
+      alert('Silinemedi: ' + (e.error || 'bilinmeyen hata'));
+    }
+    setLoading(false);
+  };
+
+  if (deleted) return <span className="text-xs" style={{ color: '#22c55e' }}>Silindi ✓</span>;
+
+  return (
+    <button onClick={del} disabled={loading}
+      className="text-xs px-2 py-1 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1"
+      style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>
+      {loading ? <Loader2 size={11} className="animate-spin" /> : <Trash2 size={11} />} Sil
+    </button>
+  );
+}
+
 export function FeatureToggle({ questId, isFeatured }: { questId: string; isFeatured: boolean }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
