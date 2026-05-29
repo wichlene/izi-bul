@@ -31,6 +31,25 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ progress, steps: steps || [] });
 }
 
+// Görevi bırak — kullanıcının bu görevdeki ilerlemesini sil (başka göreve geçebilsin)
+export async function DELETE(req: NextRequest) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Giriş yapmalısın' }, { status: 401 });
+
+  const questId = req.nextUrl.searchParams.get('quest_id');
+  if (!questId) return NextResponse.json({ error: 'quest_id gerekli' }, { status: 400 });
+
+  const admin = createAdminClient();
+  await admin.from('user_quest_progress')
+    .delete()
+    .eq('user_id', user.id)
+    .eq('quest_id', questId)
+    .eq('is_completed', false);
+
+  return NextResponse.json({ ok: true });
+}
+
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -104,6 +123,26 @@ export async function POST(req: NextRequest) {
       last_activity_at: new Date().toISOString(),
     }).eq('id', existingProgress.id);
   } else {
+    // TEK AKTİF GÖREV KISITI: bu görevi yeni başlatıyorsa, başka aktif görevi olmamalı
+    const { data: otherActive } = await admin
+      .from('user_quest_progress')
+      .select('quest_id, quests(title)')
+      .eq('user_id', user.id)
+      .eq('is_completed', false)
+      .neq('quest_id', quest_id)
+      .limit(1)
+      .maybeSingle();
+
+    if (otherActive) {
+      const t = (otherActive as { quests?: { title?: string } }).quests?.title;
+      return NextResponse.json({
+        correct: false,
+        blocked: true,
+        message: `Aynı anda sadece 1 göreve devam edebilirsin. Önce "${t || 'mevcut görevini'}" bitir veya bırak.`,
+        active_quest_id: otherActive.quest_id,
+      }, { status: 409 });
+    }
+
     await admin.from('user_quest_progress').insert({
       user_id: user.id,
       quest_id,

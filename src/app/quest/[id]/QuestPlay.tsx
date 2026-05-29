@@ -52,6 +52,8 @@ export default function QuestPlay({ quest, alreadyWon, isLoggedIn, steps: rawSte
   const [error, setError] = useState('');
   const [showAR, setShowAR] = useState(false);
   const [done, setDone] = useState<null | { points: number; cash: number; coop: number; pending: boolean }>(null);
+  const [blocked, setBlocked] = useState<null | { message: string; questId: string }>(null);
+  const [abandoning, setAbandoning] = useState(false);
   const watchRef = useRef<number | null>(null);
 
   // Canlı GPS takibi
@@ -92,6 +94,12 @@ export default function QuestPlay({ quest, alreadyWon, isLoggedIn, steps: rawSte
           }),
         });
         const data = await res.json();
+        // Başka aktif görev varsa engellendi
+        if (res.status === 409 && data.blocked) {
+          setBlocked({ message: data.message, questId: data.active_quest_id });
+          setShowAR(false);
+          return false;
+        }
         if (!res.ok) throw new Error(data.error || 'Hata');
         if (!data.correct) { setError(data.message); setShowAR(false); return false; }
         if (data.is_complete) {
@@ -127,6 +135,17 @@ export default function QuestPlay({ quest, alreadyWon, isLoggedIn, steps: rawSte
     if (ok !== false) setShowAR(false);
   };
 
+  // Diğer aktif görevi bırak
+  const abandonOther = async () => {
+    if (!blocked) return;
+    setAbandoning(true);
+    await fetch(`/api/quest-progress?quest_id=${blocked.questId}`, { method: 'DELETE' });
+    setAbandoning(false);
+    setBlocked(null);
+    // Bırakıldı, şimdi bu göreve devam edebilir — adımı tekrar dene
+    submitStep();
+  };
+
   // ---- Ekranlar ----
   if (!isLoggedIn) {
     return (
@@ -151,6 +170,30 @@ export default function QuestPlay({ quest, alreadyWon, isLoggedIn, steps: rawSte
         <h3 className="text-xl font-black mb-2" style={{ color: '#0f1419' }}>Bu görevi tamamladın!</h3>
         <p className="text-sm mb-4" style={{ color: '#536471' }}>Yeni görevlere bak.</p>
         <Link href="/" className="inline-block px-6 py-2.5 rounded-xl font-semibold text-white text-sm" style={{ background: 'linear-gradient(135deg,#ff6b2b,#ff3d00)' }}>Görev Bul</Link>
+      </div>
+    );
+  }
+
+  if (blocked) {
+    return (
+      <div className="p-8 text-center">
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(234,179,8,0.12)' }}>
+          <Lock size={26} style={{ color: '#eab308' }} />
+        </div>
+        <h3 className="text-lg font-black mb-2" style={{ color: '#0f1419' }}>Önce mevcut görevini bitir</h3>
+        <p className="text-sm mb-6" style={{ color: '#536471' }}>{blocked.message}</p>
+        <div className="flex flex-col gap-2">
+          <Link href={`/quest/${blocked.questId}`}
+            className="font-semibold py-2.5 rounded-xl text-white text-center text-sm"
+            style={{ background: 'linear-gradient(135deg,#ff6b2b,#ff3d00)' }}>
+            Mevcut göreve devam et
+          </Link>
+          <button onClick={abandonOther} disabled={abandoning}
+            className="font-semibold py-2.5 rounded-xl text-sm disabled:opacity-60"
+            style={{ background: '#fef2f2', color: '#ef4444' }}>
+            {abandoning ? 'Bırakılıyor...' : 'Diğer görevi bırak, buna başla'}
+          </button>
+        </div>
       </div>
     );
   }
