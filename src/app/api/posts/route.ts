@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { checkRateLimit } from '@/lib/rateLimit';
+import { notifyUsers, getFriendIds } from '@/lib/notify';
 
 export async function GET(req: NextRequest) {
   const supabase = await createClient();
@@ -50,5 +51,24 @@ export async function POST(req: NextRequest) {
   }).select('*, profiles(username, avatar_url)').single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // İyilik paylaşılınca arkadaşlara bildirim gönder
+  if (type === 'good_deed') {
+    const posterProfile = (data as { profiles?: { username?: string } }).profiles;
+    const username = Array.isArray(posterProfile) ? posterProfile[0]?.username : posterProfile?.username;
+    const friendIds = await getFriendIds(user.id);
+    if (friendIds.length) {
+      await notifyUsers({
+        user_ids: friendIds,
+        type: 'good_deed',
+        title: `@${username || 'biri'} bir iyilik paylaştı 💗`,
+        body: content.trim().slice(0, 80),
+        actor_id: user.id,
+        actor_username: username,
+        link: '/good-deed',
+      });
+    }
+  }
+
   return NextResponse.json(data, { status: 201 });
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { calculateDistance } from '@/lib/distance';
+import { notifyUsers, getFriendIds } from '@/lib/notify';
 
 export async function GET(req: NextRequest) {
   const supabase = await createClient();
@@ -213,6 +214,20 @@ async function completeQuest(
     post_type: 'quest_complete',
     content: `@${profile?.username} "${quest.title}" görevini kazandı! 🏆${coopNote}`,
   });
+
+  // Arkadaşlara bildirim gönder
+  const allFriendIds = await getFriendIds(user_id);
+  if (allFriendIds.length) {
+    await notifyUsers({
+      user_ids: allFriendIds,
+      type: 'quest_complete',
+      title: `@${profile?.username} bir görevi kazandı! 🏆`,
+      body: `"${quest.title}" görevini tamamladı`,
+      actor_id: user_id,
+      actor_username: profile?.username,
+      link: '/dashboard',
+    });
+  }
 
   // Görevi kapat — haritadan kalkar
   await admin.from('quests').update({ is_active: false }).eq('id', quest_id);

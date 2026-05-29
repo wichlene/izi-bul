@@ -1,162 +1,38 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Bell, UserPlus, MessageCircle, Target, X } from 'lucide-react';
-
-interface Notif {
-  counts: { friend_requests: number; unread_messages: number; active_quests: number; total: number };
-  friend_requests: Array<{ id: string; from_user: { username: string } | { username: string }[] }>;
-  unread_messages: Array<{ id: string; content: string; from_user: { id: string; username: string } | { id: string; username: string }[] }>;
-  active_quests: Array<{ id: string; current_step: number; quests: { id: string; title: string } | { id: string; title: string }[] | null }>;
-}
-
-const pick = <T,>(x: T | T[] | null): T | null => (Array.isArray(x) ? x[0] : x) || null;
+import { Bell } from 'lucide-react';
 
 export default function NotificationBell() {
-  const [open, setOpen] = useState(false);
-  const [data, setData] = useState<Notif | null>(null);
-  const ref = useRef<HTMLDivElement>(null);
-
-  const fetchData = async () => {
-    try {
-      const res = await fetch('/api/notifications');
-      if (res.ok) {
-        const json = await res.json();
-        setTimeout(() => setData(json), 0);
-      }
-    } catch {}
-  };
+  const [count, setCount] = useState(0);
 
   useEffect(() => {
-    void fetchData();
-    const i = setInterval(() => void fetchData(), 15000);
-    return () => clearInterval(i);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    const onClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    const fetchCount = async () => {
+      try {
+        const res = await fetch('/api/notifications');
+        if (res.ok) {
+          const json = await res.json();
+          setTimeout(() => setCount(json.counts?.total || 0), 0);
+        }
+      } catch {}
     };
-    document.addEventListener('mousedown', onClick);
-    return () => document.removeEventListener('mousedown', onClick);
+    fetchCount();
+    const i = setInterval(fetchCount, 15000);
+    return () => clearInterval(i);
   }, []);
-
-  const count = data?.counts.total || 0;
 
   return (
-    <div className="relative" ref={ref}>
-      <button onClick={() => setOpen((o) => !o)}
-        className="relative flex items-center justify-center w-9 h-9 rounded-xl transition-colors hover:bg-gray-100"
-        style={{ color: '#262626' }}>
-        <Bell size={18} />
-        {count > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-black flex items-center justify-center text-white border-2 border-white"
-            style={{ background: '#ff3d00' }}>
-            {count > 9 ? '9+' : count}
-          </span>
-        )}
-      </button>
-
-      {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 rounded-2xl overflow-hidden z-[100]"
-          style={{ background: '#fff', border: '1px solid #efefef', boxShadow: '0 8px 40px rgba(0,0,0,0.12)' }}>
-          <div className="px-4 py-3 border-b flex items-center justify-between" style={{ borderColor: '#efefef' }}>
-            <h3 className="font-bold text-sm" style={{ color: '#262626' }}>Bildirimler</h3>
-            <button onClick={() => setOpen(false)} style={{ color: '#8e8e8e' }}>
-              <X size={14} />
-            </button>
-          </div>
-
-          <div className="max-h-96 overflow-y-auto">
-            {!data || count === 0 ? (
-              <div className="p-8 text-center">
-                <Bell size={28} className="mx-auto mb-2" style={{ color: '#d4d4d4' }} />
-                <p className="text-sm" style={{ color: '#8e8e8e' }}>Yeni bildirim yok</p>
-              </div>
-            ) : (
-              <>
-                {data.friend_requests.length > 0 && (
-                  <div>
-                    <div className="px-4 py-2 text-xs font-bold uppercase tracking-wider" style={{ color: '#8e8e8e' }}>Arkadaşlık İstekleri</div>
-                    {data.friend_requests.map((r) => {
-                      const u = pick(r.from_user);
-                      return (
-                        <Link key={r.id} href="/friends" onClick={() => setOpen(false)}
-                          className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors">
-                          <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold" style={{ background: 'linear-gradient(135deg,#a855f7,#ec4899)' }}>
-                            <UserPlus size={14} className="text-white" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold truncate" style={{ color: '#262626' }}>@{u?.username}</p>
-                            <p className="text-xs" style={{ color: '#8e8e8e' }}>arkadaş olmak istiyor</p>
-                          </div>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {data.unread_messages.length > 0 && (
-                  <div style={{ borderTop: '1px solid #efefef' }}>
-                    <div className="px-4 py-2 text-xs font-bold uppercase tracking-wider" style={{ color: '#8e8e8e' }}>Yeni Mesajlar</div>
-                    {data.unread_messages.map((m) => {
-                      const u = pick(m.from_user);
-                      return (
-                        <Link key={m.id} href={`/messages?with=${u?.id}`} onClick={() => setOpen(false)}
-                          className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors">
-                          <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold" style={{ background: 'linear-gradient(135deg,#22c55e,#10b981)' }}>
-                            <MessageCircle size={14} className="text-white" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold truncate" style={{ color: '#262626' }}>@{u?.username}</p>
-                            <p className="text-xs truncate" style={{ color: '#8e8e8e' }}>{m.content}</p>
-                          </div>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {data.active_quests.length > 0 && (
-                  <div style={{ borderTop: '1px solid #efefef' }}>
-                    <div className="px-4 py-2 text-xs font-bold uppercase tracking-wider" style={{ color: '#8e8e8e' }}>Devam Eden Görevler</div>
-                    {data.active_quests.map((p) => {
-                      const q = pick(p.quests);
-                      return (
-                        <Link key={p.id} href={`/quest/${q?.id}`} onClick={() => setOpen(false)}
-                          className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors">
-                          <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold" style={{ background: 'linear-gradient(135deg,#ff6b2b,#ff3d00)' }}>
-                            <Target size={14} className="text-white" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold truncate" style={{ color: '#262626' }}>{q?.title}</p>
-                            <p className="text-xs" style={{ color: '#8e8e8e' }}>Adım {p.current_step} · Devam et →</p>
-                          </div>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2" style={{ borderTop: '1px solid #efefef' }}>
-            <Link href="/friends" onClick={() => setOpen(false)}
-              className="px-4 py-2.5 text-xs text-center font-semibold hover:bg-gray-50 transition-colors"
-              style={{ color: '#262626' }}>
-              Arkadaşlar
-            </Link>
-            <Link href="/messages" onClick={() => setOpen(false)}
-              className="px-4 py-2.5 text-xs text-center font-semibold hover:bg-gray-50 transition-colors"
-              style={{ color: '#262626', borderLeft: '1px solid #efefef' }}>
-              Mesajlar
-            </Link>
-          </div>
-        </div>
+    <Link href="/notifications"
+      className="relative flex items-center justify-center w-9 h-9 rounded-xl transition-colors hover:bg-gray-100"
+      style={{ color: '#0f1419' }}>
+      <Bell size={26} />
+      {count > 0 && (
+        <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-black flex items-center justify-center text-white"
+          style={{ background: '#ff6b2b' }}>
+          {count > 9 ? '9+' : count}
+        </span>
       )}
-    </div>
+    </Link>
   );
 }
