@@ -1,8 +1,9 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-import { Target, Trophy, Zap, MapPin, Heart, MessageCircle, Repeat2, BarChart2, Sparkles } from 'lucide-react';
+import { Target, Trophy, Zap, Heart, MessageCircle, Repeat2, BarChart2, Megaphone } from 'lucide-react';
 import AppShell from '@/components/AppShell';
+import Composer from './Composer';
 
 export const revalidate = 0;
 
@@ -37,8 +38,8 @@ export default async function DashboardPage() {
       .eq('user_id', user.id).eq('is_completed', false)
       .order('last_activity_at', { ascending: false }).limit(3),
     supabase.from('posts')
-      .select('id, content, created_at, post_type, profiles(username), quests(id, title, photo_url, cash_reward)')
-      .order('created_at', { ascending: false }).limit(20),
+      .select('id, content, created_at, post_type, photo_url, profiles(username), quests(id, title, photo_url, cash_reward)')
+      .order('created_at', { ascending: false }).limit(30),
     supabase.from('quests')
       .select('id, title, photo_url, cash_reward, difficulty, total_attempts')
       .eq('is_active', true)
@@ -126,31 +127,8 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* "Neler oluyor?" compose kutusu */}
-      <div className="flex gap-3 px-4 py-4" style={{ borderBottom: '1px solid #eff3f4' }}>
-        <div className="w-10 h-10 rounded-full flex items-center justify-center font-black text-white flex-shrink-0"
-          style={{ background: 'linear-gradient(135deg,#ff6b2b,#a855f7)' }}>
-          {profile?.username?.charAt(0).toUpperCase()}
-        </div>
-        <div className="flex-1">
-          <p className="text-lg mb-3" style={{ color: '#536471' }}>Neler keşfediyorsun?</p>
-          <div className="flex items-center justify-between">
-            <div className="flex gap-1">
-              <button className="p-2 rounded-full hover:bg-orange-50 transition-colors" style={{ color: '#ff6b2b' }}>
-                <MapPin size={18} />
-              </button>
-              <button className="p-2 rounded-full hover:bg-orange-50 transition-colors" style={{ color: '#ff6b2b' }}>
-                <Sparkles size={18} />
-              </button>
-            </div>
-            <Link href="/"
-              className="px-4 py-2 rounded-full text-sm font-black text-white"
-              style={{ background: 'linear-gradient(135deg,#ff6b2b,#ff3d00)' }}>
-              Göreve Git
-            </Link>
-          </div>
-        </div>
-      </div>
+      {/* Çalışan compose kutusu — paylaşım + iyilik hareketi */}
+      <Composer />
 
       {/* Stats bar */}
       <div className="flex items-center gap-0 px-4 py-3" style={{ borderBottom: '1px solid #eff3f4' }}>
@@ -187,21 +165,27 @@ export default async function DashboardPage() {
         posts.map((post, idx) => {
           const p = pick(post.profiles);
           const q = pick(post.quests);
+          const isGood = post.post_type === 'good_deed';
+          const isAnnounce = post.post_type === 'announcement';
+          const isWin = post.post_type === 'quest_complete';
           return (
             <article key={post.id}
               className="flex gap-3 px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer"
-              style={{ borderBottom: '1px solid #eff3f4' }}>
+              style={{ borderBottom: '1px solid #eff3f4', background: isAnnounce ? 'rgba(255,107,43,0.04)' : isGood ? 'rgba(236,72,153,0.03)' : undefined }}>
 
               {/* Avatar */}
               <div className="w-10 h-10 rounded-full flex items-center justify-center font-black text-white flex-shrink-0 text-sm"
-                style={{ background: GRADIENTS[idx % GRADIENTS.length] }}>
-                {p?.username?.charAt(0).toUpperCase()}
+                style={{ background: isAnnounce ? 'linear-gradient(135deg,#ff6b2b,#ff3d00)' : isGood ? 'linear-gradient(135deg,#ec4899,#a855f7)' : GRADIENTS[idx % GRADIENTS.length] }}>
+                {isAnnounce ? <Megaphone size={18} /> : isGood ? <Heart size={18} /> : p?.username?.charAt(0).toUpperCase()}
               </div>
 
               <div className="flex-1 min-w-0">
                 {/* Header */}
                 <div className="flex items-center gap-1 flex-wrap">
                   <span className="font-bold text-sm" style={{ color: '#0f1419' }}>@{p?.username}</span>
+                  {isGood && <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(236,72,153,0.1)', color: '#ec4899' }}>💗 İyilik</span>}
+                  {isAnnounce && <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(255,107,43,0.1)', color: '#ff6b2b' }}>📢 Duyuru</span>}
+                  {isWin && <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(34,197,94,0.1)', color: '#16a34a' }}>🏆 Kazandı</span>}
                   <span style={{ color: '#536471' }}>·</span>
                   <span className="text-sm" style={{ color: '#536471' }}>{timeAgo(post.created_at)}</span>
                 </div>
@@ -210,6 +194,11 @@ export default async function DashboardPage() {
                 <p className="text-sm mt-0.5 leading-relaxed" style={{ color: '#0f1419' }}>
                   {post.content}
                 </p>
+
+                {/* Post fotoğrafı (iyilik/sosyal) */}
+                {post.photo_url && (
+                  <img src={post.photo_url} className="mt-3 rounded-2xl w-full object-cover" style={{ maxHeight: 320, border: '1px solid #eff3f4' }} alt="" />
+                )}
 
                 {/* Quest card — X retweet kutusu gibi */}
                 {q?.photo_url && (
