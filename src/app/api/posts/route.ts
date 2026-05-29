@@ -6,7 +6,9 @@ import { notifyUsers, getFriendIds } from '@/lib/notify';
 
 export async function GET(req: NextRequest) {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   const type = req.nextUrl.searchParams.get('type');
+
   let query = supabase
     .from('posts')
     .select('*, profiles(username, avatar_url), quests(title, photo_url, cash_reward)')
@@ -15,7 +17,30 @@ export async function GET(req: NextRequest) {
   if (type) query = query.eq('post_type', type);
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data);
+
+  const posts = data || [];
+
+  // Beğenileri ayrı çek — tablo yoksa feed yine çalışır
+  const likeCount: Record<string, number> = {};
+  const likedSet = new Set<string>();
+  if (posts.length) {
+    const { data: likeRows } = await supabase
+      .from('post_likes')
+      .select('post_id, user_id')
+      .in('post_id', posts.map((p: { id: string }) => p.id));
+    for (const row of likeRows || []) {
+      likeCount[row.post_id] = (likeCount[row.post_id] || 0) + 1;
+      if (user && row.user_id === user.id) likedSet.add(row.post_id);
+    }
+  }
+
+  const enriched = posts.map((p: { id: string } & Record<string, unknown>) => ({
+    ...p,
+    like_count: likeCount[p.id] || 0,
+    liked_by_me: likedSet.has(p.id),
+  }));
+
+  return NextResponse.json(enriched);
 }
 
 export async function POST(req: NextRequest) {

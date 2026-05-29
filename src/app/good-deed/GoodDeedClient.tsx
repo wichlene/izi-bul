@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { Heart, MapPin, ImagePlus, Loader2, X, Navigation, Map as MapIcon } from 'lucide-react';
 import PhotoUpload from '@/components/PhotoUpload';
+import PostActions from '@/components/PostActions';
 
 const MapPicker = dynamic(() => import('@/components/MapPicker'), { ssr: false });
 
@@ -16,6 +17,8 @@ interface Post {
   longitude: number | null;
   created_at: string;
   profiles: { username: string } | null;
+  like_count?: number;
+  liked_by_me?: boolean;
 }
 
 function timeAgo(date: string): string {
@@ -240,19 +243,17 @@ export default function GoodDeedClient() {
             </div>
             <p className="text-sm mt-1 leading-relaxed" style={{ color: '#0f1419' }}>{p.content}</p>
             {p.photo_url && (
-              <img src={p.photo_url} className="mt-3 rounded-2xl w-full object-cover"
-                style={{ maxHeight: 400, border: '1px solid #eff3f4' }} alt="" />
+              <div className="mt-3 rounded-2xl overflow-hidden" style={{ height: 300, border: '1px solid #eff3f4', background: '#f7f8f8' }}>
+                <img src={p.photo_url} className="w-full h-full object-cover" alt="" />
+              </div>
             )}
-            {p.latitude && p.longitude && (
-              <a
-                href={`https://maps.google.com/?q=${p.latitude},${p.longitude}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full"
-                style={{ background: 'rgba(34,197,94,0.1)', color: '#16a34a' }}>
-                <MapPin size={12} /> Konumu Gör
-              </a>
-            )}
+            <PostActions
+              postId={p.id}
+              initialLikes={p.like_count || 0}
+              initialLiked={p.liked_by_me || false}
+              latitude={p.latitude}
+              longitude={p.longitude}
+            />
           </div>
         </article>
       ))}

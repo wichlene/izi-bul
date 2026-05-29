@@ -1,9 +1,10 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-import { Target, Trophy, Zap, Heart, MessageCircle, Repeat2, BarChart2, Megaphone } from 'lucide-react';
+import { Target, Trophy, Zap, Heart, Megaphone } from 'lucide-react';
 import AppShell from '@/components/AppShell';
 import Composer from './Composer';
+import PostActions from '@/components/PostActions';
 
 export const revalidate = 0;
 
@@ -38,7 +39,7 @@ export default async function DashboardPage() {
       .eq('user_id', user.id).eq('is_completed', false)
       .order('last_activity_at', { ascending: false }).limit(3),
     supabase.from('posts')
-      .select('id, content, created_at, post_type, photo_url, profiles(username), quests(id, title, photo_url, cash_reward)')
+      .select('id, content, created_at, post_type, photo_url, latitude, longitude, profiles(username), quests(id, title, photo_url, cash_reward)')
       .order('created_at', { ascending: false }).limit(30),
     supabase.from('quests')
       .select('id, title, photo_url, cash_reward, difficulty, total_attempts')
@@ -51,6 +52,20 @@ export default async function DashboardPage() {
   const activeQuests = progressRes.data || [];
   const posts = postsRes.data || [];
   const featured = featuredRes.data || [];
+
+  // Beğenileri ayrı çek — post_likes tablosu yoksa feed yine de çalışır
+  const likeCount: Record<string, number> = {};
+  const likedByMe = new Set<string>();
+  if (posts.length) {
+    const { data: likeRows } = await supabase
+      .from('post_likes')
+      .select('post_id, user_id')
+      .in('post_id', posts.map((p) => p.id));
+    for (const row of likeRows || []) {
+      likeCount[row.post_id] = (likeCount[row.post_id] || 0) + 1;
+      if (row.user_id === user.id) likedByMe.add(row.post_id);
+    }
+  }
 
   /* ── SAĞ PANEL ─────────────────────────────────────────── */
   const aside = (
@@ -197,7 +212,9 @@ export default async function DashboardPage() {
 
                 {/* Post fotoğrafı (iyilik/sosyal) */}
                 {post.photo_url && (
-                  <img src={post.photo_url} className="mt-3 rounded-2xl w-full object-cover" style={{ maxHeight: 320, border: '1px solid #eff3f4' }} alt="" />
+                  <div className="mt-3 rounded-2xl overflow-hidden" style={{ height: 280, border: '1px solid #eff3f4', background: '#f7f8f8' }}>
+                    <img src={post.photo_url} className="w-full h-full object-cover" alt="" />
+                  </div>
                 )}
 
                 {/* Quest card — X retweet kutusu gibi */}
@@ -217,23 +234,14 @@ export default async function DashboardPage() {
                   </Link>
                 )}
 
-                {/* Actions — X gibi */}
-                <div className="flex items-center gap-6 mt-3">
-                  <button className="flex items-center gap-1.5 group" style={{ color: '#536471' }}>
-                    <MessageCircle size={18} className="group-hover:text-blue-500 transition-colors" />
-                    <span className="text-xs">0</span>
-                  </button>
-                  <button className="flex items-center gap-1.5 group" style={{ color: '#536471' }}>
-                    <Repeat2 size={18} className="group-hover:text-green-500 transition-colors" />
-                  </button>
-                  <button className="flex items-center gap-1.5 group" style={{ color: '#536471' }}>
-                    <Heart size={18} className="group-hover:text-red-500 transition-colors" />
-                    <span className="text-xs">0</span>
-                  </button>
-                  <button className="flex items-center gap-1.5 group" style={{ color: '#536471' }}>
-                    <BarChart2 size={18} className="group-hover:text-blue-500 transition-colors" />
-                  </button>
-                </div>
+                {/* Actions — çalışan beğeni + konum */}
+                <PostActions
+                  postId={post.id}
+                  initialLikes={likeCount[post.id] || 0}
+                  initialLiked={likedByMe.has(post.id)}
+                  latitude={post.latitude}
+                  longitude={post.longitude}
+                />
               </div>
             </article>
           );
