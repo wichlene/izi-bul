@@ -24,28 +24,27 @@ export default function MapView({ initialQuests, initialLiveUsers = [], questCou
   const [quests] = useState<Quest[]>(initialQuests);
   const [liveUsers, setLiveUsers] = useState<LiveUser[]>(initialLiveUsers);
 
-  const fetchLiveUsers = async () => {
-    const supabase = createClient();
-    const { data } = await supabase
-      .from('live_locations')
-      .select('user_id, latitude, longitude, profiles(username)')
-      .limit(200);
-
-    if (data) {
-      const mapped = data.map((u) => {
-        const raw = u as unknown as { user_id: string; latitude: number; longitude: number; profiles: { username: string } | { username: string }[] | null };
-        const prof = Array.isArray(raw.profiles) ? raw.profiles[0] : raw.profiles;
-        return { user_id: raw.user_id, latitude: raw.latitude, longitude: raw.longitude, username: prof?.username };
-      });
-      setLiveUsers(mapped);
-    }
-  };
-
   useEffect(() => {
-    void fetchLiveUsers();
-    const interval = setInterval(() => void fetchLiveUsers(), 8000);
+    const supabase = createClient();
+    const fetchLiveUsers = () => {
+      supabase
+        .from('live_locations')
+        .select('user_id, latitude, longitude, profiles(username)')
+        .limit(200)
+        .then(({ data }) => {
+          if (data) {
+            const mapped = data.map((u) => {
+              const raw = u as unknown as { user_id: string; latitude: number; longitude: number; profiles: { username: string } | { username: string }[] | null };
+              const prof = Array.isArray(raw.profiles) ? raw.profiles[0] : raw.profiles;
+              return { user_id: raw.user_id, latitude: raw.latitude, longitude: raw.longitude, username: prof?.username };
+            });
+            setLiveUsers(mapped);
+          }
+        });
+    };
+    fetchLiveUsers();
+    const interval = setInterval(fetchLiveUsers, 8000);
     return () => clearInterval(interval);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

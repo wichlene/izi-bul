@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -15,6 +16,7 @@ export async function POST(req: NextRequest) {
 
   if (!questId) return NextResponse.json({ error: 'Missing quest_id' }, { status: 400 });
 
-  await supabase.from('quests').update({ is_featured: featured }).eq('id', questId);
+  const admin = createAdminClient();
+  await admin.from('quests').update({ is_featured: featured }).eq('id', questId);
   return NextResponse.json({ ok: true });
 }

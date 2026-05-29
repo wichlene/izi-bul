@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { sendEmail } from '@/lib/email';
 
 export async function POST(req: NextRequest) {
@@ -16,21 +17,22 @@ export async function POST(req: NextRequest) {
 
   if (!submissionId) return NextResponse.json({ error: 'Missing submission_id' }, { status: 400 });
 
-  const { data: sub } = await supabase.from('submissions').select('*, quests(points, title, cash_reward)').eq('id', submissionId).single();
+  const admin = createAdminClient();
+  const { data: sub } = await admin.from('submissions').select('*, quests(points, title, cash_reward)').eq('id', submissionId).single();
   if (!sub) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   const quest = (sub as { quests?: { points?: number; title?: string; cash_reward?: number } }).quests;
   const points = quest?.points || 100;
 
-  await supabase.from('submissions').update({ status: 'approved', is_winner: true, points_earned: points, reviewed_at: new Date().toISOString() }).eq('id', submissionId);
+  await admin.from('submissions').update({ status: 'approved', is_winner: true, points_earned: points, reviewed_at: new Date().toISOString() }).eq('id', submissionId);
 
-  const { data: prof } = await supabase.from('profiles').select('total_points, total_finds').eq('id', sub.user_id).single();
+  const { data: prof } = await admin.from('profiles').select('total_points, total_finds').eq('id', sub.user_id).single();
   if (prof) {
-    await supabase.from('profiles').update({ total_points: prof.total_points + points, total_finds: prof.total_finds + 1 }).eq('id', sub.user_id);
+    await admin.from('profiles').update({ total_points: prof.total_points + points, total_finds: prof.total_finds + 1 }).eq('id', sub.user_id);
   }
 
   // Kullanıcıya bildirim maili
-  const { data: { user: winner } } = await supabase.auth.admin.getUserById(sub.user_id);
+  const { data: { user: winner } } = await admin.auth.admin.getUserById(sub.user_id);
   if (winner?.email) {
     await sendEmail({
       to: winner.email,

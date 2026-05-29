@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -24,7 +25,8 @@ export async function POST(req: NextRequest) {
 
   if (!userId) return NextResponse.json({ error: 'Eksik alanlar' }, { status: 400 });
 
-  const { error } = await supabase
+  const admin = createAdminClient();
+  const { error } = await admin
     .from('profiles')
     .update({ is_business: isBusiness })
     .eq('id', userId);
