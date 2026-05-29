@@ -56,47 +56,47 @@ export default async function DashboardPage() {
     <div className="pt-2 space-y-4">
       {/* Arama */}
       <div className="rounded-2xl px-4 py-3 flex items-center gap-2"
-        style={{ background: 'rgba(255,255,255,0.1)' }}>
-        <span style={{ color: 'rgba(255,255,255,0.4)' }}>🔍</span>
-        <span className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>Görev ara...</span>
+        style={{ background: '#eff3f4' }}>
+        <span style={{ color: '#536471' }}>🔍</span>
+        <span className="text-sm" style={{ color: '#536471' }}>Görev ara...</span>
       </div>
 
       {/* Öne çıkan görevler — X "Neler oluyor?" kutusu gibi */}
-      <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
+      <div className="rounded-2xl overflow-hidden" style={{ background: '#ffffff', border: '1px solid #eff3f4' }}>
         <div className="px-4 py-3">
-          <h2 className="font-black text-white text-xl">Gündemdekiler</h2>
+          <h2 className="font-black text-xl" style={{ color: '#0f1419' }}>Gündemdekiler</h2>
         </div>
-        {featured.slice(0, 5).map((q, i) => (
+        {featured.slice(0, 5).map((q) => (
           <Link key={q.id} href={`/quest/${q.id}`}
-            className="flex items-center gap-3 px-4 py-3 hover:bg-white/10 transition-colors border-t"
-            style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+            className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
+            style={{ borderTop: '1px solid #eff3f4' }}>
             <div className="flex-1 min-w-0">
-              <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Görev · {q.total_attempts || 0} deneme</p>
-              <p className="font-bold text-white text-sm truncate">{q.title}</p>
+              <p className="text-xs" style={{ color: '#536471' }}>Görev · {q.total_attempts || 0} deneme</p>
+              <p className="font-bold text-sm truncate" style={{ color: '#0f1419' }}>{q.title}</p>
               {q.cash_reward > 0 && <p className="text-xs font-bold" style={{ color: '#22c55e' }}>{q.cash_reward}₺ ödül</p>}
             </div>
             {q.photo_url && <img src={q.photo_url} className="w-12 h-12 rounded-xl object-cover flex-shrink-0" alt="" />}
           </Link>
         ))}
-        <div className="px-4 py-3">
+        <div className="px-4 py-3" style={{ borderTop: '1px solid #eff3f4' }}>
           <Link href="/" className="text-sm font-semibold" style={{ color: '#ff6b2b' }}>Daha fazla göster</Link>
         </div>
       </div>
 
-      {/* Kimi takip etmeli tarzı — aktif görevler */}
+      {/* Aktif görevler */}
       {activeQuests.length > 0 && (
-        <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
+        <div className="rounded-2xl overflow-hidden" style={{ background: '#ffffff', border: '1px solid #eff3f4' }}>
           <div className="px-4 py-3">
-            <h2 className="font-black text-white text-xl">Devam Edenler</h2>
+            <h2 className="font-black text-xl" style={{ color: '#0f1419' }}>Devam Edenler</h2>
           </div>
           {activeQuests.map((p) => {
             const q = pick(p.quests);
             return (
-              <div key={p.id} className="flex items-center gap-3 px-4 py-3 border-t"
-                style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+              <div key={p.id} className="flex items-center gap-3 px-4 py-3"
+                style={{ borderTop: '1px solid #eff3f4' }}>
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold text-white text-sm truncate">{q?.title}</p>
-                  <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Adım {p.current_step}</p>
+                  <p className="font-bold text-sm truncate" style={{ color: '#0f1419' }}>{q?.title}</p>
+                  <p className="text-xs" style={{ color: '#536471' }}>Adım {p.current_step}</p>
                 </div>
                 <Link href={`/quest/${q?.id}`}
                   className="px-4 py-1.5 rounded-full text-xs font-black text-white flex-shrink-0"

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-import { Home, MapPin, Bell, MessageCircle, Users, User, Shield, Plus, BarChart2, MoreHorizontal } from 'lucide-react';
+import { Home, MapPin, MessageCircle, Users, User, Shield, Plus, BarChart2, MoreHorizontal } from 'lucide-react';
 import SignOutButton from './SignOutButton';
 import NotificationBell from './NotificationBell';
 
@@ -34,14 +34,18 @@ export default async function AppShell({ children, aside }: Props) {
   ];
 
   return (
-    <div className="flex min-h-screen" style={{ background: '#000' }}>
+    <div className="flex min-h-screen" style={{ background: '#f7f9fa' }}>
 
-      {/* SOL SİDEBAR — X gibi siyah */}
-      <div className="w-[72px] xl:w-[275px] flex-shrink-0 flex flex-col h-screen sticky top-0 px-2 xl:px-3 py-2">
+      {/* SOL SİDEBAR — X light mode */}
+      <div className="w-[72px] xl:w-[275px] flex-shrink-0 flex flex-col h-screen sticky top-0 px-2 xl:px-3 py-2"
+        style={{ background: '#ffffff', borderRight: '1px solid #eff3f4' }}>
 
         {/* Logo */}
         <Link href="/dashboard"
-          className="w-12 h-12 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors mb-1 xl:ml-1">
+          className="w-12 h-12 flex items-center justify-center rounded-full transition-colors mb-1 xl:ml-1"
+          style={{ background: 'transparent' }}
+          onMouseOver={e => (e.currentTarget.style.background = '#f7f9fa')}
+          onMouseOut={e => (e.currentTarget.style.background = 'transparent')}>
           <div className="w-9 h-9 rounded-xl flex items-center justify-center"
             style={{ background: 'linear-gradient(135deg,#ff6b2b,#ff3d00)' }}>
             <MapPin size={18} className="text-white" />
@@ -52,21 +56,21 @@ export default async function AppShell({ children, aside }: Props) {
         <nav className="flex-1 flex flex-col gap-0.5 mt-1">
           {nav.map((item) => (
             <Link key={item.href} href={item.href}
-              className="flex items-center gap-5 px-3 py-3 rounded-full hover:bg-white/10 transition-colors w-fit xl:w-full">
-              <span className="text-white flex-shrink-0">{item.icon}</span>
-              <span className="text-white text-xl font-medium hidden xl:block">{item.label}</span>
+              className="flex items-center gap-5 px-3 py-3 rounded-full transition-colors w-fit xl:w-full hover:bg-gray-100">
+              <span className="flex-shrink-0" style={{ color: '#0f1419' }}>{item.icon}</span>
+              <span className="text-xl font-medium hidden xl:block" style={{ color: '#0f1419' }}>{item.label}</span>
             </Link>
           ))}
 
-          {/* Bildirimler — NotificationBell ile */}
-          <div className="flex items-center gap-5 px-3 py-3 rounded-full hover:bg-white/10 transition-colors w-fit xl:w-full cursor-pointer">
+          {/* Bildirimler */}
+          <div className="flex items-center gap-5 px-3 py-3 rounded-full transition-colors w-fit xl:w-full cursor-pointer hover:bg-gray-100">
             <NotificationBell />
-            <span className="text-white text-xl font-medium hidden xl:block">Bildirimler</span>
+            <span className="text-xl font-medium hidden xl:block" style={{ color: '#0f1419' }}>Bildirimler</span>
           </div>
 
-          <Link href="/" className="flex items-center gap-5 px-3 py-3 rounded-full hover:bg-white/10 transition-colors w-fit xl:w-full">
-            <MoreHorizontal size={26} className="text-white flex-shrink-0" />
-            <span className="text-white text-xl font-medium hidden xl:block">Daha fazla</span>
+          <Link href="/" className="flex items-center gap-5 px-3 py-3 rounded-full transition-colors w-fit xl:w-full hover:bg-gray-100">
+            <MoreHorizontal size={26} className="flex-shrink-0" style={{ color: '#0f1419' } as React.CSSProperties} />
+            <span className="text-xl font-medium hidden xl:block" style={{ color: '#0f1419' }}>Daha fazla</span>
           </Link>
         </nav>
 
@@ -80,15 +84,15 @@ export default async function AppShell({ children, aside }: Props) {
           </Link>
         )}
 
-        {/* Kullanıcı profili — X'teki gibi altta */}
+        {/* Kullanıcı profili — altta */}
         {profile && (
-          <div className="flex items-center gap-3 px-3 py-3 rounded-full hover:bg-white/10 transition-colors cursor-pointer">
+          <div className="flex items-center gap-3 px-3 py-3 rounded-full hover:bg-gray-100 transition-colors cursor-pointer">
             <div className="w-10 h-10 rounded-full flex items-center justify-center font-black text-white flex-shrink-0"
               style={{ background: 'linear-gradient(135deg,#ff6b2b,#a855f7)' }}>
               {profile.username?.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0 hidden xl:block">
-              <p className="text-white font-bold text-sm truncate">@{profile.username}</p>
+              <p className="font-bold text-sm truncate" style={{ color: '#0f1419' }}>@{profile.username}</p>
             </div>
             <div className="hidden xl:block">
               <SignOutButton />
@@ -100,13 +104,13 @@ export default async function AppShell({ children, aside }: Props) {
       {/* ORTA — beyaz feed */}
       <main
         className="flex-1 min-w-0 overflow-y-auto"
-        style={{ borderLeft: '1px solid rgba(255,255,255,0.15)', borderRight: aside ? '1px solid rgba(255,255,255,0.15)' : 'none', background: '#fff', minHeight: '100vh' }}>
+        style={{ borderLeft: '1px solid #eff3f4', borderRight: aside ? '1px solid #eff3f4' : 'none', background: '#fff', minHeight: '100vh' }}>
         {children}
       </main>
 
       {/* SAĞ PANEL */}
       {aside && (
-        <div className="w-[350px] flex-shrink-0 hidden lg:block px-4 py-4 overflow-y-auto" style={{ background: '#000' }}>
+        <div className="w-[350px] flex-shrink-0 hidden lg:block px-4 py-4 overflow-y-auto" style={{ background: '#f7f9fa' }}>
           {aside}
         </div>
       )}
