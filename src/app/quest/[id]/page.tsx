@@ -7,7 +7,7 @@ import { Quest, DIFFICULTIES } from '@/types';
 import Header from '@/components/Header';
 import QuestPlay from './QuestPlay';
 
-export const revalidate = 0;
+export const revalidate = 30;
 
 interface QuestStep {
   id: string;

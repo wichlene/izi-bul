@@ -6,33 +6,20 @@ import Header from '@/components/Header';
 import QuestCard from '@/components/QuestCard';
 import QuestList from '@/components/QuestList';
 import { Quest, Category } from '@/types';
+import { getCachedQuests, getCachedCategories, getCachedUserCount } from '@/lib/cache';
 
-export const revalidate = 0;
-
-async function getData() {
-  try {
-    const supabase = await createClient();
-    const [questsRes, catsRes, statsRes] = await Promise.all([
-      supabase.from('quests').select('*, category:categories(*)').eq('is_active', true).order('is_featured', { ascending: false }).order('created_at', { ascending: false }).limit(60),
-      supabase.from('categories').select('*'),
-      supabase.from('profiles').select('id', { count: 'exact', head: true }),
-    ]);
-    return {
-      quests: (questsRes.data as Quest[]) || [],
-      categories: (catsRes.data as Category[]) || [],
-      userCount: statsRes.count || 0,
-    };
-  } catch {
-    return { quests: [], categories: [], userCount: 0 };
-  }
-}
+export const revalidate = 60;
 
 export default async function HomePage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (user) redirect('/dashboard');
 
-  const { quests, categories, userCount } = await getData();
+  const [quests, categories, userCount] = await Promise.all([
+    getCachedQuests(),
+    getCachedCategories(),
+    getCachedUserCount(),
+  ]);
   const featured = quests.filter((q) => q.is_featured);
   const regular = quests.filter((q) => !q.is_featured);
 
