@@ -28,8 +28,8 @@ export default function RegisterPage() {
     if (form.username.length < 3) { setError('Kullanıcı adı en az 3 karakter olmalı'); return; }
     if (!/^[a-zA-Z0-9_]+$/.test(form.username)) { setError('Kullanıcı adı sadece harf, rakam ve _ içerebilir'); return; }
 
-    const phone = normalizePhone(form.phone);
-    if (!/^05\d{9}$/.test(phone)) { setError('Geçerli bir Türkiye telefon numarası gir (05xx...)'); return; }
+    const phone = form.phone ? normalizePhone(form.phone) : '';
+    if (phone && !/^05\d{9}$/.test(phone)) { setError('Geçerli bir Türkiye telefon numarası gir (05xx...)'); return; }
 
     setLoading(true);
     const supabase = createClient();
@@ -40,7 +40,7 @@ export default function RegisterPage() {
         data: {
           username: form.username.toLowerCase(),
           full_name: form.full_name,
-          phone,
+          ...(phone && { phone }),
         },
         emailRedirectTo: `${location.origin}/auth/callback`,
       },
@@ -72,7 +72,7 @@ export default function RegisterPage() {
     { label: 'Adın Soyadın', icon: <User size={16} />, key: 'full_name', type: 'text', placeholder: 'Ahmet Yılmaz' },
     { label: 'Kullanıcı Adı', icon: <AtSign size={16} />, key: 'username', type: 'text', placeholder: 'ahmetylmz' },
     { label: 'E-posta', icon: <Mail size={16} />, key: 'email', type: 'email', placeholder: 'ornek@email.com' },
-    { label: 'Telefon', icon: <Phone size={16} />, key: 'phone', type: 'tel', placeholder: '05xx xxx xx xx' },
+    { label: 'Telefon (isteğe bağlı)', icon: <Phone size={16} />, key: 'phone', type: 'tel', placeholder: '05xx xxx xx xx' },
     { label: 'Şifre', icon: <Lock size={16} />, key: 'password', type: 'password', placeholder: 'En az 6 karakter' },
   ];
 
@@ -100,7 +100,7 @@ export default function RegisterPage() {
                   <span className="absolute left-3.5 top-3.5 text-white/20">{icon}</span>
                   <input
                     type={type}
-                    required
+                    required={key !== 'phone'}
                     value={form[key as keyof typeof form]}
                     onChange={(e) => setForm({ ...form, [key]: e.target.value })}
                     className="w-full rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-white/20 focus:outline-none transition-all"
