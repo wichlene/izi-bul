@@ -48,12 +48,18 @@ export default async function ProfilePage() {
             <p className="text-sm" style={{ color: '#536471' }}>@{profile?.username}</p>
           </div>
           <div className="flex items-center gap-2">
-            <ProfileEditModal initialData={{
-              full_name: profile?.full_name ?? null,
-              username: profile?.username ?? null,
-              city: profile?.city ?? null,
-              bio: profile?.bio ?? null,
-            }} />
+            <ProfileEditModal
+              userId={user.id}
+              initialData={{
+                full_name: profile?.full_name ?? null,
+                username: profile?.username ?? null,
+                city: profile?.city ?? null,
+                bio: profile?.bio ?? null,
+                location_visible: profile?.location_visible !== false,
+                show_activity: profile?.show_activity !== false,
+                profile_public: profile?.profile_public !== false,
+              }}
+            />
             <LogoutButton />
           </div>
         </div>

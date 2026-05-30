@@ -163,9 +163,9 @@ export default function DashboardHome({ quests, categories }: Props) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                    <span className="font-bold text-sm" style={{ color: '#0f1419' }}>
+                    <Link href={`/user/${(post as Post & { user_id?: string }).user_id || '#'}`} className="font-bold text-sm hover:underline" style={{ color: '#0f1419' }}>
                       @{post.profiles?.username || 'kullanıcı'}
-                    </span>
+                    </Link>
                     <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
                       style={{ background: typeInfo.color + '18', color: typeInfo.color }}>
                       {typeInfo.icon} {typeInfo.text}
