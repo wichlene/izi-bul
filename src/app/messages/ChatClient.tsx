@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Send, MessageCircle, ArrowLeft, Search, PenSquare } from 'lucide-react';
+import { Send, MessageCircle, ArrowLeft, Search, PenSquare, Smile } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { playMessage } from '@/lib/sounds';
 
@@ -17,6 +17,8 @@ interface Props {
   initialMessages: Message[];
   chatWith: Friend | null;
 }
+
+const EMOJIS = ['😀','😂','🥰','😍','🤩','😎','🥳','🤔','😅','😭','😤','😡','🤯','🤗','😴','🤮','👋','👍','👎','❤️','🔥','✨','💯','🎉','🏆','🗺️','📍','🎯','💪','🙏','👀','🤌','😂','💀','🤷','🫶','😊','🥺','😈','🤣'];
 
 function timeAgo(date: string): string {
   if (!date) return '';
@@ -37,6 +39,7 @@ export default function ChatClient({ currentUserId, friends, convMap, initialMes
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState('');
   const [mobileView, setMobileView] = useState<'list' | 'chat'>(chatWith ? 'chat' : 'list');
+  const [showEmoji, setShowEmoji] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const supabase = useRef(createClient());
 
@@ -292,8 +295,23 @@ export default function ChatClient({ currentUserId, friends, convMap, initialMes
             )}
 
             {/* Input */}
+            {showEmoji && (
+              <div className="px-3 pb-2 flex flex-wrap gap-1">
+                {EMOJIS.map((e) => (
+                  <button key={e} onClick={() => { setInput((v) => v + e); setShowEmoji(false); }}
+                    className="text-xl hover:bg-gray-100 rounded p-1 transition-colors">
+                    {e}
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="px-4 py-3 flex gap-2 items-center flex-shrink-0"
               style={{ borderTop: '1px solid #eff3f4', background: '#fff' }}>
+              <button onClick={() => setShowEmoji((v) => !v)}
+                className="p-2 rounded-full hover:bg-gray-100 transition-colors flex-shrink-0"
+                style={{ color: showEmoji ? '#ff6b2b' : '#536471' }}>
+                <Smile size={20} />
+              </button>
               <input value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && send()}

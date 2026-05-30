@@ -176,7 +176,9 @@ export default function DashboardHome({ quests, categories }: Props) {
                   </div>
                   <p className="text-sm leading-relaxed" style={{ color: '#0f1419' }}>{post.content}</p>
                   {post.photo_url && (
-                    <img src={post.photo_url} className="mt-2 rounded-xl w-full max-h-60 object-cover" alt="" />
+                    <div className="mt-2 rounded-xl overflow-hidden" style={{ aspectRatio: '4/3' }}>
+                      <img src={post.photo_url} className="w-full h-full object-contain" style={{ background: '#f7f8f8' }} alt="" />
+                    </div>
                   )}
                   {post.quests && post.quest_id && (
                     <Link href={`/quest/${post.quest_id}`}

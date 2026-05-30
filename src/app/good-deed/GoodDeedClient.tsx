@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import { Heart, MapPin, ImagePlus, Loader2, X, Navigation, Map as MapIcon } from 'lucide-react';
+import { Heart, MapPin, ImagePlus, Loader2, X, Navigation, Map as MapIcon, MoreHorizontal, Edit2, Trash2 } from 'lucide-react';
 import PhotoUpload from '@/components/PhotoUpload';
 import PostActions from '@/components/PostActions';
 
@@ -20,6 +20,7 @@ interface Post {
   like_count?: number;
   liked_by_me?: boolean;
   comment_count?: number;
+  user_id?: string;
 }
 
 function pickUsername(p: Post['profiles']): string {
@@ -35,7 +36,7 @@ function timeAgo(date: string): string {
   return `${Math.floor(s / 86400)}g`;
 }
 
-export default function GoodDeedClient() {
+export default function GoodDeedClient({ currentUserId }: { currentUserId: string | null }) {
   const router = useRouter();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,6 +49,9 @@ export default function GoodDeedClient() {
   const [locError, setLocError] = useState('');
   const [showMap, setShowMap] = useState(false);
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({ lat: 39.0, lng: 35.0 });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/posts?type=good_deed')
@@ -101,6 +105,32 @@ export default function GoodDeedClient() {
       .then((r) => r.json())
       .then((data) => setPosts(data || []))
       .catch(() => {});
+  };
+
+  const deletePost = async (id: string) => {
+    if (!confirm('Bu gönderiyi silmek istiyor musun?')) return;
+    const res = await fetch(`/api/posts/${id}`, { method: 'DELETE' });
+    if (res.ok) setPosts((prev) => prev.filter((p) => p.id !== id));
+    setMenuOpenId(null);
+  };
+
+  const startEdit = (p: Post) => {
+    setEditingId(p.id);
+    setEditContent(p.content);
+    setMenuOpenId(null);
+  };
+
+  const saveEdit = async () => {
+    if (!editingId || !editContent.trim()) return;
+    const res = await fetch(`/api/posts/${editingId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: editContent }),
+    });
+    if (res.ok) {
+      setPosts((prev) => prev.map((p) => p.id === editingId ? { ...p, content: editContent.trim() } : p));
+      setEditingId(null);
+    }
   };
 
   const post = async () => {
@@ -252,8 +282,52 @@ export default function GoodDeedClient() {
               <span className="text-xs font-bold px-2 py-0.5 rounded-full"
                 style={{ background: 'rgba(236,72,153,0.1)', color: '#ec4899' }}>💗 İyilik</span>
               <span className="text-sm" style={{ color: '#536471' }}>· {timeAgo(p.created_at)}</span>
+              {currentUserId && p.user_id === currentUserId ? (
+                <div className="ml-auto relative">
+                  <button onClick={() => setMenuOpenId(menuOpenId === p.id ? null : p.id)}
+                    className="p-1 rounded-full hover:bg-gray-100" style={{ color: '#8b98a5' }}>
+                    <MoreHorizontal size={16} />
+                  </button>
+                  {menuOpenId === p.id && (
+                    <div className="absolute right-0 top-7 z-20 rounded-xl shadow-lg overflow-hidden"
+                      style={{ background: '#fff', border: '1px solid #eff3f4', minWidth: 140 }}>
+                      <button onClick={() => startEdit(p)}
+                        className="w-full flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-gray-50 text-left"
+                        style={{ color: '#0f1419' }}>
+                        <Edit2 size={14} /> Düzenle
+                      </button>
+                      <button onClick={() => deletePost(p.id)}
+                        className="w-full flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-red-50 text-left"
+                        style={{ color: '#ef4444' }}>
+                        <Trash2 size={14} /> Sil
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : null}
             </div>
-            <p className="text-sm mt-1 leading-relaxed" style={{ color: '#0f1419' }}>{p.content}</p>
+            {editingId === p.id ? (
+              <div className="mt-1">
+                <textarea
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  rows={3}
+                  maxLength={500}
+                  className="w-full text-sm resize-none focus:outline-none rounded-xl px-3 py-2"
+                  style={{ background: '#f7f8f8', border: '1px solid #eff3f4', color: '#0f1419' }}
+                />
+                <div className="flex gap-2 mt-1">
+                  <button onClick={saveEdit}
+                    className="px-4 py-1.5 rounded-full text-xs font-bold text-white"
+                    style={{ background: '#ff6b2b' }}>Kaydet</button>
+                  <button onClick={() => setEditingId(null)}
+                    className="px-4 py-1.5 rounded-full text-xs font-bold"
+                    style={{ background: '#f7f8f8', color: '#536471' }}>İptal</button>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm mt-1 leading-relaxed" style={{ color: '#0f1419' }}>{p.content}</p>
+            )}
             {p.photo_url && (
               <div className="mt-3 rounded-2xl overflow-hidden" style={{ height: 300, border: '1px solid #eff3f4', background: '#f7f8f8' }}>
                 <img src={p.photo_url} className="w-full h-full object-cover" alt="" />
