@@ -119,7 +119,7 @@ export default function ChatClient({ currentUserId, friends, convMap, initialMes
 
   const deleteMessage = async (id: string) => {
     const res = await fetch(`/api/messages/${id}`, { method: 'DELETE' });
-    if (res.ok) { setMessages((prev) => prev.filter((m) => m.id !== id)); setSelectedMsgId(null); }
+    if (res.ok) setMessages((prev) => prev.filter((m) => m.id !== id));
   };
 
   const clearConversation = async () => {
