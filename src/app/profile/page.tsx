@@ -7,6 +7,7 @@ import { Submission, Quest } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import PrivacyToggle from './PrivacyToggle';
+import ProfileImageEditor from './ProfileImageEditor';
 
 export default async function ProfilePage() {
   const supabase = await createClient();
@@ -28,51 +29,39 @@ export default async function ProfilePage() {
 
   return (
     <AppShell>
-      {/* X-style profile header */}
-      <div style={{ borderBottom: '1px solid #eff3f4' }}>
-        {/* Cover */}
-        <div className="h-36" style={{ background: 'linear-gradient(135deg,#ff6b2b,#a855f7)' }} />
+      {/* Banner + Avatar — tıklanabilir yükleme */}
+      <ProfileImageEditor
+        avatarUrl={profile?.avatar_url ?? null}
+        bannerUrl={profile?.banner_url ?? null}
+        username={profile?.username ?? '?'}
+      />
 
-        {/* Avatar + info */}
-        <div className="px-4 pb-4">
-          <div className="flex items-end justify-between -mt-10 mb-3">
-            <div className="w-24 h-24 rounded-full border-4 border-white flex items-center justify-center text-3xl font-black text-white"
-              style={{ background: 'linear-gradient(135deg,#ff6b2b,#a855f7)' }}>
-              {profile?.username?.charAt(0).toUpperCase()}
-              {profile?.is_premium && (
-                <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center" style={{ background: '#ff6b2b' }}>
-                  <Star size={10} className="text-white" fill="white" />
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 mb-0.5">
-            <h1 className="text-xl font-black" style={{ color: '#0f1419' }}>{profile?.full_name || profile?.username}</h1>
-            {profile?.is_admin && <Shield size={16} style={{ color: '#ff6b2b' }} />}
-          </div>
-          <p className="text-sm mb-2" style={{ color: '#536471' }}>@{profile?.username}</p>
-          {profile?.city && (
-            <p className="text-xs flex items-center gap-1 mb-3" style={{ color: '#536471' }}>
-              <MapPin size={11} />{profile.city}
-            </p>
-          )}
-
-          {/* Stats — X gibi */}
-          <div className="flex gap-5 flex-wrap">
-            <span className="text-sm cursor-pointer hover:underline" style={{ color: '#536471' }}>
-              <span className="font-black" style={{ color: '#0f1419' }}>{followingCount}</span> Takip
-            </span>
-            <span className="text-sm cursor-pointer hover:underline" style={{ color: '#536471' }}>
-              <span className="font-black" style={{ color: '#0f1419' }}>{followersCount}</span> Takipçi
-            </span>
-            <span className="text-sm" style={{ color: '#536471' }}>
-              <span className="font-black" style={{ color: '#0f1419' }}>{profile?.total_finds || 0}</span> Buldu
-            </span>
-            <span className="text-sm" style={{ color: '#536471' }}>
-              <span className="font-black" style={{ color: '#0f1419' }}>{wonCount}</span> Kazandı
-            </span>
-          </div>
+      {/* İsim / kullanıcı adı / stats */}
+      <div className="px-4 pb-4" style={{ borderBottom: '1px solid #eff3f4' }}>
+        <div className="flex items-center gap-2 mb-0.5">
+          <h1 className="text-xl font-black" style={{ color: '#0f1419' }}>{profile?.full_name || profile?.username}</h1>
+          {profile?.is_admin && <Shield size={16} style={{ color: '#ff6b2b' }} />}
+          {profile?.is_premium && <Star size={14} style={{ color: '#ff6b2b' }} fill="#ff6b2b" />}
+        </div>
+        <p className="text-sm mb-2" style={{ color: '#536471' }}>@{profile?.username}</p>
+        {profile?.city && (
+          <p className="text-xs flex items-center gap-1 mb-3" style={{ color: '#536471' }}>
+            <MapPin size={11} />{profile.city}
+          </p>
+        )}
+        <div className="flex gap-5 flex-wrap">
+          <span className="text-sm" style={{ color: '#536471' }}>
+            <span className="font-black" style={{ color: '#0f1419' }}>{followingCount}</span> Takip
+          </span>
+          <span className="text-sm" style={{ color: '#536471' }}>
+            <span className="font-black" style={{ color: '#0f1419' }}>{followersCount}</span> Takipçi
+          </span>
+          <span className="text-sm" style={{ color: '#536471' }}>
+            <span className="font-black" style={{ color: '#0f1419' }}>{profile?.total_finds || 0}</span> Buldu
+          </span>
+          <span className="text-sm" style={{ color: '#536471' }}>
+            <span className="font-black" style={{ color: '#0f1419' }}>{wonCount}</span> Kazandı
+          </span>
         </div>
       </div>
 
