@@ -72,7 +72,7 @@ export default async function QuestPage({ params }: { params: Promise<{ id: stri
   const { id } = await params;
   const { quest, alreadyWon, isLoggedIn, steps, initialStep } = await getQuest(id);
   if (!quest) notFound();
-  const questUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://izibul.vercel.app'}/quest/${id}`;
+  const questUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://izi-bul.vercel.app'}/quest/${id}`;
 
   const diff = DIFFICULTIES[quest.difficulty];
 

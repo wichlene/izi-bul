@@ -1,6 +1,6 @@
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'İzi Bul <onboarding@resend.dev>';
-export const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'emrckc52@gmail.com';
+export const ADMIN_EMAIL = process.env.ADMIN_EMAIL || '';
 
 interface EmailOptions {
   to: string;
@@ -9,7 +9,11 @@ interface EmailOptions {
 }
 
 export async function sendEmail({ to, subject, html }: EmailOptions): Promise<void> {
-  if (!RESEND_API_KEY) return;
+  if (!RESEND_API_KEY) {
+    console.warn('[email] RESEND_API_KEY eksik, mail gönderilmedi.');
+    return;
+  }
+  if (!to) return;
 
   try {
     const res = await fetch('https://api.resend.com/emails', {
@@ -20,8 +24,8 @@ export async function sendEmail({ to, subject, html }: EmailOptions): Promise<vo
       },
       body: JSON.stringify({ from: FROM_EMAIL, to, subject, html }),
     });
-    if (!res.ok) console.error('[email] failed:', await res.text());
+    if (!res.ok) console.error('[email] gönderilemedi:', await res.text());
   } catch (err) {
-    console.error('[email] error:', err);
+    console.error('[email] hata:', err);
   }
 }
