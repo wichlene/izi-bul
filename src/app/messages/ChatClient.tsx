@@ -75,12 +75,17 @@ export default function ChatClient({ currentUserId, friends, convMap, initialMes
           setMessages((prev) => {
             const ids = new Set(prev.map((m) => m.id));
             const fresh = data.filter((m) => !ids.has(m.id));
-            return fresh.length ? [...prev, ...fresh] : prev;
+            if (fresh.length) {
+              const hasIncoming = fresh.some((m) => m.from_user_id !== currentUserId);
+              if (hasIncoming) playMessage();
+              return [...prev, ...fresh];
+            }
+            return prev;
           });
         })
         .catch(() => {});
     };
-    const interval = setInterval(poll, 3500);
+    const interval = setInterval(poll, 1500);
     return () => { sb.removeChannel(channel); clearInterval(interval); };
   }, [chatWith?.id, currentUserId]); // eslint-disable-line react-hooks/exhaustive-deps
 

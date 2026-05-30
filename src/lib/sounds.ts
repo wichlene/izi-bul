@@ -1,23 +1,34 @@
 'use client';
 
 let ctx: AudioContext | null = null;
+let unlocked = false;
 
-function getCtx(): AudioContext | null {
-  if (typeof window === 'undefined') return null;
-  if (!ctx) ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-  return ctx;
+// Tarayıcı ilk kullanıcı etkileşiminde AudioContext'i açar
+if (typeof window !== 'undefined') {
+  const unlock = () => {
+    if (unlocked) return;
+    unlocked = true;
+    if (!ctx) {
+      ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+    }
+    if (ctx.state === 'suspended') ctx.resume();
+  };
+  window.addEventListener('click', unlock, { once: false, passive: true });
+  window.addEventListener('touchstart', unlock, { once: false, passive: true });
+  window.addEventListener('keydown', unlock, { once: false, passive: true });
 }
 
 function play(fn: (ctx: AudioContext) => void) {
   try {
-    const c = getCtx();
-    if (!c) return;
-    if (c.state === 'suspended') c.resume();
-    fn(c);
+    if (typeof window === 'undefined') return;
+    if (!ctx) {
+      ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+    }
+    const resume = ctx.state === 'suspended' ? ctx.resume() : Promise.resolve();
+    resume.then(() => fn(ctx!)).catch(() => {});
   } catch { /* ses desteklenmiyor */ }
 }
 
-// Mesaj sesi — "ding dong"
 export function playMessage() {
   play((c) => {
     const now = c.currentTime;
@@ -36,7 +47,6 @@ export function playMessage() {
   });
 }
 
-// Bildirim sesi — kısa "ping"
 export function playNotification() {
   play((c) => {
     const now = c.currentTime;
@@ -52,12 +62,10 @@ export function playNotification() {
   });
 }
 
-// Görev tamamlama — zafer fanfar
 export function playQuestComplete() {
   play((c) => {
     const now = c.currentTime;
-    const notes = [523.25, 659.25, 783.99, 1046.5];
-    notes.forEach((freq, i) => {
+    [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
       const o = c.createOscillator();
       const g = c.createGain();
       o.connect(g); g.connect(c.destination);
@@ -72,7 +80,6 @@ export function playQuestComplete() {
   });
 }
 
-// Beğeni sesi — küçük "pop"
 export function playLike() {
   play((c) => {
     const now = c.currentTime;
@@ -88,7 +95,6 @@ export function playLike() {
   });
 }
 
-// Hata sesi — "buzz"
 export function playError() {
   play((c) => {
     const now = c.currentTime;
@@ -103,7 +109,6 @@ export function playError() {
   });
 }
 
-// Arkadaşlık isteği — "chime"
 export function playFriendRequest() {
   play((c) => {
     const now = c.currentTime;
