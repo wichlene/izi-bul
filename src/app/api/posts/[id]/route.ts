@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
+async function isAdmin(userId: string): Promise<boolean> {
+  const admin = createAdminClient();
+  const { data } = await admin.from('profiles').select('is_admin').eq('id', userId).single();
+  return !!data?.is_admin;
+}
+
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -13,7 +19,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const admin = createAdminClient();
   const { data: post } = await admin.from('posts').select('user_id').eq('id', id).single();
-  if (!post || post.user_id !== user.id) return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 });
+  if (!post) return NextResponse.json({ error: 'Bulunamadı' }, { status: 404 });
+
+  const adminUser = await isAdmin(user.id);
+  if (post.user_id !== user.id && !adminUser) return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 });
 
   const { data, error } = await admin
     .from('posts')
@@ -34,7 +43,10 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const { id } = await params;
   const admin = createAdminClient();
   const { data: post } = await admin.from('posts').select('user_id').eq('id', id).single();
-  if (!post || post.user_id !== user.id) return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 });
+  if (!post) return NextResponse.json({ error: 'Bulunamadı' }, { status: 404 });
+
+  const adminUser = await isAdmin(user.id);
+  if (post.user_id !== user.id && !adminUser) return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 });
 
   const { error } = await admin.from('posts').delete().eq('id', id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

@@ -123,10 +123,9 @@ export default function ChatClient({ currentUserId, friends, convMap, initialMes
   };
 
   const clearConversation = async () => {
-    if (!chatWith || !confirm(`${chatWith.username} ile olan tüm mesajlarını silmek istiyor musun?`)) return;
-    const myMsgs = messages.filter((m) => m.from_user_id === currentUserId);
-    await Promise.all(myMsgs.map((m) => fetch(`/api/messages/${m.id}`, { method: 'DELETE' })));
-    setMessages((prev) => prev.filter((m) => m.from_user_id !== currentUserId));
+    if (!chatWith || !confirm(`${chatWith.username} ile tüm sohbeti silmek istiyor musun? Bu işlem geri alınamaz.`)) return;
+    const res = await fetch(`/api/messages/conversation/${chatWith.id}`, { method: 'DELETE' });
+    if (res.ok) setMessages([]);
   };
 
   const filteredFriends = search.trim()

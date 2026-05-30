@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { DIFFICULTIES, Difficulty } from '@/types';
@@ -123,5 +124,6 @@ export async function POST(req: NextRequest) {
     if (stepErr) return NextResponse.json({ error: 'Adımlar kaydedilemedi: ' + stepErr.message }, { status: 500 });
   }
 
+  revalidateTag('quests');
   return NextResponse.json(data, { status: 201 });
 }
