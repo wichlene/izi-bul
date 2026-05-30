@@ -2,12 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import dynamic from 'next/dynamic';
 import { Loader2, Check, Plus, Trash2, Route } from 'lucide-react';
 import { Category, DIFFICULTIES, Difficulty } from '@/types';
 import PhotoUpload from '@/components/PhotoUpload';
-
-const MapPicker = dynamic(() => import('@/components/MapPicker'), { ssr: false });
+import LocationPicker from '@/components/LocationPicker';
 
 interface Props {
   categories: Category[];
@@ -217,10 +215,7 @@ export default function CreateQuestForm({ categories }: Props) {
                     </button>
                   ))}
                 </div>
-                <div className="h-44 rounded-lg overflow-hidden" style={{ border: '1px solid #eff3f4' }}>
-                  <MapPicker onLocationSelect={(la, ln) => updStep(i, { latitude: la, longitude: ln })} initialLat={st.latitude || undefined} initialLng={st.longitude || undefined} />
-                </div>
-                {st.latitude && <p className="flex items-center gap-1.5 text-xs mt-1.5" style={{ color: '#22c55e' }}><Check size={12} /> Konum seçildi</p>}
+                <LocationPicker lat={st.latitude} lng={st.longitude} onSelect={(la, ln) => updStep(i, { latitude: la, longitude: ln })} height="h-44" />
               </div>
             ))}
             <button onClick={addStep} className="w-full py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-1.5" style={{ background: 'rgba(255,107,43,0.08)', color: '#ff6b2b', border: '1px dashed rgba(255,107,43,0.3)' }}>
@@ -232,11 +227,8 @@ export default function CreateQuestForm({ categories }: Props) {
 
       <section className="rounded-2xl p-5" style={section}>
         <h2 className="font-bold mb-1" style={{ color: '#0f1419' }}>{multistep ? 'Son Nokta — Gizli Konum' : 'Gizli Konum'} <span style={{ color: '#f87171' }}>*</span></h2>
-        <p className="text-sm mb-3" style={{ color: '#536471' }}>Hazinenin olduğu nokta. Haritaya tıkla, pin bırak.</p>
-        <div className="h-64 rounded-xl overflow-hidden" style={{ border: '1px solid #eff3f4' }}>
-          <MapPicker onLocationSelect={(la, ln) => { setLat(la); setLng(ln); }} initialLat={lat || undefined} initialLng={lng || undefined} />
-        </div>
-        {lat && lng && <p className="flex items-center gap-1.5 text-sm mt-2" style={{ color: '#22c55e' }}><Check size={14} /> Konum işaretlendi</p>}
+        <p className="text-sm mb-3" style={{ color: '#536471' }}>Hazinenin gizlendiği nokta. GPS ile konumunu al, adresten ara ya da haritaya tıkla.</p>
+        <LocationPicker lat={lat} lng={lng} onSelect={(la, ln) => { setLat(la); setLng(ln); }} />
       </section>
 
       <section className="rounded-2xl p-5 space-y-4" style={section}>
