@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Send, MessageCircle, ArrowLeft, Search, PenSquare, Smile, Trash2, MoreVertical } from 'lucide-react';
+import { Send, MessageCircle, ArrowLeft, Search, PenSquare, Smile, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { playMessage } from '@/lib/sounds';
 
@@ -40,8 +40,6 @@ export default function ChatClient({ currentUserId, friends, convMap, initialMes
   const [sendError, setSendError] = useState('');
   const [mobileView, setMobileView] = useState<'list' | 'chat'>(chatWith ? 'chat' : 'list');
   const [showEmoji, setShowEmoji] = useState(false);
-  const [selectedMsgId, setSelectedMsgId] = useState<string | null>(null);
-  const [showChatMenu, setShowChatMenu] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const supabase = useRef(createClient());
 
@@ -267,23 +265,12 @@ export default function ChatClient({ currentUserId, friends, convMap, initialMes
                 </p>
                 <p className="text-xs" style={{ color: '#536471' }}>@{chatWith.username}</p>
               </div>
-              <div className="relative">
-                <button onClick={() => setShowChatMenu((v) => !v)}
-                  className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-                  style={{ color: '#536471' }}>
-                  <MoreVertical size={20} />
-                </button>
-                {showChatMenu && (
-                  <div className="absolute right-0 top-10 z-20 rounded-xl shadow-lg overflow-hidden"
-                    style={{ background: '#fff', border: '1px solid #eff3f4', minWidth: 180 }}>
-                    <button onClick={clearConversation}
-                      className="w-full flex items-center gap-2 px-4 py-3 text-sm hover:bg-red-50 text-left"
-                      style={{ color: '#ef4444' }}>
-                      <Trash2 size={15} /> Tüm mesajlarımı sil
-                    </button>
-                  </div>
-                )}
-              </div>
+              <button onClick={clearConversation}
+                className="p-2 rounded-full hover:bg-red-50 transition-colors flex-shrink-0"
+                title="Tüm mesajlarımı sil"
+                style={{ color: '#ef4444' }}>
+                <Trash2 size={20} />
+              </button>
             </div>
 
             {/* Mesajlar */}
@@ -300,32 +287,27 @@ export default function ChatClient({ currentUserId, friends, convMap, initialMes
               )}
               {messages.map((msg) => {
                 const isMe = msg.from_user_id === currentUserId;
-                const selected = selectedMsgId === msg.id;
                 return (
-                  <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} items-end gap-1.5`}>
+                  <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} items-center gap-1.5`}>
                     {!isMe && (
                       <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
                         style={{ background: 'linear-gradient(135deg,#ff6b2b,#ff3d00)' }}>
                         {chatWith.username.charAt(0).toUpperCase()}
                       </div>
                     )}
-                    <div className={`flex items-end gap-1 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
-                      <button
-                        onClick={() => isMe && setSelectedMsgId(selected ? null : msg.id)}
-                        className="max-w-[72%] px-4 py-2.5 rounded-[20px] text-[15px] leading-relaxed text-left"
-                        style={isMe
-                          ? { background: selected ? '#e55a20' : '#ff6b2b', color: '#fff', borderBottomRightRadius: 4 }
-                          : { background: '#fff', color: '#0f1419', border: '1px solid #e5e7eb', borderBottomLeftRadius: 4 }}>
-                        {msg.content}
-                      </button>
-                      {isMe && selected && (
-                        <button onClick={() => deleteMessage(msg.id)}
-                          className="p-1.5 rounded-full flex-shrink-0 transition-all"
-                          style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>
-                          <Trash2 size={15} />
-                        </button>
-                      )}
+                    <div className="max-w-[68%] px-4 py-2.5 rounded-[20px] text-[15px] leading-relaxed"
+                      style={isMe
+                        ? { background: '#ff6b2b', color: '#fff', borderBottomRightRadius: 4 }
+                        : { background: '#fff', color: '#0f1419', border: '1px solid #e5e7eb', borderBottomLeftRadius: 4 }}>
+                      {msg.content}
                     </div>
+                    {isMe && (
+                      <button onClick={() => deleteMessage(msg.id)}
+                        className="p-1 rounded-full flex-shrink-0"
+                        style={{ color: '#ef4444', opacity: 0.5 }}>
+                        <Trash2 size={13} />
+                      </button>
+                    )}
                   </div>
                 );
               })}
