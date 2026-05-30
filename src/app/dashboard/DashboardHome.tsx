@@ -109,7 +109,7 @@ export default function DashboardHome({ quests, categories }: Props) {
 
   return (
     <div>
-      <div className="sticky top-0 z-10 px-4 pt-3 pb-2 space-y-2"
+      <div className="sticky top-0 z-10 px-4 pt-3 pb-2"
         style={{ background: 'rgba(255,255,255,0.95)', borderBottom: '1px solid #eff3f4', backdropFilter: 'blur(8px)' }}>
         <div className="relative">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#8b98a5' }} />
@@ -121,24 +121,6 @@ export default function DashboardHome({ quests, categories }: Props) {
             className="w-full pl-9 pr-4 py-2.5 rounded-full text-sm focus:outline-none"
             style={{ background: '#f7f8f8', border: '1px solid #eff3f4', color: '#0f1419' }}
           />
-        </div>
-        <div className="flex gap-1.5 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-          {chips.map((chip) => {
-            const active = filter === chip.id;
-            return (
-              <button
-                key={chip.id}
-                onClick={() => setFilter(chip.id)}
-                className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
-                style={active
-                  ? { background: '#ff6b2b', color: '#fff', border: '1px solid #ff6b2b' }
-                  : { background: '#f7f8f8', color: '#536471', border: '1px solid #eff3f4' }}
-              >
-                <span>{chip.icon}</span>
-                <span>{chip.label}</span>
-              </button>
-            );
-          })}
         </div>
       </div>
 
