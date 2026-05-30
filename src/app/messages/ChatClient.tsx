@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Send, MessageCircle, ArrowLeft, Search, PenSquare, Smile, Trash2 } from 'lucide-react';
+import { Send, MessageCircle, ArrowLeft, Search, PenSquare, Smile, Trash2, MoreVertical } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { playMessage } from '@/lib/sounds';
 
@@ -40,7 +40,8 @@ export default function ChatClient({ currentUserId, friends, convMap, initialMes
   const [sendError, setSendError] = useState('');
   const [mobileView, setMobileView] = useState<'list' | 'chat'>(chatWith ? 'chat' : 'list');
   const [showEmoji, setShowEmoji] = useState(false);
-  const [hoveredMsgId, setHoveredMsgId] = useState<string | null>(null);
+  const [selectedMsgId, setSelectedMsgId] = useState<string | null>(null);
+  const [showChatMenu, setShowChatMenu] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const supabase = useRef(createClient());
 
@@ -120,7 +121,15 @@ export default function ChatClient({ currentUserId, friends, convMap, initialMes
 
   const deleteMessage = async (id: string) => {
     const res = await fetch(`/api/messages/${id}`, { method: 'DELETE' });
-    if (res.ok) setMessages((prev) => prev.filter((m) => m.id !== id));
+    if (res.ok) { setMessages((prev) => prev.filter((m) => m.id !== id)); setSelectedMsgId(null); }
+  };
+
+  const clearConversation = async () => {
+    if (!chatWith || !confirm(`${chatWith.username} ile olan tüm mesajlarını silmek istiyor musun?`)) return;
+    setShowChatMenu(false);
+    const myMsgs = messages.filter((m) => m.from_user_id === currentUserId);
+    await Promise.all(myMsgs.map((m) => fetch(`/api/messages/${m.id}`, { method: 'DELETE' })));
+    setMessages((prev) => prev.filter((m) => m.from_user_id !== currentUserId));
   };
 
   const filteredFriends = search.trim()
@@ -252,11 +261,28 @@ export default function ChatClient({ currentUserId, friends, convMap, initialMes
                 style={{ background: 'linear-gradient(135deg,#ff6b2b,#ff3d00)' }}>
                 {chatWith.username.charAt(0).toUpperCase()}
               </div>
-              <div>
+              <div className="flex-1">
                 <p className="font-bold text-[15px] leading-tight" style={{ color: '#0f1419' }}>
                   {chatWith.username}
                 </p>
                 <p className="text-xs" style={{ color: '#536471' }}>@{chatWith.username}</p>
+              </div>
+              <div className="relative">
+                <button onClick={() => setShowChatMenu((v) => !v)}
+                  className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                  style={{ color: '#536471' }}>
+                  <MoreVertical size={20} />
+                </button>
+                {showChatMenu && (
+                  <div className="absolute right-0 top-10 z-20 rounded-xl shadow-lg overflow-hidden"
+                    style={{ background: '#fff', border: '1px solid #eff3f4', minWidth: 180 }}>
+                    <button onClick={clearConversation}
+                      className="w-full flex items-center gap-2 px-4 py-3 text-sm hover:bg-red-50 text-left"
+                      style={{ color: '#ef4444' }}>
+                      <Trash2 size={15} /> Tüm mesajlarımı sil
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -274,29 +300,31 @@ export default function ChatClient({ currentUserId, friends, convMap, initialMes
               )}
               {messages.map((msg) => {
                 const isMe = msg.from_user_id === currentUserId;
+                const selected = selectedMsgId === msg.id;
                 return (
-                  <div key={msg.id}
-                    className={`flex ${isMe ? 'justify-end' : 'justify-start'} items-end gap-2 group`}
-                    onMouseEnter={() => setHoveredMsgId(msg.id)}
-                    onMouseLeave={() => setHoveredMsgId(null)}>
+                  <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} items-end gap-1.5`}>
                     {!isMe && (
                       <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
                         style={{ background: 'linear-gradient(135deg,#ff6b2b,#ff3d00)' }}>
                         {chatWith.username.charAt(0).toUpperCase()}
                       </div>
                     )}
-                    {isMe && hoveredMsgId === msg.id && (
-                      <button onClick={() => deleteMessage(msg.id)}
-                        className="p-1.5 rounded-full opacity-60 hover:opacity-100 transition-opacity flex-shrink-0"
-                        style={{ color: '#ef4444' }}>
-                        <Trash2 size={14} />
+                    <div className={`flex items-end gap-1 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
+                      <button
+                        onClick={() => isMe && setSelectedMsgId(selected ? null : msg.id)}
+                        className="max-w-[72%] px-4 py-2.5 rounded-[20px] text-[15px] leading-relaxed text-left"
+                        style={isMe
+                          ? { background: selected ? '#e55a20' : '#ff6b2b', color: '#fff', borderBottomRightRadius: 4 }
+                          : { background: '#fff', color: '#0f1419', border: '1px solid #e5e7eb', borderBottomLeftRadius: 4 }}>
+                        {msg.content}
                       </button>
-                    )}
-                    <div className="max-w-[72%] px-4 py-2.5 rounded-[20px] text-[15px] leading-relaxed"
-                      style={isMe
-                        ? { background: '#ff6b2b', color: '#fff', borderBottomRightRadius: 4 }
-                        : { background: '#fff', color: '#0f1419', border: '1px solid #e5e7eb', borderBottomLeftRadius: 4 }}>
-                      {msg.content}
+                      {isMe && selected && (
+                        <button onClick={() => deleteMessage(msg.id)}
+                          className="p-1.5 rounded-full flex-shrink-0 transition-all"
+                          style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>
+                          <Trash2 size={15} />
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
