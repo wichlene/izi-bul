@@ -404,9 +404,11 @@ export default function QuestPlay({ quest, alreadyWon, isLoggedIn, steps: rawSte
               )}
 
               {/* Fotoğraf - if has_image OR old step_type === 'image' */}
-              {(step.has_image || step.step_type === 'image') && !isLastStep && (
+              {(step.has_image || step.step_type === 'image') && (
                 <div>
-                  <p className="font-bold text-sm mb-2" style={{ color: '#0f1419' }}>Bu adım için fotoğraf çek</p>
+                  <p className="font-bold text-sm mb-2" style={{ color: '#0f1419' }}>
+                    {isLastStep ? 'Hazineyi fotoğrafla — hazineyi bul!' : 'Bu adım için fotoğraf çek'}
+                  </p>
                   <PhotoUpload onUpload={setPhoto} />
                 </div>
               )}
