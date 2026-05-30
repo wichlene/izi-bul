@@ -1,16 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import Anthropic from '@anthropic-ai/sdk';
+import Groq from 'groq-sdk';
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-async function urlToBase64(url: string): Promise<{ data: string; mediaType: string }> {
+async function urlToBase64(url: string): Promise<string> {
   const res = await fetch(url);
   const buffer = await res.arrayBuffer();
-  const contentType = res.headers.get('content-type') || 'image/jpeg';
-  const mediaType = contentType.split(';')[0] as 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif';
-  const data = Buffer.from(buffer).toString('base64');
-  return { data, mediaType };
+  return Buffer.from(buffer).toString('base64');
 }
 
 export async function POST(req: NextRequest) {
@@ -30,58 +27,51 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (!quest?.photo_url) {
-    // Referans fotoğraf yoksa AI kontrolü atla, geç
     return NextResponse.json({ match: 100, accepted: true, reasoning: 'Referans fotoğraf yok' });
   }
 
   try {
-    const [ref, submitted] = await Promise.all([
+    const [refB64, userB64] = await Promise.all([
       urlToBase64(quest.photo_url),
       urlToBase64(user_photo_url),
     ]);
 
-    const response = await anthropic.messages.create({
-      model: 'claude-opus-4-8',
-      max_tokens: 300,
-      messages: [{
-        role: 'user',
-        content: [
-          {
-            type: 'text',
-            text: `Aşağıda bir görevin referans fotoğrafı ve kullanıcının çektiği fotoğraf var. Bu iki fotoğrafın AYNI KONUMU gösterip göstermediğini analiz et.
+    const response = await groq.chat.completions.create({
+      model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+      max_tokens: 200,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: `Bu iki fotoğrafı karşılaştır. AYNI konumu/nesneyi gösteriyor mu?
+
+Referans fotoğraf (görevin orijinal fotoğrafı) ve kullanıcının çektiği fotoğraf aşağıda.
 
 Şunlara bak:
-- Aynı bina, heykel, doğal yapı veya nesne var mı?
-- Arka plan, çevre, ışık koşulları benzer mi?
+- Aynı bina, heykel, anıt veya nesne var mı?
 - Farklı açıdan çekilmiş olsa da aynı yer mi?
 
-SADECE JSON döndür, başka hiçbir şey yazma:
-{"match": <0-100 arası sayı>, "accepted": <true/false>, "reason": "<kısa Türkçe açıklama>"}`
-          },
-          {
-            type: 'text',
-            text: 'Referans fotoğraf (görevin orijinal fotoğrafı):'
-          },
-          {
-            type: 'image',
-            source: { type: 'base64', media_type: ref.mediaType, data: ref.data },
-          },
-          {
-            type: 'text',
-            text: 'Kullanıcının çektiği fotoğraf:'
-          },
-          {
-            type: 'image',
-            source: { type: 'base64', media_type: submitted.mediaType, data: submitted.data },
-          },
-        ],
-      }],
+SADECE JSON döndür:
+{"match": <0-100>, "accepted": <true/false>, "reason": "<kısa Türkçe açıklama>"}`,
+            },
+            {
+              type: 'image_url',
+              image_url: { url: `data:image/jpeg;base64,${refB64}` },
+            },
+            {
+              type: 'image_url',
+              image_url: { url: `data:image/jpeg;base64,${userB64}` },
+            },
+          ],
+        },
+      ],
     });
 
-    const text = response.content[0].type === 'text' ? response.content[0].text.trim() : '';
-    // JSON'u çıkart
+    const text = response.choices[0]?.message?.content?.trim() || '';
     const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('AI geçersiz yanıt döndürdü');
+    if (!jsonMatch) throw new Error('AI geçersiz yanıt');
 
     const result = JSON.parse(jsonMatch[0]);
     const match = Math.max(0, Math.min(100, Number(result.match) || 0));
@@ -90,7 +80,6 @@ SADECE JSON döndür, başka hiçbir şey yazma:
     return NextResponse.json({ match, accepted, reasoning: result.reason || '' });
   } catch (err) {
     console.error('AI verify error:', err);
-    // AI hatası durumunda geç (kullanıcıyı bloklama)
     return NextResponse.json({ match: 80, accepted: true, reasoning: 'AI analiz yapılamadı, manuel onaya gönderildi' });
   }
 }
