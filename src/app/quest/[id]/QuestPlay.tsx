@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Trophy, Loader2, AlertCircle, LogIn, Navigation, CheckCircle, Lock, Clock } from 'lucide-react';
+import { Trophy, Loader2, AlertCircle, LogIn, Navigation, CheckCircle, Lock, Clock, ScanLine } from 'lucide-react';
 import { Quest } from '@/types';
 import { calculateDistance, formatDistance } from '@/lib/distance';
 import PhotoUpload from '@/components/PhotoUpload';
@@ -54,6 +54,8 @@ export default function QuestPlay({ quest, alreadyWon, isLoggedIn, steps: rawSte
   const [done, setDone] = useState<null | { points: number; cash: number; coop: number; pending: boolean }>(null);
   const [blocked, setBlocked] = useState<null | { message: string; questId: string }>(null);
   const [abandoning, setAbandoning] = useState(false);
+  const [aiResult, setAiResult] = useState<null | { match: number; accepted: boolean; reasoning: string }>(null);
+  const [aiLoading, setAiLoading] = useState(false);
   const watchRef = useRef<number | null>(null);
 
   // Canlı GPS takibi
@@ -316,18 +318,61 @@ export default function QuestPlay({ quest, alreadyWon, isLoggedIn, steps: rawSte
                 </div>
               )}
 
+              {/* AI sonucu */}
+              {aiResult && (
+                <div className="rounded-xl p-4 text-sm" style={{
+                  background: aiResult.accepted ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)',
+                  border: `1px solid ${aiResult.accepted ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}`,
+                  color: aiResult.accepted ? '#16a34a' : '#dc2626',
+                }}>
+                  <div className="flex items-center gap-2 font-bold mb-1">
+                    {aiResult.accepted ? <CheckCircle size={15} /> : <AlertCircle size={15} />}
+                    Eşleşme: %{aiResult.match}
+                  </div>
+                  <p className="text-xs opacity-80">{aiResult.reasoning}</p>
+                </div>
+              )}
+
               {/* Aksiyon */}
               {isLastStep ? (
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     if (step.step_type === 'question' && !answer.trim()) { setError('Önce soruyu cevapla.'); return; }
                     if (step.step_type === 'image' && !photo) { setError('Önce fotoğraf çek.'); return; }
-                    setError(''); setShowAR(true);
+                    setError('');
+
+                    // Fotoğraflı görevde AI kontrolü yap
+                    if (step.step_type === 'image' && photo) {
+                      setAiLoading(true);
+                      setAiResult(null);
+                      try {
+                        const res = await fetch('/api/submissions/verify', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ quest_id: quest.id, user_photo_url: photo }),
+                        });
+                        const data = await res.json();
+                        setAiResult(data);
+                        setAiLoading(false);
+                        if (!data.accepted) {
+                          setError('Fotoğraf uyuşmadı. Doğru konumdan tekrar çekmeyi dene.');
+                          return;
+                        }
+                      } catch {
+                        setAiLoading(false);
+                      }
+                    }
+
+                    setShowAR(true);
                   }}
-                  disabled={submitting}
+                  disabled={submitting || aiLoading}
                   className="w-full font-black py-3.5 rounded-xl flex items-center justify-center gap-2 text-white"
                   style={{ background: 'linear-gradient(135deg,#ffd700,#ff6b2b)', boxShadow: '0 6px 20px rgba(255,107,43,0.4)' }}>
-                  ✨ Kamerayı Aç — Hazineyi Bul
+                  {aiLoading ? (
+                    <><ScanLine size={16} className="animate-pulse" /> Yapay Zeka Analiz Ediyor...</>
+                  ) : (
+                    <>✨ Kamerayı Aç — Hazineyi Bul</>
+                  )}
                 </button>
               ) : (
                 <button onClick={submitStep} disabled={submitting || (step.step_type === 'question' && !answer.trim()) || (step.step_type === 'image' && !photo)}
