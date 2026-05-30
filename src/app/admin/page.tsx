@@ -81,9 +81,14 @@ export default async function AdminPage() {
             <h1 className="text-2xl font-black" style={{ color: '#0f1419' }}>Admin Paneli</h1>
             <p className="text-sm" style={{ color: '#536471' }}>İzi Bul yönetim merkezi</p>
           </div>
-          <Link href="/admin/categories" className="ml-auto flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold" style={{ background: 'rgba(255,107,43,0.08)', color: '#ff6b2b', border: '1px solid rgba(255,107,43,0.2)' }}>
-            <Tag size={14} /> Kategoriler
-          </Link>
+          <div className="ml-auto flex items-center gap-2">
+            <Link href="/quest/create" className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: 'linear-gradient(135deg,#ff6b2b,#ff3d00)' }}>
+              <MapPin size={14} /> Görev Oluştur
+            </Link>
+            <Link href="/admin/categories" className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold" style={{ background: 'rgba(255,107,43,0.08)', color: '#ff6b2b', border: '1px solid rgba(255,107,43,0.2)' }}>
+              <Tag size={14} /> Kategoriler
+            </Link>
+          </div>
         </div>
 
         {/* Günlük Duyuru */}
