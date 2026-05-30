@@ -1,15 +1,13 @@
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
-import { MapPin, Calendar, Shield, Eye, EyeOff, Star, CheckCircle, Clock } from 'lucide-react';
+import { MapPin, Shield, Eye, EyeOff, Star } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import AppShell from '@/components/AppShell';
 import { Submission, Quest } from '@/types';
-import { formatDistanceToNow } from 'date-fns';
-import { tr } from 'date-fns/locale';
 import PrivacyToggle from './PrivacyToggle';
 import ProfileImageEditor from './ProfileImageEditor';
 import ProfileEditModal from './ProfileEditModal';
 import LogoutButton from './LogoutButton';
+import ProfilePosts from './ProfilePosts';
 
 export default async function ProfilePage() {
   const supabase = await createClient();
@@ -24,21 +22,21 @@ export default async function ProfilePage() {
   ]);
 
   const profile = profileRes.data;
-  const submissions = submissionsRes.data;
+  const submissions = (submissionsRes.data || []) as unknown as (Submission & { quest: Quest & { cash_reward: number } })[];
   const followingCount = followingRes.count || 0;
   const followersCount = followersRes.count || 0;
-  const wonCount = submissions?.filter((s) => s.is_winner).length || 0;
+  const wonCount = submissions.filter((s) => s.is_winner).length;
 
   return (
     <AppShell>
-      {/* Banner + Avatar — tıklanabilir yükleme */}
+      {/* Banner + Avatar */}
       <ProfileImageEditor
         avatarUrl={profile?.avatar_url ?? null}
         bannerUrl={profile?.banner_url ?? null}
         username={profile?.username ?? '?'}
       />
 
-      {/* İsim / kullanıcı adı / stats */}
+      {/* İsim / stats */}
       <div className="px-4 pb-4" style={{ borderBottom: '1px solid #eff3f4' }}>
         <div className="flex items-start justify-between mb-1">
           <div>
@@ -96,47 +94,8 @@ export default async function ProfilePage() {
         </div>
       </div>
 
-      {/* Geçmiş */}
-      <div className="px-4 py-3" style={{ borderBottom: '1px solid #eff3f4' }}>
-        <h2 className="font-black text-base" style={{ color: '#0f1419' }}>
-          <Calendar size={16} className="inline mr-2" style={{ color: '#536471' }} />
-          Geçmiş ({submissions?.length || 0})
-        </h2>
-      </div>
-
-      {!submissions?.length ? (
-        <div className="p-16 text-center">
-          <p className="mb-4 text-sm" style={{ color: '#536471' }}>Henüz hiç deneme yapmadın.</p>
-          <Link href="/" className="inline-block px-5 py-2.5 rounded-full font-bold text-white text-sm" style={{ background: '#ff6b2b' }}>
-            Görevlere Bak
-          </Link>
-        </div>
-      ) : (
-        (submissions as unknown as (Submission & { quest: Quest & { cash_reward: number } })[]).map((s) => (
-          <Link key={s.id} href={`/quest/${s.quest.id}`}
-            className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
-            style={{ borderBottom: '1px solid #eff3f4' }}>
-            <img src={s.quest.photo_url} className="w-12 h-12 rounded-xl object-cover flex-shrink-0" alt="" />
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium truncate" style={{ color: '#0f1419' }}>{s.quest.title}</div>
-              <div className="text-xs" style={{ color: '#536471' }}>
-                {formatDistanceToNow(new Date(s.created_at), { addSuffix: true, locale: tr })} · {s.distance_meters}m
-              </div>
-            </div>
-            {s.is_winner ? (
-              <span className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-bold" style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e' }}>
-                <CheckCircle size={11} /> Kazandı
-              </span>
-            ) : s.status === 'pending' ? (
-              <span className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-bold" style={{ background: 'rgba(234,179,8,0.1)', color: '#ca8a04' }}>
-                <Clock size={11} /> İnceleniyor
-              </span>
-            ) : (
-              <span className="text-xs px-2.5 py-1 rounded-full" style={{ background: '#f7f8f8', color: '#536471' }}>Uzak</span>
-            )}
-          </Link>
-        ))
-      )}
+      {/* Paylaşımlar + Geçmiş sekmeleri */}
+      <ProfilePosts userId={user.id} submissions={submissions} />
     </AppShell>
   );
 }

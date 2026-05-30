@@ -8,6 +8,7 @@ export async function GET(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   const type = req.nextUrl.searchParams.get('type');
+  const userId = req.nextUrl.searchParams.get('user_id');
 
   let query = supabase
     .from('posts')
@@ -15,6 +16,7 @@ export async function GET(req: NextRequest) {
     .order('created_at', { ascending: false })
     .limit(50);
   if (type) query = query.eq('post_type', type);
+  if (userId) query = query.eq('user_id', userId);
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
