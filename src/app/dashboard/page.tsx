@@ -47,14 +47,19 @@ export default async function DashboardPage() {
 
   const likeCount: Record<string, number> = {};
   const likedByMe = new Set<string>();
+  const commentCount: Record<string, number> = {};
   if (posts.length) {
-    const { data: likeRows } = await supabase
-      .from('post_likes')
-      .select('post_id, user_id')
-      .in('post_id', posts.map((p) => p.id));
-    for (const row of likeRows || []) {
+    const ids = posts.map((p) => p.id);
+    const [likeRes, commentRes] = await Promise.all([
+      supabase.from('post_likes').select('post_id, user_id').in('post_id', ids),
+      supabase.from('post_comments').select('post_id').in('post_id', ids),
+    ]);
+    for (const row of likeRes.data || []) {
       likeCount[row.post_id] = (likeCount[row.post_id] || 0) + 1;
       if (row.user_id === user.id) likedByMe.add(row.post_id);
+    }
+    for (const row of commentRes.data || []) {
+      commentCount[row.post_id] = (commentCount[row.post_id] || 0) + 1;
     }
   }
 
@@ -174,6 +179,7 @@ export default async function DashboardPage() {
                   postId={post.id}
                   initialLikes={likeCount[post.id] || 0}
                   initialLiked={likedByMe.has(post.id)}
+                  initialCommentCount={commentCount[post.id] || 0}
                   latitude={post.latitude}
                   longitude={post.longitude}
                 />

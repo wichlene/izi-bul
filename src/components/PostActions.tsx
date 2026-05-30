@@ -16,6 +16,7 @@ interface Props {
   postId: string;
   initialLikes: number;
   initialLiked: boolean;
+  initialCommentCount?: number;
   latitude?: number | null;
   longitude?: number | null;
 }
@@ -33,14 +34,14 @@ function timeAgo(d: string) {
   return `${Math.floor(s / 86400)}g`;
 }
 
-export default function PostActions({ postId, initialLikes, initialLiked, latitude, longitude }: Props) {
+export default function PostActions({ postId, initialLikes, initialLiked, initialCommentCount = 0, latitude, longitude }: Props) {
   const [likes, setLikes] = useState(initialLikes);
   const [liked, setLiked] = useState(initialLiked);
   const [likeBusy, setLikeBusy] = useState(false);
 
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
-  const [commentCount, setCommentCount] = useState(0);
+  const [commentCount, setCommentCount] = useState(initialCommentCount);
   const [commentsLoaded, setCommentsLoaded] = useState(false);
   const [commentInput, setCommentInput] = useState('');
   const [commentBusy, setCommentBusy] = useState(false);

@@ -16,9 +16,15 @@ interface Post {
   latitude: number | null;
   longitude: number | null;
   created_at: string;
-  profiles: { username: string } | null;
+  profiles: { username: string } | { username: string }[] | null;
   like_count?: number;
   liked_by_me?: boolean;
+  comment_count?: number;
+}
+
+function pickUsername(p: Post['profiles']): string {
+  if (!p) return '?';
+  return (Array.isArray(p) ? p[0]?.username : p.username) || '?';
 }
 
 function timeAgo(date: string): string {
@@ -90,6 +96,13 @@ export default function GoodDeedClient() {
     }
   };
 
+  const loadPosts = () => {
+    fetch('/api/posts?type=good_deed')
+      .then((r) => r.json())
+      .then((data) => setPosts(data || []))
+      .catch(() => {});
+  };
+
   const post = async () => {
     if (!content.trim() || posting) return;
     setPosting(true);
@@ -99,12 +112,11 @@ export default function GoodDeedClient() {
       body: JSON.stringify({ content, post_type: 'good_deed', photo_url: photo || null, latitude: coords?.lat, longitude: coords?.lng }),
     });
     if (res.ok) {
-      const newPost = await res.json();
-      setPosts((prev) => [newPost, ...prev]);
       setContent('');
       setPhoto('');
       setShowPhoto(false);
       setCoords(null);
+      loadPosts(); // sunucudan taze veri çek
       router.refresh();
     }
     setPosting(false);
@@ -232,11 +244,11 @@ export default function GoodDeedClient() {
           style={{ borderBottom: '1px solid #eff3f4', background: 'rgba(236,72,153,0.02)' }}>
           <div className="w-10 h-10 rounded-full flex items-center justify-center font-black text-white flex-shrink-0 text-sm"
             style={{ background: 'linear-gradient(135deg,#ec4899,#a855f7)' }}>
-            {p.profiles?.username?.charAt(0).toUpperCase() || '?'}
+            {pickUsername(p.profiles).charAt(0).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-bold text-sm" style={{ color: '#0f1419' }}>@{p.profiles?.username}</span>
+              <span className="font-bold text-sm" style={{ color: '#0f1419' }}>@{pickUsername(p.profiles)}</span>
               <span className="text-xs font-bold px-2 py-0.5 rounded-full"
                 style={{ background: 'rgba(236,72,153,0.1)', color: '#ec4899' }}>💗 İyilik</span>
               <span className="text-sm" style={{ color: '#536471' }}>· {timeAgo(p.created_at)}</span>
@@ -251,6 +263,7 @@ export default function GoodDeedClient() {
               postId={p.id}
               initialLikes={p.like_count || 0}
               initialLiked={p.liked_by_me || false}
+              initialCommentCount={p.comment_count || 0}
               latitude={p.latitude}
               longitude={p.longitude}
             />

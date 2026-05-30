@@ -34,10 +34,23 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // Yorum sayıları
+  const commentCount: Record<string, number> = {};
+  if (posts.length) {
+    const { data: commentRows } = await supabase
+      .from('post_comments')
+      .select('post_id')
+      .in('post_id', posts.map((p: { id: string }) => p.id));
+    for (const row of commentRows || []) {
+      commentCount[row.post_id] = (commentCount[row.post_id] || 0) + 1;
+    }
+  }
+
   const enriched = posts.map((p: { id: string } & Record<string, unknown>) => ({
     ...p,
     like_count: likeCount[p.id] || 0,
     liked_by_me: likedSet.has(p.id),
+    comment_count: commentCount[p.id] || 0,
   }));
 
   return NextResponse.json(enriched);
