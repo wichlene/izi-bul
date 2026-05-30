@@ -3,14 +3,22 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { MapPin, Loader2, Mail, Lock, User, AtSign } from 'lucide-react';
+import { MapPin, Loader2, Mail, Lock, User, AtSign, Phone } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [form, setForm] = useState({ email: '', password: '', username: '', full_name: '' });
+  const [form, setForm] = useState({ email: '', password: '', username: '', full_name: '', phone: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const normalizePhone = (v: string) => {
+    // Sadece rakam bırak
+    const digits = v.replace(/\D/g, '');
+    // Başında 90 varsa at, 0 ile başlıyorsa bırak
+    if (digits.startsWith('90') && digits.length === 12) return '0' + digits.slice(2);
+    return digits;
+  };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,24 +28,39 @@ export default function RegisterPage() {
     if (form.username.length < 3) { setError('Kullanıcı adı en az 3 karakter olmalı'); return; }
     if (!/^[a-zA-Z0-9_]+$/.test(form.username)) { setError('Kullanıcı adı sadece harf, rakam ve _ içerebilir'); return; }
 
+    const phone = normalizePhone(form.phone);
+    if (!/^05\d{9}$/.test(phone)) { setError('Geçerli bir Türkiye telefon numarası gir (05xx...)'); return; }
+
     setLoading(true);
     const supabase = createClient();
-    const { error } = await supabase.auth.signUp({
+    const { error: signUpError } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
       options: {
-        data: { username: form.username.toLowerCase(), full_name: form.full_name },
+        data: {
+          username: form.username.toLowerCase(),
+          full_name: form.full_name,
+          phone,
+        },
         emailRedirectTo: `${location.origin}/auth/callback`,
       },
     });
 
-    if (error) {
-      setError(error.message);
+    if (signUpError) {
+      setError(signUpError.message === 'User already registered' ? 'Bu e-posta zaten kayıtlı' : signUpError.message);
       setLoading(false);
-    } else {
-      router.push('/');
-      router.refresh();
+      return;
     }
+
+    // Profil oluşturulduktan sonra telefonu güncelle
+    await fetch('/api/profile/phone', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone }),
+    });
+
+    router.push('/dashboard');
+    router.refresh();
   };
 
   const inputStyle = {
@@ -45,10 +68,18 @@ export default function RegisterPage() {
     border: '1px solid rgba(255,255,255,0.08)',
   };
 
+  const fields = [
+    { label: 'Adın Soyadın', icon: <User size={16} />, key: 'full_name', type: 'text', placeholder: 'Ahmet Yılmaz' },
+    { label: 'Kullanıcı Adı', icon: <AtSign size={16} />, key: 'username', type: 'text', placeholder: 'ahmetylmz' },
+    { label: 'E-posta', icon: <Mail size={16} />, key: 'email', type: 'email', placeholder: 'ornek@email.com' },
+    { label: 'Telefon', icon: <Phone size={16} />, key: 'phone', type: 'tel', placeholder: '05xx xxx xx xx' },
+    { label: 'Şifre', icon: <Lock size={16} />, key: 'password', type: 'password', placeholder: 'En az 6 karakter' },
+  ];
+
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-8" style={{ background: '#0a0a0f' }}>
       <div className="w-full max-w-md">
-        <Link href="/" className="flex items-center justify-center gap-2 mb-8">
+        <Link href="/login" className="flex items-center justify-center gap-2 mb-8">
           <div className="rounded-2xl p-2.5" style={{ background: 'linear-gradient(135deg, #ff6b2b, #ff3d00)' }}>
             <MapPin size={24} className="text-white" />
           </div>
@@ -62,12 +93,7 @@ export default function RegisterPage() {
           <p className="text-white/40 text-sm mb-6">Ücretsiz hesap aç, keşfe çık, ödülleri topla.</p>
 
           <form onSubmit={handleRegister} className="space-y-3">
-            {[
-              { label: 'Adın Soyadın', icon: <User size={16} />, key: 'full_name', type: 'text', placeholder: 'Ahmet Yılmaz' },
-              { label: 'Kullanıcı Adı', icon: <AtSign size={16} />, key: 'username', type: 'text', placeholder: 'ahmetylmz' },
-              { label: 'E-posta', icon: <Mail size={16} />, key: 'email', type: 'email', placeholder: 'ornek@email.com' },
-              { label: 'Şifre', icon: <Lock size={16} />, key: 'password', type: 'password', placeholder: 'En az 6 karakter' },
-            ].map(({ label, icon, key, type, placeholder }) => (
+            {fields.map(({ label, icon, key, type, placeholder }) => (
               <div key={key}>
                 <label className="text-white/60 text-sm font-medium block mb-1.5">{label}</label>
                 <div className="relative">
@@ -80,8 +106,8 @@ export default function RegisterPage() {
                     className="w-full rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-white/20 focus:outline-none transition-all"
                     style={inputStyle}
                     placeholder={placeholder}
-                    onFocus={(e) => e.target.style.borderColor = 'rgba(255,107,43,0.5)'}
-                    onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.08)'}
+                    onFocus={(e) => (e.target.style.borderColor = 'rgba(255,107,43,0.5)')}
+                    onBlur={(e) => (e.target.style.borderColor = 'rgba(255,255,255,0.08)')}
                   />
                 </div>
               </div>

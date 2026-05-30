@@ -1,38 +1,55 @@
+import { createServerClient } from '@supabase/ssr';
 import { NextRequest, NextResponse } from 'next/server';
 
-// Giriş gerektiren sayfalar
-const PROTECTED = ['/dashboard', '/profile', '/messages', '/notifications', '/admin', '/quest', '/good-deed', '/friends', '/map'];
+// Bu sayfalar giriş yapmadan erişilebilir
+const PUBLIC_PATHS = ['/login', '/register', '/forgot-password', '/auth'];
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Giriş kontrolü: token cookie yoksa login'e yönlendir
-  const isProtected = PROTECTED.some((p) => pathname.startsWith(p));
-  if (isProtected) {
-    const token =
-      request.cookies.get('sb-access-token')?.value ||
-      request.cookies.get('sb-refresh-token')?.value ||
-      // Supabase v2 cookie formatı
-      [...request.cookies.getAll()].some((c) => c.name.startsWith('sb-') && c.name.endsWith('-auth-token'));
+  const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
+  const isStatic = pathname.startsWith('/_next') || pathname.startsWith('/favicon') || /\.(png|svg|ico|jpg|webp|css|js)$/.test(pathname);
 
-    if (!token) {
-      const url = request.nextUrl.clone();
-      url.pathname = '/login';
-      url.searchParams.set('next', pathname);
-      return NextResponse.redirect(url);
+  if (isStatic) return NextResponse.next();
+
+  // Supabase oturumunu middleware'de doğru şekilde kontrol et
+  let response = NextResponse.next({ request });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll: () => request.cookies.getAll(),
+        setAll: (toSet) => {
+          toSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          response = NextResponse.next({ request });
+          toSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
+        },
+      },
     }
+  );
+
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // Giriş yapmamış → sadece public sayfalara izin ver
+  if (!user && !isPublic) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    if (pathname !== '/') url.searchParams.set('next', pathname);
+    return NextResponse.redirect(url);
   }
 
-  const response = NextResponse.next();
+  // Giriş yapmış → /login ve /register'a gitmesin, dashboard'a yönlendir
+  if (user && (pathname === '/login' || pathname === '/register')) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/dashboard';
+    url.search = '';
+    return NextResponse.redirect(url);
+  }
 
-  // API rotaları için CORS: sadece kendi domainden
+  // API güvenliği
   if (pathname.startsWith('/api/')) {
-    const origin = request.headers.get('origin');
-    const host = request.headers.get('host') || '';
-    const allowed = !origin || origin.includes(host) || origin.includes('izi-bul.vercel.app');
-    if (!allowed) {
-      return new NextResponse('Forbidden', { status: 403 });
-    }
     response.headers.set('Cache-Control', 'no-store');
   }
 
@@ -40,5 +57,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.png$|.*\\.svg$).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 };
