@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { Home, MapPin, MessageCircle, Users, User, Shield, Plus, BarChart2, Heart } from 'lucide-react';
 import SignOutButton from './SignOutButton';
 import NotificationBell from './NotificationBell';
+import PushSubscriber from './PushSubscriber';
 
 interface Props {
   children: React.ReactNode;
@@ -48,6 +49,7 @@ export default async function AppShell({ children, aside }: Props) {
 
   return (
     <div className="flex min-h-screen" style={{ background: '#f7f9fa' }}>
+      {user && <PushSubscriber userId={user.id} />}
 
       {/* SOL SİDEBAR — sadece md+ */}
       <div className="hidden md:flex w-[72px] xl:w-[275px] flex-shrink-0 flex-col h-screen sticky top-0 px-2 xl:px-3 py-2"

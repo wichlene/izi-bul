@@ -8,6 +8,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import PrivacyToggle from './PrivacyToggle';
 import ProfileImageEditor from './ProfileImageEditor';
+import ProfileEditModal from './ProfileEditModal';
 
 export default async function ProfilePage() {
   const supabase = await createClient();
@@ -38,18 +39,32 @@ export default async function ProfilePage() {
 
       {/* İsim / kullanıcı adı / stats */}
       <div className="px-4 pb-4" style={{ borderBottom: '1px solid #eff3f4' }}>
-        <div className="flex items-center gap-2 mb-0.5">
-          <h1 className="text-xl font-black" style={{ color: '#0f1419' }}>{profile?.full_name || profile?.username}</h1>
-          {profile?.is_admin && <Shield size={16} style={{ color: '#ff6b2b' }} />}
-          {profile?.is_premium && <Star size={14} style={{ color: '#ff6b2b' }} fill="#ff6b2b" />}
+        <div className="flex items-start justify-between mb-1">
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-black" style={{ color: '#0f1419' }}>{profile?.full_name || profile?.username}</h1>
+              {profile?.is_admin && <Shield size={16} style={{ color: '#ff6b2b' }} />}
+              {profile?.is_premium && <Star size={14} style={{ color: '#ff6b2b' }} fill="#ff6b2b" />}
+            </div>
+            <p className="text-sm" style={{ color: '#536471' }}>@{profile?.username}</p>
+          </div>
+          <ProfileEditModal initialData={{
+            full_name: profile?.full_name ?? null,
+            username: profile?.username ?? null,
+            city: profile?.city ?? null,
+            bio: profile?.bio ?? null,
+          }} />
         </div>
-        <p className="text-sm mb-2" style={{ color: '#536471' }}>@{profile?.username}</p>
+
+        {profile?.bio && (
+          <p className="text-sm mt-2 mb-1 leading-relaxed" style={{ color: '#0f1419' }}>{profile.bio}</p>
+        )}
         {profile?.city && (
-          <p className="text-xs flex items-center gap-1 mb-3" style={{ color: '#536471' }}>
+          <p className="text-xs flex items-center gap-1 mt-1 mb-3" style={{ color: '#536471' }}>
             <MapPin size={11} />{profile.city}
           </p>
         )}
-        <div className="flex gap-5 flex-wrap">
+        <div className="flex gap-5 flex-wrap mt-3">
           <span className="text-sm" style={{ color: '#536471' }}>
             <span className="font-black" style={{ color: '#0f1419' }}>{followingCount}</span> Takip
           </span>
