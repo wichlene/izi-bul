@@ -9,10 +9,14 @@ import { createClient } from '@/lib/supabase/client';
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const next = params.get('next') || '/';
+  const next = params.get('next') || '/dashboard';
+  const urlError = params.get('error');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState(
+    urlError === 'link_expired' ? 'Şifre sıfırlama linki süresi dolmuş. Tekrar dene.' :
+    urlError === 'missing_token' ? 'Geçersiz link. Tekrar şifre sıfırlama isteği gönder.' : ''
+  );
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {

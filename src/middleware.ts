@@ -18,6 +18,9 @@ const MEMBERS_ONLY = [
 // Auth sayfaları — giriş yapmışlar buraya giremez
 const AUTH_PAGES = ['/login', '/register'];
 
+// Herkese açık auth yardımcı sayfaları (token ile gelinir)
+const AUTH_HELPER = ['/forgot-password', '/reset-password', '/auth'];
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -26,9 +29,10 @@ export async function middleware(request: NextRequest) {
 
   const isMembersOnly = MEMBERS_ONLY.some((p) => pathname.startsWith(p));
   const isAuthPage = AUTH_PAGES.some((p) => pathname.startsWith(p));
+  const isAuthHelper = AUTH_HELPER.some((p) => pathname.startsWith(p));
 
   // Korumalı sayfa veya auth sayfasıysa oturumu kontrol et
-  if (!isMembersOnly && !isAuthPage) {
+  if (!isMembersOnly && !isAuthPage && !isAuthHelper) {
     // Açık sayfa (/, /quest/[id], /about, vb.) — geç
     const response = NextResponse.next();
     if (pathname.startsWith('/api/')) response.headers.set('Cache-Control', 'no-store');
@@ -53,6 +57,9 @@ export async function middleware(request: NextRequest) {
   );
 
   const { data: { user } } = await supabase.auth.getUser();
+
+  // Auth helper sayfaları (forgot/reset/auth callback) herkese açık
+  if (isAuthHelper) return response;
 
   if (!user && isMembersOnly) {
     // Üye değil, korumalı sayfaya girmeye çalışıyor → login
