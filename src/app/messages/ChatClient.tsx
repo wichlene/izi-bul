@@ -124,7 +124,6 @@ export default function ChatClient({ currentUserId, friends, convMap, initialMes
 
   const clearConversation = async () => {
     if (!chatWith || !confirm(`${chatWith.username} ile olan tüm mesajlarını silmek istiyor musun?`)) return;
-    setShowChatMenu(false);
     const myMsgs = messages.filter((m) => m.from_user_id === currentUserId);
     await Promise.all(myMsgs.map((m) => fetch(`/api/messages/${m.id}`, { method: 'DELETE' })));
     setMessages((prev) => prev.filter((m) => m.from_user_id !== currentUserId));
