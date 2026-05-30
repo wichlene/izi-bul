@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import Groq from 'groq-sdk';
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-
 async function urlToBase64(url: string): Promise<string> {
   const res = await fetch(url);
   const buffer = await res.arrayBuffer();
@@ -31,6 +29,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
     const [refB64, userB64] = await Promise.all([
       urlToBase64(quest.photo_url),
       urlToBase64(user_photo_url),
