@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { checkRateLimit } from '@/lib/rateLimit';
 
 // Beğeni toggle
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Giriş yapmalısın' }, { status: 401 });
+
+  if (!checkRateLimit(`like:${user.id}`, 60, 60_000)) {
+    return NextResponse.json({ error: 'Çok hızlı.' }, { status: 429 });
+  }
 
   const { post_id } = await req.json();
   if (!post_id) return NextResponse.json({ error: 'post_id gerekli' }, { status: 400 });

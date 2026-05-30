@@ -6,7 +6,10 @@ const securityHeaders = [
   { key: 'X-Frame-Options', value: 'DENY' },
   { key: 'X-XSS-Protection', value: '1; mode=block' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(self)' },
+  // Kamera AR için, mikrofon ve ödeme kapalı
+  { key: 'Permissions-Policy', value: 'camera=(self), microphone=(), payment=(), geolocation=(self)' },
+  // HTTPS'i 1 yıl boyunca zorla, subdomainlere de uygula
+  { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
 ];
 
 const nextConfig: NextConfig = {
