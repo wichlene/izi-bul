@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Heart, MessageSquare, Loader2, ImagePlus, X } from 'lucide-react';
 import PhotoUpload from '@/components/PhotoUpload';
 
-export default function Composer({ initial }: { initial?: string }) {
+export default function Composer() {
   const router = useRouter();
   const [type, setType] = useState<'social' | 'good_deed'>('social');
   const [content, setContent] = useState('');

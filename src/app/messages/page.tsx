@@ -81,6 +81,7 @@ export default async function MessagesPage({ searchParams }: { searchParams: Pro
   return (
     <AppShell>
       <ChatClient
+        key={chatWith?.id ?? 'list'}
         currentUserId={user.id}
         friends={sortedFriends}
         convMap={convMap}

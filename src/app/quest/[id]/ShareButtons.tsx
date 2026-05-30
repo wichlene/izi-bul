@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Share2, QrCode, Copy, Check } from 'lucide-react';
+import { QrCode, Copy, Check } from 'lucide-react';
 
 interface Props {
   questTitle: string;

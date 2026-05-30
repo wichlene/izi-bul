@@ -41,12 +41,6 @@ export default function ChatClient({ currentUserId, friends, convMap, initialMes
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
   useEffect(() => {
-    setMessages(initialMessages);
-    if (chatWith) setMobileView('chat');
-    else setMobileView('list');
-  }, [chatWith?.id]); // eslint-disable-line
-
-  useEffect(() => {
     if (!chatWith) return;
     const withId = chatWith.id;
 

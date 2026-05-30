@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Bell, UserPlus, MessageCircle, Trophy, Heart, Target, Check } from 'lucide-react';
+import { Bell, UserPlus, MessageCircle, Trophy, Heart, Check } from 'lucide-react';
 
 
 interface DBNotif {
@@ -39,7 +38,6 @@ const ICONS: Record<string, { icon: React.ReactNode; color: string }> = {
 };
 
 export default function NotificationsClient() {
-  const router = useRouter();
   const [data, setData] = useState<{
     friend_requests: FriendReq[];
     unread_messages: UnreadMsg[];
