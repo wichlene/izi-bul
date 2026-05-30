@@ -1,10 +1,11 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-import { Target, Trophy, Zap, Heart, Megaphone } from 'lucide-react';
+import { Heart, Megaphone } from 'lucide-react';
 import AppShell from '@/components/AppShell';
 import Composer from './Composer';
 import PostActions from '@/components/PostActions';
+import { renderContent } from '@/lib/renderContent';
 
 export const revalidate = 0;
 
@@ -32,28 +33,18 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login?next=/dashboard');
 
-  const [profileRes, progressRes, postsRes, featuredRes] = await Promise.all([
-    supabase.from('profiles').select('username, total_finds, total_wins, is_admin, is_business').eq('id', user.id).single(),
-    supabase.from('user_quest_progress')
-      .select('id, current_step, quests(id, title, photo_url)')
-      .eq('user_id', user.id).eq('is_completed', false)
-      .order('last_activity_at', { ascending: false }).limit(3),
+  const [postsRes, recentActivityRes] = await Promise.all([
     supabase.from('posts')
       .select('id, content, created_at, post_type, photo_url, latitude, longitude, profiles(username), quests(id, title, photo_url, cash_reward)')
       .order('created_at', { ascending: false }).limit(30),
-    supabase.from('quests')
-      .select('id, title, photo_url, cash_reward, difficulty, total_attempts')
-      .eq('is_active', true)
-      .order('created_at', { ascending: false })
-      .limit(6),
+    supabase.from('posts')
+      .select('id, content, created_at, post_type, profiles(username)')
+      .order('created_at', { ascending: false }).limit(10),
   ]);
 
-  const profile = profileRes.data;
-  const activeQuests = progressRes.data || [];
   const posts = postsRes.data || [];
-  const featured = featuredRes.data || [];
+  const recentActivity = recentActivityRes.data || [];
 
-  // Beğenileri ayrı çek — post_likes tablosu yoksa feed yine de çalışır
   const likeCount: Record<string, number> = {};
   const likedByMe = new Set<string>();
   if (posts.length) {
@@ -70,101 +61,45 @@ export default async function DashboardPage() {
   /* ── SAĞ PANEL ─────────────────────────────────────────── */
   const aside = (
     <div className="pt-2 space-y-4">
-      {/* Arama */}
-      <div className="rounded-2xl px-4 py-3 flex items-center gap-2"
-        style={{ background: '#eff3f4' }}>
-        <span style={{ color: '#536471' }}>🔍</span>
-        <span className="text-sm" style={{ color: '#536471' }}>Görev ara...</span>
-      </div>
-
-      {/* Öne çıkan görevler — X "Neler oluyor?" kutusu gibi */}
+      {/* Anlık Faaliyetler */}
       <div className="rounded-2xl overflow-hidden" style={{ background: '#ffffff', border: '1px solid #eff3f4' }}>
         <div className="px-4 py-3">
-          <h2 className="font-black text-xl" style={{ color: '#0f1419' }}>Gündemdekiler</h2>
+          <h2 className="font-black text-xl" style={{ color: '#0f1419' }}>Anlık Faaliyetler</h2>
+          <p className="text-xs mt-0.5" style={{ color: '#536471' }}>Son paylaşımlar</p>
         </div>
-        {featured.slice(0, 5).map((q) => (
-          <Link key={q.id} href={`/quest/${q.id}`}
-            className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
-            style={{ borderTop: '1px solid #eff3f4' }}>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs" style={{ color: '#536471' }}>Görev · {q.total_attempts || 0} deneme</p>
-              <p className="font-bold text-sm truncate" style={{ color: '#0f1419' }}>{q.title}</p>
-              {q.cash_reward > 0 && <p className="text-xs font-bold" style={{ color: '#22c55e' }}>{q.cash_reward}₺ ödül</p>}
-            </div>
-            {q.photo_url && <img src={q.photo_url} className="w-12 h-12 rounded-xl object-cover flex-shrink-0" alt="" />}
-          </Link>
-        ))}
-        <div className="px-4 py-3" style={{ borderTop: '1px solid #eff3f4' }}>
-          <Link href="/" className="text-sm font-semibold" style={{ color: '#ff6b2b' }}>Daha fazla göster</Link>
-        </div>
-      </div>
-
-      {/* Aktif görevler */}
-      {activeQuests.length > 0 && (
-        <div className="rounded-2xl overflow-hidden" style={{ background: '#ffffff', border: '1px solid #eff3f4' }}>
-          <div className="px-4 py-3">
-            <h2 className="font-black text-xl" style={{ color: '#0f1419' }}>Devam Edenler</h2>
-          </div>
-          {activeQuests.map((p) => {
-            const q = pick(p.quests);
-            return (
-              <div key={p.id} className="flex items-center gap-3 px-4 py-3"
-                style={{ borderTop: '1px solid #eff3f4' }}>
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-sm truncate" style={{ color: '#0f1419' }}>{q?.title}</p>
-                  <p className="text-xs" style={{ color: '#536471' }}>Adım {p.current_step}</p>
-                </div>
-                <Link href={`/quest/${q?.id}`}
-                  className="px-4 py-1.5 rounded-full text-xs font-black text-white flex-shrink-0"
-                  style={{ background: 'linear-gradient(135deg,#ff6b2b,#ff3d00)' }}>
-                  Devam
-                </Link>
+        {recentActivity.length === 0 ? (
+          <p className="px-4 py-3 text-sm" style={{ color: '#536471' }}>Henüz aktivite yok.</p>
+        ) : recentActivity.map((a) => {
+          const ap = pick(a.profiles);
+          const isGood = a.post_type === 'good_deed';
+          const isAnnounce = a.post_type === 'announcement';
+          return (
+            <div key={a.id} className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
+              style={{ borderTop: '1px solid #eff3f4' }}>
+              <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-black text-white flex-shrink-0"
+                style={{ background: isAnnounce ? 'linear-gradient(135deg,#ff6b2b,#ff3d00)' : isGood ? 'linear-gradient(135deg,#ec4899,#a855f7)' : 'linear-gradient(135deg,#ff6b2b,#a855f7)' }}>
+                {isAnnounce ? '📢' : isGood ? '💗' : ap?.username?.charAt(0).toUpperCase()}
               </div>
-            );
-          })}
-        </div>
-      )}
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold truncate" style={{ color: '#0f1419' }}>@{ap?.username}</p>
+                <p className="text-xs mt-0.5 line-clamp-2 leading-snug" style={{ color: '#536471' }}>
+                  {renderContent(a.content)}
+                </p>
+                <p className="text-[10px] mt-1" style={{ color: '#8e8e8e' }}>{timeAgo(a.created_at)}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 
   return (
     <AppShell aside={aside}>
-      {/* Sticky tab bar — X gibi */}
-      <div className="sticky top-0 z-10 backdrop-blur-md"
-        style={{ background: 'rgba(255,255,255,0.85)', borderBottom: '1px solid #eff3f4' }}>
-        <div className="flex">
-          <button className="flex-1 py-4 text-sm font-bold" style={{ color: '#0f1419', borderBottom: '2px solid #ff6b2b' }}>
-            Sana Özel
-          </button>
-          <Link href="/" className="flex-1 py-4 text-sm font-bold text-center" style={{ color: '#536471' }}>
-            Görevler
-          </Link>
-        </div>
-      </div>
-
-      {/* Çalışan compose kutusu — paylaşım + iyilik hareketi */}
+      {/* Compose kutusu */}
       <Composer />
 
-      {/* Stats bar */}
-      <div className="flex items-center gap-0 px-4 py-3" style={{ borderBottom: '1px solid #eff3f4' }}>
-        {[
-          { icon: <Target size={14} />, val: profile?.total_finds || 0, label: 'Buldu', c: '#ff6b2b' },
-          { icon: <Trophy size={14} />, val: profile?.total_wins || 0, label: 'Kazandı', c: '#22c55e' },
-          { icon: <Zap size={14} />, val: activeQuests.length, label: 'Aktif', c: '#a855f7' },
-        ].map((s, i) => (
-          <div key={i} className="flex-1 flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: s.c + '15', color: s.c }}>
-              {s.icon}
-            </div>
-            <div>
-              <span className="font-black text-lg" style={{ color: '#0f1419' }}>{s.val}</span>
-              <span className="text-xs ml-1" style={{ color: '#536471' }}>{s.label}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Feed — Tweet tarzı */}
+      {/* Feed */}
       {posts.length === 0 ? (
         <div className="p-16 text-center">
           <div className="text-5xl mb-4">📭</div>
@@ -207,7 +142,7 @@ export default async function DashboardPage() {
 
                 {/* Content */}
                 <p className="text-sm mt-0.5 leading-relaxed" style={{ color: '#0f1419' }}>
-                  {post.content}
+                  {renderContent(post.content)}
                 </p>
 
                 {/* Post fotoğrafı (iyilik/sosyal) */}

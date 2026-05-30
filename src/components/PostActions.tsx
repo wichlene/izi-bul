@@ -1,7 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Heart, MessageCircle, Share2, MapPin, Send, X } from 'lucide-react';
+
+interface UserSuggest { id: string; username: string }
 
 interface Comment {
   id: string;
@@ -44,6 +46,40 @@ export default function PostActions({ postId, initialLikes, initialLiked, latitu
   const [commentBusy, setCommentBusy] = useState(false);
 
   const [copied, setCopied] = useState(false);
+
+  // @mention for comments
+  const [mentionResults, setMentionResults] = useState<UserSuggest[]>([]);
+  const commentInputRef = useRef<HTMLInputElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleCommentChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setCommentInput(val);
+    const pos = e.target.selectionStart ?? val.length;
+    const before = val.slice(0, pos);
+    const match = before.match(/@(\w*)$/);
+    if (match) {
+      const query = match[1];
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(async () => {
+        if (query.length === 0) { setMentionResults([]); return; }
+        const res = await fetch(`/api/users/search?q=${encodeURIComponent(query)}`);
+        if (res.ok) setMentionResults(await res.json());
+      }, 200);
+    } else {
+      setMentionResults([]);
+    }
+  }, []);
+
+  const pickCommentMention = (username: string) => {
+    const pos = commentInputRef.current?.selectionStart ?? commentInput.length;
+    const before = commentInput.slice(0, pos);
+    const after = commentInput.slice(pos);
+    const replaced = before.replace(/@\w*$/, `@${username} `);
+    setCommentInput(replaced + after);
+    setMentionResults([]);
+    commentInputRef.current?.focus();
+  };
 
   // ── Beğeni ──
   const toggleLike = async () => {
@@ -184,12 +220,29 @@ export default function PostActions({ postId, initialLikes, initialLiked, latitu
           )}
 
           {/* Yorum input */}
+          <div className="relative">
+            {mentionResults.length > 0 && (
+              <div className="absolute bottom-full left-0 right-0 z-50 rounded-xl overflow-hidden shadow-lg mb-1"
+                style={{ background: '#fff', border: '1px solid #eff3f4' }}>
+                {mentionResults.map((u) => (
+                  <button key={u.id} onMouseDown={() => pickCommentMention(u.username)}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 text-left transition-colors">
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black text-white flex-shrink-0"
+                      style={{ background: 'linear-gradient(135deg,#ff6b2b,#a855f7)' }}>
+                      {u.username.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="text-sm font-semibold" style={{ color: '#0f1419' }}>@{u.username}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           <div className="flex items-center gap-2 px-3 py-2.5" style={{ borderTop: comments.length ? '1px solid #eff3f4' : undefined, background: '#fff' }}>
             <input
+              ref={commentInputRef}
               value={commentInput}
-              onChange={(e) => setCommentInput(e.target.value)}
+              onChange={handleCommentChange}
               onKeyDown={(e) => e.key === 'Enter' && submitComment()}
-              placeholder="Yorum ekle..."
+              placeholder="Yorum ekle... @birini etiketle"
               maxLength={280}
               className="flex-1 text-sm focus:outline-none bg-transparent"
               style={{ color: '#0f1419' }}
@@ -205,6 +258,7 @@ export default function PostActions({ postId, initialLikes, initialLiked, latitu
                 <X size={14} />
               </button>
             )}
+          </div>
           </div>
         </div>
       )}
