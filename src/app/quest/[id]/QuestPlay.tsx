@@ -13,8 +13,11 @@ import ARTreasure from '@/components/ARTreasure';
 interface Step {
   id?: string;
   step_number: number;
-  step_type: 'question' | 'location' | 'image' | 'final';
+  step_type: string;
+  has_question?: boolean;
+  has_image?: boolean;
   question?: string | null;
+  photo_url?: string | null;
   target_lat: number;
   target_lng: number;
   approach_radius_meters: number;
@@ -37,6 +40,8 @@ export default function QuestPlay({ quest, alreadyWon, isLoggedIn, steps: rawSte
   const steps: Step[] = hasSteps ? rawSteps : [{
     step_number: 1,
     step_type: quest.requires_photo_proof ? 'image' : 'final',
+    has_question: false,
+    has_image: quest.requires_photo_proof,
     question: null,
     target_lat: quest.latitude,
     target_lng: quest.longitude,
@@ -250,7 +255,10 @@ export default function QuestPlay({ quest, alreadyWon, isLoggedIn, steps: rawSte
               {totalSteps > 1 ? `Adım ${currentStepNum}/${totalSteps}` : 'Hazineyi Bul'}
             </h2>
             <span className="text-xs font-bold px-2 py-1 rounded-full" style={{ background: '#f7f8f8', color: '#536471' }}>
-              {step.step_type === 'question' ? '❓ Soru' : step.step_type === 'image' ? '📷 Fotoğraf' : '📍 Konum'}
+              {step.has_question && step.has_image ? '❓+📷 Kombine'
+               : step.has_question || step.step_type === 'question' ? '❓ Soru'
+               : step.has_image || step.step_type === 'image' ? '📷 Fotoğraf'
+               : '📍 Konum'}
             </span>
           </div>
           <p className="text-sm" style={{ color: '#536471' }}>
@@ -297,8 +305,8 @@ export default function QuestPlay({ quest, alreadyWon, isLoggedIn, steps: rawSte
             </div>
           ) : (
             <>
-              {/* Soru */}
-              {step.step_type === 'question' && step.question && (
+              {/* Soru - if has_question OR old step_type === 'question' */}
+              {(step.has_question || step.step_type === 'question') && step.question && (
                 <div>
                   <p className="font-bold text-sm mb-2" style={{ color: '#0f1419' }}>{step.question}</p>
                   <input value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Cevabını yaz..."
@@ -307,10 +315,10 @@ export default function QuestPlay({ quest, alreadyWon, isLoggedIn, steps: rawSte
                 </div>
               )}
 
-              {/* Fotoğraf */}
-              {step.step_type === 'image' && (
+              {/* Fotoğraf - if has_image OR old step_type === 'image' */}
+              {(step.has_image || step.step_type === 'image') && !isLastStep && (
                 <div>
-                  <p className="font-bold text-sm mb-2" style={{ color: '#0f1419' }}>Buradan bir fotoğraf çek</p>
+                  <p className="font-bold text-sm mb-2" style={{ color: '#0f1419' }}>Bu adım için fotoğraf çek</p>
                   <PhotoUpload onUpload={setPhoto} />
                 </div>
               )}
@@ -340,12 +348,14 @@ export default function QuestPlay({ quest, alreadyWon, isLoggedIn, steps: rawSte
               {isLastStep ? (
                 <button
                   onClick={async () => {
-                    if (step.step_type === 'question' && !answer.trim()) { setError('Önce soruyu cevapla.'); return; }
-                    if (step.step_type === 'image' && !photo) { setError('Önce fotoğraf çek.'); return; }
+                    const needsQuestion = step.has_question || step.step_type === 'question';
+                    const needsImage = step.has_image || step.step_type === 'image';
+                    if (needsQuestion && !answer.trim()) { setError('Önce soruyu cevapla.'); return; }
+                    if (needsImage && !photo) { setError('Önce fotoğraf çek.'); return; }
                     setError('');
 
                     // Fotoğraflı görevde AI kontrolü yap
-                    if (step.step_type === 'image' && photo) {
+                    if (needsImage && photo) {
                       setAiLoading(true);
                       setAiResult(null);
                       try {
@@ -378,11 +388,18 @@ export default function QuestPlay({ quest, alreadyWon, isLoggedIn, steps: rawSte
                   )}
                 </button>
               ) : (
-                <button onClick={submitStep} disabled={submitting || (step.step_type === 'question' && !answer.trim()) || (step.step_type === 'image' && !photo)}
-                  className="w-full font-bold py-3 rounded-xl flex items-center justify-center gap-2 text-white disabled:opacity-50"
-                  style={{ background: 'linear-gradient(135deg,#ff6b2b,#ff3d00)' }}>
-                  {submitting ? <><Loader2 size={16} className="animate-spin" /> Kontrol ediliyor...</> : <><CheckCircle size={16} /> Bu Adımı Tamamla</>}
-                </button>
+                (() => {
+                  const needsQuestion = step.has_question || step.step_type === 'question';
+                  const needsImage = step.has_image || step.step_type === 'image';
+                  const canSubmit = !(needsQuestion && !answer.trim()) && !(needsImage && !photo);
+                  return (
+                    <button onClick={submitStep} disabled={submitting || !canSubmit}
+                      className="w-full font-bold py-3 rounded-xl flex items-center justify-center gap-2 text-white disabled:opacity-50"
+                      style={{ background: 'linear-gradient(135deg,#ff6b2b,#ff3d00)' }}>
+                      {submitting ? <><Loader2 size={16} className="animate-spin" /> Kontrol ediliyor...</> : <><CheckCircle size={16} /> Bu Adımı Tamamla</>}
+                    </button>
+                  );
+                })()
               )}
             </>
           )}

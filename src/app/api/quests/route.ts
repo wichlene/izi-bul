@@ -83,26 +83,37 @@ export async function POST(req: NextRequest) {
   if (isMultistep) {
     const admin = createAdminClient();
     const stepRows = steps.map((s: {
-      step_type?: string; question?: string; correct_answer?: string;
-      latitude: number; longitude: number; approach_radius_meters?: number; hint?: string;
+      has_question?: boolean;
+      has_image?: boolean;
+      question?: string;
+      correct_answer?: string;
+      reference_photo_url?: string;
+      approach_radius_meters?: number;
+      hint?: string;
     }, i: number) => ({
       quest_id: data.id,
       step_number: i + 1,
-      step_type: s.step_type || 'location',
+      step_type: s.has_question && s.has_image ? 'combo' : s.has_question ? 'question' : 'image',
+      has_question: s.has_question || false,
+      has_image: s.has_image || false,
       question: s.question || null,
       correct_answer: s.correct_answer || null,
-      target_lat: s.latitude,
-      target_lng: s.longitude,
-      approach_radius_meters: s.approach_radius_meters || 500,
+      photo_url: s.reference_photo_url || null,
+      target_lat: latitude,
+      target_lng: longitude,
+      approach_radius_meters: s.approach_radius_meters || 400,
       hint: s.hint || null,
     }));
     // Son adım: görevin gizli konumu (zorluğa göre dar yarıçap)
     stepRows.push({
       quest_id: data.id,
       step_number: steps.length + 1,
-      step_type: requires_photo_proof !== false ? 'image' : 'final',
+      step_type: 'final',
+      has_question: false,
+      has_image: true,
       question: null,
       correct_answer: null,
+      photo_url: photo_url || null,
       target_lat: latitude,
       target_lng: longitude,
       approach_radius_meters: finalRadius,

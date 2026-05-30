@@ -12,11 +12,11 @@ interface Props {
 }
 
 interface StepDraft {
-  step_type: 'question' | 'location';
+  has_question: boolean;
+  has_image: boolean;
   question: string;
   correct_answer: string;
-  latitude: number | null;
-  longitude: number | null;
+  reference_photo_url: string;
   approach_radius_meters: number;
   hint: string;
 }
@@ -46,8 +46,8 @@ export default function CreateQuestForm({ categories }: Props) {
   const set = (k: string, v: unknown) => setForm((f) => ({ ...f, [k]: v }));
 
   const addStep = () => setSteps((s) => [...s, {
-    step_type: 'question', question: '', correct_answer: '', latitude: null, longitude: null,
-    approach_radius_meters: Math.max(1500 - s.length * 500, 300), hint: '',
+    has_question: true, has_image: false, question: '', correct_answer: '',
+    reference_photo_url: '', approach_radius_meters: 400, hint: '',
   }]);
   const updStep = (i: number, patch: Partial<StepDraft>) => setSteps((s) => s.map((st, idx) => idx === i ? { ...st, ...patch } : st));
   const delStep = (i: number) => setSteps((s) => s.filter((_, idx) => idx !== i));
@@ -59,8 +59,9 @@ export default function CreateQuestForm({ categories }: Props) {
     }
     if (multistep) {
       for (const [i, st] of steps.entries()) {
-        if (!st.latitude || !st.longitude) { setError(`${i + 1}. adımın konumunu haritadan seç.`); return; }
-        if (st.step_type === 'question' && (!st.question || !st.correct_answer)) { setError(`${i + 1}. adımın soru ve cevabını gir.`); return; }
+        if (!st.has_question && !st.has_image) { setError(`${i + 1}. adım için en az bir tür seçmelisin (Soru-Cevap veya Resim).`); return; }
+        if (st.has_question && (!st.question || !st.correct_answer)) { setError(`${i + 1}. adımın soru ve cevabını gir.`); return; }
+        if (st.has_image && !st.reference_photo_url) { setError(`${i + 1}. adım için referans fotoğraf yükle.`); return; }
       }
     }
     setError('');
@@ -78,11 +79,11 @@ export default function CreateQuestForm({ categories }: Props) {
           max_distance_meters: parseInt(form.max_distance_meters),
           expires_at: form.expires_at ? new Date(form.expires_at).toISOString() : null,
           steps: multistep ? steps.map((s) => ({
-            step_type: s.step_type,
+            has_question: s.has_question,
+            has_image: s.has_image,
             question: s.question || null,
             correct_answer: s.correct_answer || null,
-            latitude: s.latitude,
-            longitude: s.longitude,
+            reference_photo_url: s.reference_photo_url || null,
             approach_radius_meters: s.approach_radius_meters,
             hint: s.hint || null,
           })) : undefined,
@@ -188,34 +189,60 @@ export default function CreateQuestForm({ categories }: Props) {
                   <span className="font-bold text-sm" style={{ color: '#0f1419' }}>Adım {i + 1}</span>
                   <button onClick={() => delStep(i)} className="p-1.5 rounded-lg" style={{ color: '#ef4444' }}><Trash2 size={14} /></button>
                 </div>
+
+                {/* Tür seçimi: çift checkbox */}
                 <div className="flex gap-2 mb-3">
-                  {(['question', 'location'] as const).map((t) => (
-                    <button key={t} onClick={() => updStep(i, { step_type: t })}
-                      className="px-3 py-1.5 rounded-lg text-xs font-semibold"
-                      style={st.step_type === t ? { background: 'rgba(255,107,43,0.1)', color: '#ff6b2b' } : { background: '#fff', color: '#536471', border: '1px solid #eff3f4' }}>
-                      {t === 'question' ? '❓ Soru' : '📍 Sadece Konum'}
-                    </button>
-                  ))}
+                  <label className="flex items-center gap-1.5 px-3 py-2 rounded-lg cursor-pointer text-xs font-semibold select-none"
+                    style={st.has_question ? { background: 'rgba(255,107,43,0.1)', color: '#ff6b2b', border: '1px solid rgba(255,107,43,0.3)' } : { background: '#fff', color: '#536471', border: '1px solid #eff3f4' }}>
+                    <input type="checkbox" checked={st.has_question} onChange={(e) => updStep(i, { has_question: e.target.checked })}
+                      className="w-3.5 h-3.5" style={{ accentColor: '#ff6b2b' }} />
+                    ❓ Soru-Cevap
+                  </label>
+                  <label className="flex items-center gap-1.5 px-3 py-2 rounded-lg cursor-pointer text-xs font-semibold select-none"
+                    style={st.has_image ? { background: 'rgba(255,107,43,0.1)', color: '#ff6b2b', border: '1px solid rgba(255,107,43,0.3)' } : { background: '#fff', color: '#536471', border: '1px solid #eff3f4' }}>
+                    <input type="checkbox" checked={st.has_image} onChange={(e) => updStep(i, { has_image: e.target.checked })}
+                      className="w-3.5 h-3.5" style={{ accentColor: '#ff6b2b' }} />
+                    📷 Resim Karşılaştırma
+                  </label>
                 </div>
-                {st.step_type === 'question' && (
+
+                {/* Soru-Cevap alanları */}
+                {st.has_question && (
                   <div className="space-y-2 mb-3">
-                    <input value={st.question} onChange={(e) => updStep(i, { question: e.target.value })} placeholder="Soru (örn: Bu heykelin adı ne?)"
-                      className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none" style={{ background: '#fff', border: '1px solid #eff3f4', color: '#0f1419' }} />
+                    <textarea value={st.question} onChange={(e) => updStep(i, { question: e.target.value })} rows={2}
+                      placeholder="Soru (örn: Bu heykelin adı ne?)"
+                      className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none resize-none"
+                      style={{ background: '#fff', border: '1px solid #eff3f4', color: '#0f1419' }} />
                     <input value={st.correct_answer} onChange={(e) => updStep(i, { correct_answer: e.target.value })} placeholder="Doğru cevap"
                       className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none" style={{ background: '#fff', border: '1px solid #eff3f4', color: '#0f1419' }} />
                   </div>
                 )}
+
+                {/* Referans fotoğraf */}
+                {st.has_image && (
+                  <div className="mb-3">
+                    <p className="text-xs font-medium mb-1.5" style={{ color: '#536471' }}>Bu adım için referans fotoğraf yükle:</p>
+                    <PhotoUpload onUpload={(url) => updStep(i, { reference_photo_url: url })} />
+                    {st.reference_photo_url && (
+                      <p className="flex items-center gap-1 text-xs mt-1" style={{ color: '#22c55e' }}><Check size={12} /> Fotoğraf yüklendi</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Yakınlık yarıçapı */}
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xs" style={{ color: '#536471' }}>Yakınlık:</span>
-                  {[1500, 800, 400, 200].map((r) => (
-                    <button key={r} onClick={() => updStep(i, { approach_radius_meters: r })}
-                      className="px-2 py-1 rounded-lg text-xs font-semibold"
-                      style={st.approach_radius_meters === r ? { background: 'rgba(255,107,43,0.1)', color: '#ff6b2b' } : { background: '#fff', color: '#536471', border: '1px solid #eff3f4' }}>
-                      {r}m
-                    </button>
-                  ))}
+                  <span className="text-xs shrink-0" style={{ color: '#536471' }}>Yakınlık yarıçapı (final konumdan):</span>
+                  <input type="number" min={10} step={10} value={st.approach_radius_meters}
+                    onChange={(e) => updStep(i, { approach_radius_meters: parseInt(e.target.value) || 400 })}
+                    className="w-20 rounded-lg px-2 py-1.5 text-sm focus:outline-none text-right"
+                    style={{ background: '#fff', border: '1px solid #eff3f4', color: '#0f1419' }} />
+                  <span className="text-xs" style={{ color: '#536471' }}>m</span>
                 </div>
-                <LocationPicker lat={st.latitude} lng={st.longitude} onSelect={(la, ln) => updStep(i, { latitude: la, longitude: ln })} height="h-44" />
+
+                {/* İpucu */}
+                <input value={st.hint} onChange={(e) => updStep(i, { hint: e.target.value })} placeholder="İpucu (isteğe bağlı)"
+                  className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
+                  style={{ background: '#fff', border: '1px solid #eff3f4', color: '#0f1419' }} />
               </div>
             ))}
             <button onClick={addStep} className="w-full py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-1.5" style={{ background: 'rgba(255,107,43,0.08)', color: '#ff6b2b', border: '1px dashed rgba(255,107,43,0.3)' }}>

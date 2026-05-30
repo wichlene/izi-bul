@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
   // Adımlardan correct_answer'ı gizle (cevap sızmasın)
   const { data: steps } = await admin
     .from('quest_steps')
-    .select('id, quest_id, step_number, step_type, question, target_lat, target_lng, approach_radius_meters, hint, photo_url')
+    .select('id, quest_id, step_number, step_type, has_question, has_image, question, target_lat, target_lng, approach_radius_meters, hint, photo_url')
     .eq('quest_id', questId)
     .order('step_number');
 
@@ -85,15 +85,16 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // Cevap kontrolü (eğer varsa)
-  if (step.step_type === 'question' && step.correct_answer) {
+  // Soru kontrolü
+  if (step.has_question && step.correct_answer) {
     const norm = (s: string) => s.trim().toLowerCase().replace(/[^a-z0-9ğüşöçı]/gi, '');
     if (norm(answer || '') !== norm(step.correct_answer)) {
       return NextResponse.json({ correct: false, message: 'Yanlış cevap, tekrar dene.' });
     }
   }
 
-  if (step.step_type === 'image' && !photo_url) {
+  // Fotoğraf kontrolü — adım resim gerektiriyorsa fotoğraf zorunlu
+  if (step.has_image && !photo_url) {
     return NextResponse.json({ correct: false, message: 'Fotoğraf gerekli.' });
   }
 
