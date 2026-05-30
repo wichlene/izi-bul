@@ -16,10 +16,11 @@ export default function LogoutButton() {
   return (
     <button
       onClick={logout}
-      className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl text-sm font-semibold transition-colors hover:bg-red-50"
+      title="Çıkış Yap"
+      className="flex items-center justify-center p-2 rounded-xl transition-colors hover:bg-red-50"
       style={{ background: 'rgba(239,68,68,0.06)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.15)' }}
     >
-      <LogOut size={16} /> Çıkış Yap
+      <LogOut size={16} />
     </button>
   );
 }

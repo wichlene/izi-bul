@@ -49,12 +49,15 @@ export default async function ProfilePage() {
             </div>
             <p className="text-sm" style={{ color: '#536471' }}>@{profile?.username}</p>
           </div>
-          <ProfileEditModal initialData={{
-            full_name: profile?.full_name ?? null,
-            username: profile?.username ?? null,
-            city: profile?.city ?? null,
-            bio: profile?.bio ?? null,
-          }} />
+          <div className="flex items-center gap-2">
+            <ProfileEditModal initialData={{
+              full_name: profile?.full_name ?? null,
+              username: profile?.username ?? null,
+              city: profile?.city ?? null,
+              bio: profile?.bio ?? null,
+            }} />
+            <LogoutButton />
+          </div>
         </div>
 
         {profile?.bio && (
@@ -99,11 +102,6 @@ export default async function ProfilePage() {
           <Calendar size={16} className="inline mr-2" style={{ color: '#536471' }} />
           Geçmiş ({submissions?.length || 0})
         </h2>
-      </div>
-
-      {/* Çıkış Yap */}
-      <div className="px-4 py-4" style={{ borderBottom: '1px solid #eff3f4' }}>
-        <LogoutButton />
       </div>
 
       {!submissions?.length ? (
