@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Send, MessageCircle, ArrowLeft, Search, PenSquare } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { playMessage } from '@/lib/sounds';
 
 interface Message { id: string; from_user_id: string; to_user_id: string; content: string; created_at: string }
 interface Friend { id: string; username: string }
@@ -47,6 +48,7 @@ export default function ChatClient({ currentUserId, friends, convMap, initialMes
 
     const addMsg = (msg: Message) => {
       setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
+      if (msg.from_user_id !== currentUserId) playMessage();
       setLiveConv((prev) => ({
         ...prev,
         [msg.from_user_id === currentUserId ? msg.to_user_id : msg.from_user_id]: {

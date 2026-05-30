@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Bell } from 'lucide-react';
+import { playNotification } from '@/lib/sounds';
 
 export default function NotificationBell() {
   const [count, setCount] = useState(0);
+  const prevCount = useRef(-1);
 
   useEffect(() => {
     const fetchCount = async () => {
@@ -12,7 +14,12 @@ export default function NotificationBell() {
         const res = await fetch('/api/notifications');
         if (res.ok) {
           const json = await res.json();
-          setTimeout(() => setCount(json.counts?.total || 0), 0);
+          const total = json.counts?.total || 0;
+          if (prevCount.current !== -1 && total > prevCount.current) {
+            playNotification();
+          }
+          prevCount.current = total;
+          setTimeout(() => setCount(total), 0);
         }
       } catch {}
     };

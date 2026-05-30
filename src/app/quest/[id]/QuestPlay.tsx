@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Trophy, Loader2, AlertCircle, LogIn, Navigation, CheckCircle, Lock, Clock, ScanLine } from 'lucide-react';
+import { playQuestComplete, playError } from '@/lib/sounds';
 import { Quest } from '@/types';
 import { calculateDistance, formatDistance } from '@/lib/distance';
 import PhotoUpload from '@/components/PhotoUpload';
@@ -105,6 +106,7 @@ export default function QuestPlay({ quest, alreadyWon, isLoggedIn, steps: rawSte
         if (!res.ok) throw new Error(data.error || 'Hata');
         if (!data.correct) { setError(data.message); setShowAR(false); return false; }
         if (data.is_complete) {
+          playQuestComplete();
           setDone({ points: data.points ?? quest.points, cash: data.cash_reward ?? 0, coop: data.coop_count ?? 1, pending: false });
         } else {
           setCurrentStepNum(data.next_step);
@@ -119,7 +121,8 @@ export default function QuestPlay({ quest, alreadyWon, isLoggedIn, steps: rawSte
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Hata');
-        if (!data.isClose) { setError(`Yeterince yakın değilsin (${formatDistance(data.distance)}).`); setShowAR(false); return false; }
+        if (!data.isClose) { playError(); setError(`Yeterince yakın değilsin (${formatDistance(data.distance)}).`); setShowAR(false); return false; }
+        playQuestComplete();
         setDone({ points: data.pointsEarned || quest.points, cash: quest.cash_reward || 0, coop: 1, pending: data.status === 'pending' });
         return true;
       }

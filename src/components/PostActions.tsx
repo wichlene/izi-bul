@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { Heart, MessageCircle, Share2, MapPin, Send, X } from 'lucide-react';
+import { playLike, playMessage } from '@/lib/sounds';
 
 interface UserSuggest { id: string; username: string }
 
@@ -89,6 +90,7 @@ export default function PostActions({ postId, initialLikes, initialLiked, initia
     const next = !liked;
     setLiked(next);
     setLikes((n) => n + (next ? 1 : -1));
+    if (next) playLike();
     try {
       const res = await fetch('/api/posts/like', {
         method: 'POST',
@@ -137,6 +139,7 @@ export default function PostActions({ postId, initialLikes, initialLiked, initia
       setComments((prev) => [...prev, c]);
       setCommentCount((n) => n + 1);
       setCommentInput('');
+      playMessage();
     }
     setCommentBusy(false);
   };
