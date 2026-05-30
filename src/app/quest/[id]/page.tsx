@@ -183,7 +183,7 @@ export default async function QuestPage({ params }: { params: Promise<{ id: stri
             <div className="rounded-2xl overflow-hidden" style={{ background: '#ffffff', border: '1px solid #eff3f4' }}>
               <QuestPlay quest={quest} alreadyWon={alreadyWon} isLoggedIn={isLoggedIn} steps={steps} initialStep={initialStep} />
             </div>
-            <ShareButtons questTitle={quest.title} questUrl={questUrl} />
+            <ShareButtons questTitle={quest.title} questUrl={questUrl} questDescription={quest.description} />
           </div>
         </div>
       </main>
