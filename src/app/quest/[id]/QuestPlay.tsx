@@ -1,14 +1,17 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Trophy, Loader2, AlertCircle, LogIn, Navigation, CheckCircle, Lock, Clock, ScanLine } from 'lucide-react';
+import { Trophy, Loader2, AlertCircle, LogIn, Navigation, CheckCircle, Lock, Clock, ScanLine, Map } from 'lucide-react';
 import { playQuestComplete, playError } from '@/lib/sounds';
 import { Quest } from '@/types';
 import { calculateDistance, formatDistance } from '@/lib/distance';
 import PhotoUpload from '@/components/PhotoUpload';
 import ARTreasure from '@/components/ARTreasure';
+
+const QuestMap = dynamic(() => import('@/components/QuestMap'), { ssr: false });
 
 interface Step {
   id?: string;
@@ -57,6 +60,8 @@ export default function QuestPlay({ quest, alreadyWon, isLoggedIn, steps: rawSte
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [showAR, setShowAR] = useState(false);
+  const [showMap, setShowMap] = useState(false);
+  const [started, setStarted] = useState(initialStep > 1);
   const [done, setDone] = useState<null | { points: number; cash: number; coop: number; pending: boolean }>(null);
   const [blocked, setBlocked] = useState<null | { message: string; questId: string }>(null);
   const [abandoning, setAbandoning] = useState(false);
@@ -155,6 +160,64 @@ export default function QuestPlay({ quest, alreadyWon, isLoggedIn, steps: rawSte
     // Bırakıldı, şimdi bu göreve devam edebilir — adımı tekrar dene
     submitStep();
   };
+
+  // ---- Quest kapandı — başka biri kazandı ----
+  if (!quest.is_active && !alreadyWon) {
+    return (
+      <div className="p-8 text-center">
+        <div className="text-4xl mb-3">🏁</div>
+        <h3 className="text-lg font-black mb-2" style={{ color: '#0f1419' }}>Görev kapandı</h3>
+        <p className="text-sm mb-4" style={{ color: '#536471' }}>Bu görevi başka bir oyuncu tamamladı. Yeni görevlere bak!</p>
+        <Link href="/dashboard" className="inline-block px-6 py-2.5 rounded-xl font-semibold text-white text-sm" style={{ background: 'linear-gradient(135deg,#ff6b2b,#ff3d00)' }}>Yeni Görev Bul</Link>
+      </div>
+    );
+  }
+
+  // ---- Başlangıç: harita ile kabul ekranı ----
+  if (!started && isLoggedIn && !alreadyWon) {
+    return (
+      <div className="flex flex-col">
+        <div className="p-4" style={{ borderBottom: '1px solid #eff3f4' }}>
+          <h2 className="font-black text-base" style={{ color: '#0f1419' }}>Hazır mısın?</h2>
+          <p className="text-sm mt-0.5" style={{ color: '#536471' }}>Görev alanı haritada gösteriliyor. Yaklaş ve görevi tamamla.</p>
+        </div>
+        <div style={{ height: 280, position: 'relative' }}>
+          <QuestMap
+            userLat={coords?.lat ?? null}
+            userLng={coords?.lng ?? null}
+            targetLat={step.target_lat}
+            targetLng={step.target_lng}
+            radiusMeters={step.approach_radius_meters}
+            inRange={inRange}
+          />
+          {coords && inRange && (
+            <div className="absolute top-3 left-3 px-3 py-1.5 rounded-full text-xs font-bold" style={{ background: 'rgba(34,197,94,0.9)', color: '#fff' }}>
+              ✓ Bölgedesin!
+            </div>
+          )}
+          {coords && !inRange && liveDistance !== null && (
+            <div className="absolute top-3 left-3 px-3 py-1.5 rounded-full text-xs font-bold" style={{ background: 'rgba(0,0,0,0.7)', color: '#fff' }}>
+              {formatDistance(liveDistance)} uzakta
+            </div>
+          )}
+        </div>
+        <div className="p-4 space-y-2">
+          {gpsError && (
+            <div className="rounded-xl p-3 flex items-start gap-2 text-sm" style={{ background: 'rgba(239,68,68,0.08)', color: '#dc2626' }}>
+              <AlertCircle size={15} className="shrink-0 mt-0.5" />{gpsError}
+            </div>
+          )}
+          <button
+            onClick={() => setStarted(true)}
+            className="w-full font-black py-3.5 rounded-xl text-white flex items-center justify-center gap-2"
+            style={{ background: 'linear-gradient(135deg,#ff6b2b,#ff3d00)', boxShadow: '0 6px 20px rgba(255,107,43,0.35)' }}
+          >
+            🚀 Görevi Başlat
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // ---- Ekranlar ----
   if (!isLoggedIn) {
@@ -292,6 +355,31 @@ export default function QuestPlay({ quest, alreadyWon, isLoggedIn, steps: rawSte
           {step.hint && !inRange && (
             <div className="mt-4 rounded-xl px-3 py-2 text-xs w-full" style={{ background: 'rgba(59,130,246,0.06)', color: '#2563eb' }}>
               💡 {step.hint}
+            </div>
+          )}
+        </div>
+
+        {/* Harita toggle */}
+        <div style={{ borderBottom: '1px solid #eff3f4' }}>
+          <button
+            onClick={() => setShowMap(!showMap)}
+            className="w-full py-2 text-xs font-semibold flex items-center justify-center gap-1.5"
+            style={{ color: showMap ? '#ff6b2b' : '#536471' }}
+          >
+            <Map size={13} /> {showMap ? 'Haritayı Gizle' : 'Haritayı Göster'}
+          </button>
+          {showMap && (
+            <div className="px-3 pb-3">
+              <div style={{ height: 200 }} className="rounded-xl overflow-hidden">
+                <QuestMap
+                  userLat={coords?.lat ?? null}
+                  userLng={coords?.lng ?? null}
+                  targetLat={step.target_lat}
+                  targetLng={step.target_lng}
+                  radiusMeters={step.approach_radius_meters}
+                  inRange={inRange}
+                />
+              </div>
             </div>
           )}
         </div>

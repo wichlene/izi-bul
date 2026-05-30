@@ -31,7 +31,7 @@ export default function CreateQuestForm({ categories }: Props) {
     region: '',
     difficulty: 'medium' as Difficulty,
     cash_reward: '0',
-    max_distance_meters: '50',
+    max_distance_meters: '',
     requires_photo_proof: true,
     expires_at: '',
   });
@@ -47,7 +47,7 @@ export default function CreateQuestForm({ categories }: Props) {
 
   const addStep = () => setSteps((s) => [...s, {
     has_question: true, has_image: false, question: '', correct_answer: '',
-    reference_photo_url: '', approach_radius_meters: 400, hint: '',
+    reference_photo_url: '', approach_radius_meters: 0, hint: '',
   }]);
   const updStep = (i: number, patch: Partial<StepDraft>) => setSteps((s) => s.map((st, idx) => idx === i ? { ...st, ...patch } : st));
   const delStep = (i: number) => setSteps((s) => s.filter((_, idx) => idx !== i));
@@ -62,6 +62,7 @@ export default function CreateQuestForm({ categories }: Props) {
         if (!st.has_question && !st.has_image) { setError(`${i + 1}. adım için en az bir tür seçmelisin (Soru-Cevap veya Resim).`); return; }
         if (st.has_question && (!st.question || !st.correct_answer)) { setError(`${i + 1}. adımın soru ve cevabını gir.`); return; }
         if (st.has_image && !st.reference_photo_url) { setError(`${i + 1}. adım için referans fotoğraf yükle.`); return; }
+        if (!(st.approach_radius_meters > 0)) { setError(`${i + 1}. adım için yakınlık yarıçapı girilmedi (metre cinsinden gir).`); return; }
       }
     }
     setError('');
@@ -76,7 +77,7 @@ export default function CreateQuestForm({ categories }: Props) {
           latitude: lat,
           longitude: lng,
           cash_reward: parseInt(form.cash_reward) || 0,
-          max_distance_meters: parseInt(form.max_distance_meters),
+          ...(form.max_distance_meters ? { max_distance_meters: parseInt(form.max_distance_meters) } : {}),
           expires_at: form.expires_at ? new Date(form.expires_at).toISOString() : null,
           steps: multistep ? steps.map((s) => ({
             has_question: s.has_question,
@@ -231,10 +232,12 @@ export default function CreateQuestForm({ categories }: Props) {
 
                 {/* Yakınlık yarıçapı */}
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xs shrink-0" style={{ color: '#536471' }}>Yakınlık yarıçapı (final konumdan):</span>
-                  <input type="number" min={10} step={10} value={st.approach_radius_meters}
-                    onChange={(e) => updStep(i, { approach_radius_meters: parseInt(e.target.value) || 400 })}
-                    className="w-20 rounded-lg px-2 py-1.5 text-sm focus:outline-none text-right"
+                  <span className="text-xs shrink-0" style={{ color: '#536471' }}>Yakınlık yarıçapı (m) <span style={{ color: '#ef4444' }}>*</span></span>
+                  <input type="number" min={1} step={10}
+                    value={st.approach_radius_meters || ''}
+                    placeholder="örn: 500"
+                    onChange={(e) => updStep(i, { approach_radius_meters: parseInt(e.target.value) || 0 })}
+                    className="w-24 rounded-lg px-2 py-1.5 text-sm focus:outline-none text-right"
                     style={{ background: '#fff', border: '1px solid #eff3f4', color: '#0f1419' }} />
                   <span className="text-xs" style={{ color: '#536471' }}>m</span>
                 </div>
@@ -258,10 +261,22 @@ export default function CreateQuestForm({ categories }: Props) {
         <LocationPicker lat={lat} lng={lng} onSelect={(la, ln) => { setLat(la); setLng(ln); }} />
       </section>
 
+      <section className="rounded-2xl p-5 space-y-3" style={section}>
+        <div>
+          <label className="text-sm font-medium block mb-1" style={{ color: '#536471' }}>
+            Final Bölge Yarıçapı (m) <span className="opacity-60">— boş bırakırsan zorluk belirler</span>
+          </label>
+          <input type="number" min={1} step={5} value={form.max_distance_meters}
+            onChange={(e) => set('max_distance_meters', e.target.value)}
+            placeholder={{ easy: '100', medium: '60', hard: '40', legendary: '25' }[form.difficulty] || '60'}
+            className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none" style={input} />
+        </div>
+      </section>
+
       <section className="rounded-2xl p-5 space-y-4" style={section}>
         <div>
           <h2 className="font-bold mb-1" style={{ color: '#0f1419' }}>Ekstra Nakit Ödül</h2>
-          <p className="text-sm mb-2" style={{ color: '#536471' }}>İsteğe bağlı — puana ek nakit (TL). Ortak görevde eşit bölünür.</p>
+          <p className="text-sm mb-2" style={{ color: '#536471' }}>İsteğe bağlı — puana ek nakit (TL).</p>
           <input type="number" value={form.cash_reward} onChange={(e) => set('cash_reward', e.target.value)} placeholder="0"
             className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none" style={input} />
         </div>

@@ -173,14 +173,10 @@ export async function POST(req: NextRequest) {
   });
 }
 
-/**
- * Görevi tamamla. Eğer kullanıcı görevde arkadaşlarıyla birlikteyse
- * (aynı görevde aktif ilerlemesi olan friends), ödül eşit bölünür.
- */
 async function completeQuest(
   admin: ReturnType<typeof createAdminClient>,
   { quest, quest_id, user_id, latitude, longitude, distance, photo_url }: {
-    quest: { id: string; title: string; points: number; cash_reward: number };
+    quest: { id: string; title: string; points: number; cash_reward: number; is_active: boolean };
     quest_id: string;
     user_id: string;
     latitude: number;
@@ -189,77 +185,54 @@ async function completeQuest(
     photo_url?: string | null;
   }
 ) {
-  // Ortak görev: bu kullanıcının arkadaşları arasında aynı görevde aktif olanları bul
-  const { data: friendRows } = await admin
-    .from('friendships')
-    .select('friend_id')
-    .eq('user_id', user_id);
-  const friendIds = (friendRows || []).map((f) => f.friend_id);
-
-  let coopWinners: string[] = [user_id];
-  if (friendIds.length) {
-    const { data: activeFriends } = await admin
-      .from('user_quest_progress')
-      .select('user_id')
-      .eq('quest_id', quest_id)
-      .in('user_id', friendIds)
-      .eq('is_completed', false);
-    coopWinners = [user_id, ...(activeFriends || []).map((a) => a.user_id)];
-  }
-
-  const splitPoints = Math.round((quest.points || 0) / coopWinners.length);
-  const splitCash = Math.round((quest.cash_reward || 0) / coopWinners.length);
-
-  for (const winnerId of coopWinners) {
-    const { data: prof } = await admin
-      .from('profiles')
-      .select('total_finds, total_wins, total_cash_earned')
-      .eq('id', winnerId)
-      .single();
-    if (prof) {
-      await admin.from('profiles').update({
-        total_finds: (prof.total_finds || 0) + 1,
-        total_wins: (prof.total_wins || 0) + 1,
-        total_cash_earned: (prof.total_cash_earned || 0) + splitCash,
-      }).eq('id', winnerId);
-    }
-
-    await admin.from('submissions').insert({
-      quest_id,
-      user_id: winnerId,
-      latitude,
-      longitude,
-      distance_meters: Math.round(distance),
-      photo_url: photo_url || null,
-      status: 'approved',
-      is_winner: true,
-      points_earned: splitPoints,
+  // Yarış modu: başka biri önce tamamladıysa reddet
+  if (!quest.is_active) {
+    return NextResponse.json({
+      correct: false,
+      message: 'Üzgünüm, başka bir oyuncu bu görevi önce tamamladı! 🏁',
     });
-
-    // Ortak oyuncuların ilerlemesini de tamamlanmış işaretle
-    if (winnerId !== user_id) {
-      await admin.from('user_quest_progress')
-        .update({ is_completed: true, completed_at: new Date().toISOString() })
-        .eq('quest_id', quest_id)
-        .eq('user_id', winnerId);
-    }
   }
 
-  // Sosyal post — kazananları yaz
-  const { data: profile } = await admin.from('profiles').select('username').eq('id', user_id).single();
-  const coopNote = coopWinners.length > 1 ? ` (${coopWinners.length} kişi ortak)` : '';
+  const earnedPoints = quest.points || 0;
+  const earnedCash = quest.cash_reward || 0;
+
+  const { data: profile } = await admin.from('profiles').select('username, total_finds, total_wins, total_cash_earned').eq('id', user_id).single();
+  if (profile) {
+    await admin.from('profiles').update({
+      total_finds: (profile.total_finds || 0) + 1,
+      total_wins: (profile.total_wins || 0) + 1,
+      total_cash_earned: (profile.total_cash_earned || 0) + earnedCash,
+    }).eq('id', user_id);
+  }
+
+  await admin.from('submissions').insert({
+    quest_id,
+    user_id,
+    latitude,
+    longitude,
+    distance_meters: Math.round(distance),
+    photo_url: photo_url || null,
+    status: 'approved',
+    is_winner: true,
+    points_earned: earnedPoints,
+  });
+
+  // Görevi kapat — ilk kazanan aldı
+  await admin.from('quests').update({ is_active: false }).eq('id', quest_id);
+
+  // Sosyal post
   await admin.from('posts').insert({
     user_id,
     quest_id,
     post_type: 'quest_complete',
-    content: `@${profile?.username} "${quest.title}" görevini kazandı! 🏆${coopNote}`,
+    content: `@${profile?.username} "${quest.title}" görevini kazandı! 🏆`,
   });
 
-  // Arkadaşlara bildirim gönder
-  const allFriendIds = await getFriendIds(user_id);
-  if (allFriendIds.length) {
+  // Arkadaşlara bildirim
+  const friendIds = await getFriendIds(user_id);
+  if (friendIds.length) {
     await notifyUsers({
-      user_ids: allFriendIds,
+      user_ids: friendIds,
       type: 'quest_complete',
       title: `@${profile?.username} bir görevi kazandı! 🏆`,
       body: `"${quest.title}" görevini tamamladı`,
@@ -269,15 +242,12 @@ async function completeQuest(
     });
   }
 
-  // Görevi kapat — haritadan kalkar
-  await admin.from('quests').update({ is_active: false }).eq('id', quest_id);
-
   return NextResponse.json({
     correct: true,
     is_complete: true,
     message: 'Tebrikler! Görevi tamamladın! 🎉',
-    cash_reward: splitCash,
-    points: splitPoints,
-    coop_count: coopWinners.length,
+    cash_reward: earnedCash,
+    points: earnedPoints,
+    coop_count: 1,
   });
 }

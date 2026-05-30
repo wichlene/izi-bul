@@ -90,20 +90,22 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // İyilik paylaşılınca arkadaşlara bildirim gönder
-  if (type === 'good_deed') {
+  // Arkadaşlara bildirim gönder
+  if (type === 'good_deed' || type === 'social') {
     const posterProfile = (data as { profiles?: { username?: string } }).profiles;
     const username = Array.isArray(posterProfile) ? posterProfile[0]?.username : posterProfile?.username;
     const friendIds = await getFriendIds(user.id);
     if (friendIds.length) {
       await notifyUsers({
         user_ids: friendIds,
-        type: 'good_deed',
-        title: `@${username || 'biri'} bir iyilik paylaştı 💗`,
+        type: type === 'good_deed' ? 'good_deed' : 'info',
+        title: type === 'good_deed'
+          ? `@${username || 'biri'} bir iyilik paylaştı 💗`
+          : `@${username || 'biri'} bir şey paylaştı`,
         body: content.trim().slice(0, 80),
         actor_id: user.id,
         actor_username: username,
-        link: '/good-deed',
+        link: '/dashboard',
       });
     }
   }

@@ -12,8 +12,11 @@ export const revalidate = 30;
 interface QuestStep {
   id: string;
   step_number: number;
-  step_type: 'question' | 'location' | 'image' | 'final';
+  step_type: 'question' | 'location' | 'image' | 'final' | 'combo';
+  has_question: boolean;
+  has_image: boolean;
   question: string | null;
+  photo_url: string | null;
   target_lat: number;
   target_lng: number;
   approach_radius_meters: number;
@@ -58,7 +61,7 @@ async function getQuest(id: string): Promise<{
 
     const { data: steps } = await supabase
       .from('quest_steps')
-      .select('id, step_number, step_type, question, target_lat, target_lng, approach_radius_meters, hint')
+      .select('id, step_number, step_type, has_question, has_image, question, photo_url, target_lat, target_lng, approach_radius_meters, hint')
       .eq('quest_id', id)
       .order('step_number');
 

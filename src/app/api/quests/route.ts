@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
       photo_url: s.reference_photo_url || null,
       target_lat: latitude,
       target_lng: longitude,
-      approach_radius_meters: s.approach_radius_meters || 400,
+      approach_radius_meters: (s.approach_radius_meters ?? 0) > 0 ? s.approach_radius_meters! : 400,
       hint: s.hint || null,
     }));
     // Son adım: görevin gizli konumu (zorluğa göre dar yarıçap)
