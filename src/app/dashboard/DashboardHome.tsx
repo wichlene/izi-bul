@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Quest, Category } from '@/types';
 import { calculateDistance } from '@/lib/distance';
 import QuestCard from '@/components/QuestCard';
+import PostActions from '@/components/PostActions';
 import { Search } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -19,7 +20,10 @@ interface Post {
   profiles?: { username?: string; avatar_url?: string | null } | null;
   quests?: { title?: string; photo_url?: string; cash_reward?: number } | null;
   like_count: number;
+  liked_by_me: boolean;
   comment_count: number;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 type FeedItem =
@@ -184,6 +188,14 @@ export default function DashboardHome({ quests, categories }: Props) {
                       <span className="text-xs font-semibold" style={{ color: '#ff6b2b' }}>{post.quests.title}</span>
                     </Link>
                   )}
+                  <PostActions
+                    postId={post.id}
+                    initialLikes={post.like_count}
+                    initialLiked={post.liked_by_me}
+                    initialCommentCount={post.comment_count}
+                    latitude={post.latitude}
+                    longitude={post.longitude}
+                  />
                 </div>
               </div>
             </div>
