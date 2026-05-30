@@ -10,9 +10,12 @@ self.addEventListener('push', (event) => {
     self.registration.showNotification(data.title || 'İzi Bul', {
       body: data.body || '',
       icon: '/icon-192.png',
-      badge: '/icon-192.png',
+      badge: '/favicon-32.png',
+      tag: data.tag || 'izibul',
+      renotify: true,
       data: { url: data.url || '/dashboard' },
-      vibrate: [200, 100, 200],
+      vibrate: [150, 80, 150, 80, 300],
+      requireInteraction: false,
     })
   );
 });

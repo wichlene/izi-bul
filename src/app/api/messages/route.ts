@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { checkRateLimit } from '@/lib/rateLimit';
+import { notifyUsers } from '@/lib/notify';
 
 export async function GET(req: NextRequest) {
   // Kimlik doğrulama cookie tabanlı (RLS client)
@@ -52,5 +53,18 @@ export async function POST(req: NextRequest) {
   }).select().single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Mesajı alan kişiye push bildirim gönder
+  const { data: sender } = await admin.from('profiles').select('username').eq('id', user.id).single();
+  notifyUsers({
+    user_ids: [to_user_id],
+    type: 'message',
+    title: `💬 ${sender?.username || 'Biri'} sana mesaj gönderdi`,
+    body: content.trim().slice(0, 80),
+    actor_id: user.id,
+    actor_username: sender?.username,
+    link: '/messages',
+  }).catch(() => {});
+
   return NextResponse.json(data, { status: 201 });
 }

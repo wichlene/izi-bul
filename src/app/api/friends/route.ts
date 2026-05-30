@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { notifyUsers } from '@/lib/notify';
 
 export async function GET() {
   const supabase = await createClient();
@@ -33,6 +34,15 @@ export async function POST(req: NextRequest) {
     if (to_user_id === user.id) return NextResponse.json({ error: 'Kendine istek gönderemezsin' }, { status: 400 });
     const { error } = await supabase.from('friend_requests').insert({ from_user_id: user.id, to_user_id });
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    const { data: sender } = await supabase.from('profiles').select('username').eq('id', user.id).single();
+    notifyUsers({
+      user_ids: [to_user_id],
+      type: 'friend_request',
+      title: `👤 ${sender?.username || 'Biri'} sana arkadaşlık isteği gönderdi`,
+      actor_id: user.id,
+      actor_username: sender?.username,
+      link: '/friends',
+    }).catch(() => {});
     return NextResponse.json({ ok: true });
   }
 
@@ -44,6 +54,15 @@ export async function POST(req: NextRequest) {
       { user_id: user.id, friend_id: req2.from_user_id },
       { user_id: req2.from_user_id, friend_id: user.id },
     ]);
+    const { data: accepter } = await supabase.from('profiles').select('username').eq('id', user.id).single();
+    notifyUsers({
+      user_ids: [req2.from_user_id],
+      type: 'friend_accept',
+      title: `🤝 ${accepter?.username || 'Biri'} arkadaşlık isteğini kabul etti`,
+      actor_id: user.id,
+      actor_username: accepter?.username,
+      link: '/friends',
+    }).catch(() => {});
     return NextResponse.json({ ok: true });
   }
 
