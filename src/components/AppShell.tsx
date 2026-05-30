@@ -28,7 +28,7 @@ export default async function AppShell({ children, aside }: Props) {
     pendingRequests = reqRes.count || 0;
   }
 
-  const nav = [
+  const sidebarNav = [
     { href: '/dashboard', icon: <Home size={26} />, label: 'Anasayfa', badge: 0 },
     { href: '/map', icon: <MapPin size={26} />, label: 'Harita', badge: 0 },
     { href: '/friends', icon: <Users size={26} />, label: 'Arkadaşlar', badge: pendingRequests },
@@ -39,11 +39,18 @@ export default async function AppShell({ children, aside }: Props) {
     ...((profile?.is_business || profile?.is_admin) ? [{ href: '/business/stats', icon: <BarChart2 size={26} />, label: 'İstatistik', badge: 0 }] : []),
   ];
 
+  const bottomNav = [
+    { href: '/dashboard', icon: <Home size={24} />, badge: 0 },
+    { href: '/map', icon: <MapPin size={24} />, badge: 0 },
+    { href: '/messages', icon: <MessageCircle size={24} />, badge: unreadMessages },
+    { href: '/profile', icon: <User size={24} />, badge: 0 },
+  ];
+
   return (
     <div className="flex min-h-screen" style={{ background: '#f7f9fa' }}>
 
-      {/* SOL SİDEBAR — X light mode */}
-      <div className="w-[72px] xl:w-[275px] flex-shrink-0 flex flex-col h-screen sticky top-0 px-2 xl:px-3 py-2"
+      {/* SOL SİDEBAR — sadece md+ */}
+      <div className="hidden md:flex w-[72px] xl:w-[275px] flex-shrink-0 flex-col h-screen sticky top-0 px-2 xl:px-3 py-2"
         style={{ background: '#ffffff', borderRight: '1px solid #eff3f4' }}>
 
         {/* Logo */}
@@ -57,7 +64,7 @@ export default async function AppShell({ children, aside }: Props) {
 
         {/* Nav items */}
         <nav className="flex-1 flex flex-col gap-0.5 mt-1">
-          {nav.map((item) => (
+          {sidebarNav.map((item) => (
             <Link key={item.href} href={item.href}
               className="flex items-center gap-5 px-3 py-3 rounded-full transition-colors w-fit xl:w-full hover:bg-gray-100 relative">
               <span className="flex-shrink-0 relative" style={{ color: '#0f1419' }}>
@@ -110,7 +117,7 @@ export default async function AppShell({ children, aside }: Props) {
 
       {/* ORTA — beyaz feed */}
       <main
-        className="flex-1 min-w-0 overflow-y-auto"
+        className="flex-1 min-w-0 overflow-y-auto pb-16 md:pb-0"
         style={{ borderLeft: '1px solid #eff3f4', borderRight: aside ? '1px solid #eff3f4' : 'none', background: '#fff', minHeight: '100vh' }}>
         {children}
       </main>
@@ -121,6 +128,27 @@ export default async function AppShell({ children, aside }: Props) {
           {aside}
         </div>
       )}
+
+      {/* ALT NAVİGASYON — sadece mobil */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden flex items-center justify-around"
+        style={{ background: '#ffffff', borderTop: '1px solid #eff3f4', height: '56px' }}>
+        {bottomNav.map((item) => (
+          <Link key={item.href} href={item.href}
+            className="flex items-center justify-center w-12 h-12 rounded-full relative"
+            style={{ color: '#0f1419' }}>
+            {item.icon}
+            {item.badge > 0 && (
+              <span className="absolute top-1 right-1 min-w-[16px] h-[16px] rounded-full text-[9px] font-black text-white flex items-center justify-center px-0.5"
+                style={{ background: '#ff6b2b' }}>
+                {item.badge > 99 ? '99+' : item.badge}
+              </span>
+            )}
+          </Link>
+        ))}
+        <Link href="/notifications" className="flex items-center justify-center w-12 h-12 rounded-full" style={{ color: '#0f1419' }}>
+          <NotificationBell />
+        </Link>
+      </nav>
     </div>
   );
 }
