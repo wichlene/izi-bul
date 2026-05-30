@@ -22,13 +22,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Sadece JPG, PNG veya WebP yüklenebilir' }, { status: 400 });
   }
 
-  const maxSize = 10 * 1024 * 1024; // 10MB
+  const maxSize = 3 * 1024 * 1024; // 3MB — client sıkıştırıyor zaten
   if (file.size > maxSize) {
-    return NextResponse.json({ error: 'Dosya 10MB\'dan büyük olamaz' }, { status: 400 });
+    return NextResponse.json({ error: 'Dosya 3MB\'dan büyük olamaz' }, { status: 400 });
   }
 
-  const ext = file.name.split('.').pop();
-  const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
 
   const { data, error } = await supabase.storage
     .from('quest-photos')

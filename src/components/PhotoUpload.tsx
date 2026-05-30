@@ -14,13 +14,37 @@ export default function PhotoUpload({ onUpload }: Props) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
 
+  const compress = (file: File): Promise<File> =>
+    new Promise((resolve) => {
+      const img = new Image();
+      const blobUrl = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(blobUrl);
+        const MAX = 1200;
+        let { width, height } = img;
+        if (width > MAX || height > MAX) {
+          if (width > height) { height = Math.round(height * MAX / width); width = MAX; }
+          else { width = Math.round(width * MAX / height); height = MAX; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => resolve(new File([blob!], 'photo.jpg', { type: 'image/jpeg' })),
+          'image/jpeg', 0.82
+        );
+      };
+      img.src = blobUrl;
+    });
+
   const handleFile = async (file: File) => {
     setError('');
     setPreview(URL.createObjectURL(file));
     setUploading(true);
 
+    const compressed = await compress(file);
     const form = new FormData();
-    form.append('file', file);
+    form.append('file', compressed);
 
     try {
       const res = await fetch('/api/upload', { method: 'POST', body: form });
