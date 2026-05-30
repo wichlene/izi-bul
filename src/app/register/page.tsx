@@ -11,6 +11,7 @@ export default function RegisterPage() {
   const [form, setForm] = useState({ email: '', password: '', username: '', full_name: '', phone: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   const normalizePhone = (v: string) => {
     // Sadece rakam bırak
@@ -33,7 +34,7 @@ export default function RegisterPage() {
 
     setLoading(true);
     const supabase = createClient();
-    const { error: signUpError } = await supabase.auth.signUp({
+    const { data, error: signUpError } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
       options: {
@@ -52,12 +53,21 @@ export default function RegisterPage() {
       return;
     }
 
-    // Profil oluşturulduktan sonra telefonu güncelle
-    await fetch('/api/profile/phone', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone }),
-    });
+    // Email onayı açıksa session oluşmaz → kullanıcı maildeki linke tıklamalı
+    if (!data.session) {
+      setLoading(false);
+      setSuccess(true);
+      return;
+    }
+
+    // Session var → telefonu güncelle ve dashboard'a geç
+    if (phone) {
+      await fetch('/api/profile/phone', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone }),
+      });
+    }
 
     router.push('/dashboard');
     router.refresh();
@@ -75,6 +85,28 @@ export default function RegisterPage() {
     { label: 'Telefon (isteğe bağlı)', icon: <Phone size={16} />, key: 'phone', type: 'tel', placeholder: '05xx xxx xx xx' },
     { label: 'Şifre', icon: <Lock size={16} />, key: 'password', type: 'password', placeholder: 'En az 6 karakter' },
   ];
+
+  if (success) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 py-8" style={{ background: '#0a0a0f' }}>
+        <div className="w-full max-w-md text-center">
+          <div className="rounded-3xl p-8" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <div className="mx-auto mb-5 w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #ff6b2b, #ff3d00)' }}>
+              <Mail size={28} className="text-white" />
+            </div>
+            <h1 className="text-2xl font-black text-white mb-2">E-postanı kontrol et</h1>
+            <p className="text-white/50 text-sm mb-6">
+              <span className="text-white/80 font-semibold">{form.email}</span> adresine bir onay bağlantısı gönderdik.
+              Hesabını aktifleştirmek için maildeki bağlantıya tıkla.
+            </p>
+            <Link href="/login" className="inline-block w-full font-bold py-3 rounded-xl text-white" style={{ background: 'linear-gradient(135deg, #ff6b2b, #ff3d00)' }}>
+              Giriş ekranına dön
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-8" style={{ background: '#0a0a0f' }}>
