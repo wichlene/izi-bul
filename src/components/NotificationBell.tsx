@@ -24,7 +24,7 @@ export default function NotificationBell() {
       } catch {}
     };
     fetchCount();
-    const i = setInterval(fetchCount, 15000);
+    const i = setInterval(fetchCount, 5000);
     return () => clearInterval(i);
   }, []);
 

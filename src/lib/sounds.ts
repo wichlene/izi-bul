@@ -1,128 +1,54 @@
 'use client';
 
 let ctx: AudioContext | null = null;
-let unlocked = false;
+let ready = false;
 
-// Tarayıcı ilk kullanıcı etkileşiminde AudioContext'i açar
-if (typeof window !== 'undefined') {
-  const unlock = () => {
-    if (unlocked) return;
-    unlocked = true;
-    if (!ctx) {
-      ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-    }
-    if (ctx.state === 'suspended') ctx.resume();
-  };
-  window.addEventListener('click', unlock, { once: false, passive: true });
-  window.addEventListener('touchstart', unlock, { once: false, passive: true });
-  window.addEventListener('keydown', unlock, { once: false, passive: true });
-}
-
-function play(fn: (ctx: AudioContext) => void) {
+export function unlockAudio() {
+  if (ready) return;
   try {
-    if (typeof window === 'undefined') return;
     if (!ctx) {
-      ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      ctx = new (window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
     }
-    const resume = ctx.state === 'suspended' ? ctx.resume() : Promise.resolve();
-    resume.then(() => fn(ctx!)).catch(() => {});
-  } catch { /* ses desteklenmiyor */ }
+    // iOS için sessiz buffer çal — context'i "running" durumuna getirir
+    const buf = ctx.createBuffer(1, 1, 22050);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(ctx.destination);
+    src.start(0);
+    if (ctx.state === 'suspended') ctx.resume();
+    ready = true;
+  } catch {}
 }
 
-export function playMessage() {
-  play((c) => {
-    const now = c.currentTime;
-    [523.25, 659.25].forEach((freq, i) => {
-      const o = c.createOscillator();
-      const g = c.createGain();
-      o.connect(g); g.connect(c.destination);
-      o.type = 'sine';
-      o.frequency.value = freq;
-      g.gain.setValueAtTime(0, now + i * 0.12);
-      g.gain.linearRampToValueAtTime(0.3, now + i * 0.12 + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.12 + 0.4);
-      o.start(now + i * 0.12);
-      o.stop(now + i * 0.12 + 0.4);
-    });
+function tone(
+  type: OscillatorType,
+  freqs: number[],
+  spacing: number,
+  gain: number,
+  dur: number
+) {
+  if (!ready || !ctx) return;
+  const now = ctx.currentTime;
+  freqs.forEach((freq, i) => {
+    const o = ctx!.createOscillator();
+    const g = ctx!.createGain();
+    o.connect(g);
+    g.connect(ctx!.destination);
+    o.type = type;
+    o.frequency.value = freq;
+    const t = now + i * spacing;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(gain, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.start(t);
+    o.stop(t + dur);
   });
 }
 
-export function playNotification() {
-  play((c) => {
-    const now = c.currentTime;
-    const o = c.createOscillator();
-    const g = c.createGain();
-    o.connect(g); g.connect(c.destination);
-    o.type = 'sine';
-    o.frequency.setValueAtTime(880, now);
-    o.frequency.exponentialRampToValueAtTime(1100, now + 0.05);
-    g.gain.setValueAtTime(0.25, now);
-    g.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-    o.start(now); o.stop(now + 0.3);
-  });
-}
-
-export function playQuestComplete() {
-  play((c) => {
-    const now = c.currentTime;
-    [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
-      const o = c.createOscillator();
-      const g = c.createGain();
-      o.connect(g); g.connect(c.destination);
-      o.type = 'triangle';
-      o.frequency.value = freq;
-      g.gain.setValueAtTime(0, now + i * 0.1);
-      g.gain.linearRampToValueAtTime(0.35, now + i * 0.1 + 0.03);
-      g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.5);
-      o.start(now + i * 0.1);
-      o.stop(now + i * 0.1 + 0.5);
-    });
-  });
-}
-
-export function playLike() {
-  play((c) => {
-    const now = c.currentTime;
-    const o = c.createOscillator();
-    const g = c.createGain();
-    o.connect(g); g.connect(c.destination);
-    o.type = 'sine';
-    o.frequency.setValueAtTime(600, now);
-    o.frequency.exponentialRampToValueAtTime(900, now + 0.08);
-    g.gain.setValueAtTime(0.2, now);
-    g.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-    o.start(now); o.stop(now + 0.15);
-  });
-}
-
-export function playError() {
-  play((c) => {
-    const now = c.currentTime;
-    const o = c.createOscillator();
-    const g = c.createGain();
-    o.connect(g); g.connect(c.destination);
-    o.type = 'sawtooth';
-    o.frequency.value = 150;
-    g.gain.setValueAtTime(0.2, now);
-    g.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-    o.start(now); o.stop(now + 0.25);
-  });
-}
-
-export function playFriendRequest() {
-  play((c) => {
-    const now = c.currentTime;
-    [440, 550, 660].forEach((freq, i) => {
-      const o = c.createOscillator();
-      const g = c.createGain();
-      o.connect(g); g.connect(c.destination);
-      o.type = 'sine';
-      o.frequency.value = freq;
-      g.gain.setValueAtTime(0, now + i * 0.08);
-      g.gain.linearRampToValueAtTime(0.2, now + i * 0.08 + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.35);
-      o.start(now + i * 0.08);
-      o.stop(now + i * 0.08 + 0.35);
-    });
-  });
-}
+export const playLike         = () => tone('sine',     [600, 900],                    0,    0.18, 0.15);
+export const playMessage      = () => tone('sine',     [523, 659],                    0.12, 0.28, 0.4);
+export const playNotification = () => tone('sine',     [880, 1100],                   0,    0.22, 0.3);
+export const playQuestComplete= () => tone('triangle', [523, 659, 784, 1047],         0.1,  0.32, 0.5);
+export const playError        = () => tone('sawtooth', [150],                         0,    0.18, 0.25);
+export const playFriendRequest= () => tone('sine',     [440, 550, 660],               0.08, 0.18, 0.35);
