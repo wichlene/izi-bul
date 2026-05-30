@@ -49,13 +49,33 @@ export default function ARTreasure({ onOpen, onClose }: Props) {
       <video ref={videoRef} playsInline muted className="absolute inset-0 w-full h-full object-cover" />
 
       {camError ? (
-        <div className="relative z-10 text-center px-8">
-          <p className="text-white text-lg font-bold mb-2">📷</p>
-          <p className="text-white/80 text-sm mb-6">{camError}</p>
-          <button onClick={onClose} className="px-6 py-2.5 rounded-full font-bold text-white" style={{ background: '#ff6b2b' }}>
-            Kapat
+        /* Kamera yoksa yine de sandık göster — görev tamamlanabilir */
+        <>
+          <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, #1a1a2e 0%, #000 100%)' }} />
+          <div className="absolute top-4 left-0 right-0 z-20 text-center">
+            <p className="text-yellow-400 text-xs font-semibold">📷 Kamera izni yok — yine de devam edebilirsin</p>
+          </div>
+          <button onClick={onClose} className="absolute top-4 right-4 z-20 w-9 h-9 rounded-full bg-black/40 flex items-center justify-center text-white">
+            <X size={18} />
           </button>
-        </div>
+          <button onClick={handleTap} className="relative z-10 flex flex-col items-center">
+            <div className="absolute inset-0 -m-12 rounded-full"
+              style={{ background: 'radial-gradient(circle, rgba(255,215,0,0.45) 0%, transparent 70%)', animation: 'arPulse 2s ease-in-out infinite' }} />
+            <svg width="150" height="150" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg"
+              style={{ filter: 'drop-shadow(0 12px 30px rgba(0,0,0,0.5))' }}>
+              <path d="M22 58 Q22 34 60 34 Q98 34 98 58 L98 60 L22 60 Z" fill="#8B5A2B" stroke="#5C3A1A" strokeWidth="3"/>
+              <rect x="22" y="52" width="76" height="8" fill="#FFD700" stroke="#B8860B" strokeWidth="2"/>
+              <rect x="22" y="58" width="76" height="46" rx="4" fill="#A0682E" stroke="#5C3A1A" strokeWidth="3"/>
+              <rect x="22" y="66" width="76" height="7" fill="#FFD700" stroke="#B8860B" strokeWidth="2"/>
+              <rect x="52" y="74" width="16" height="18" rx="3" fill="#FFD700" stroke="#B8860B" strokeWidth="2"/>
+              <circle cx="60" cy="81" r="3" fill="#5C3A1A"/>
+            </svg>
+            <div className="relative z-10 mt-4 px-6 py-2.5 rounded-full font-black text-white text-sm"
+              style={{ background: opening ? '#22c55e' : 'linear-gradient(135deg,#ff6b2b,#ff3d00)', boxShadow: '0 6px 20px rgba(255,107,43,0.5)' }}>
+              {opening ? '✨ Açılıyor...' : '👆 Sandığa dokun ve aç'}
+            </div>
+          </button>
+        </>
       ) : (
         <>
           {/* Üst bilgi */}
