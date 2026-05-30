@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { MapPin, Search, Navigation, Loader2, X } from 'lucide-react';
+import { MapPin, Search, Navigation, Loader2, X, Expand } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
 const MapPicker = dynamic(() => import('./MapPicker'), { ssr: false });
@@ -25,37 +25,48 @@ export default function LocationPicker({ lat, lng, onSelect, height = 'h-72' }: 
   const [searching, setSearching] = useState(false);
   const [gpsLoading, setGpsLoading] = useState(false);
   const [gpsError, setGpsError] = useState('');
+  const [fullscreen, setFullscreen] = useState(false);
+  const [fsLat, setFsLat] = useState<number | null>(null);
+  const [fsLng, setFsLng] = useState<number | null>(null);
+  const [fsQuery, setFsQuery] = useState('');
+  const [fsResults, setFsResults] = useState<SearchResult[]>([]);
+  const [fsSearching, setFsSearching] = useState(false);
+  const [fsGpsLoading, setFsGpsLoading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fsDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const search = useCallback(async (q: string) => {
-    if (q.length < 3) { setResults([]); return; }
-    setSearching(true);
+  const search = useCallback(async (q: string, setRes: (r: SearchResult[]) => void, setLoading: (v: boolean) => void) => {
+    if (q.length < 3) { setRes([]); return; }
+    setLoading(true);
     try {
       const res = await fetch(
         `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5&countrycodes=tr`,
         { headers: { 'Accept-Language': 'tr' } }
       );
       const data = await res.json();
-      setResults(data);
-    } catch { setResults([]); }
-    setSearching(false);
+      setRes(data);
+    } catch { setRes([]); }
+    setLoading(false);
   }, []);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => search(query), 400);
+    debounceRef.current = setTimeout(() => search(query, setResults, setSearching), 400);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [query, search]);
 
-  const getLiveLocation = () => {
+  useEffect(() => {
+    if (fsDebounceRef.current) clearTimeout(fsDebounceRef.current);
+    fsDebounceRef.current = setTimeout(() => search(fsQuery, setFsResults, setFsSearching), 400);
+    return () => { if (fsDebounceRef.current) clearTimeout(fsDebounceRef.current); };
+  }, [fsQuery, search]);
+
+  const getLiveLocation = (onDone: (la: number, ln: number) => void, setLoading: (v: boolean) => void) => {
     setGpsError('');
-    setGpsLoading(true);
+    setLoading(true);
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        onSelect(pos.coords.latitude, pos.coords.longitude);
-        setGpsLoading(false);
-      },
-      () => { setGpsError('Konum alınamadı, izin vermelisin.'); setGpsLoading(false); },
+      (pos) => { onDone(pos.coords.latitude, pos.coords.longitude); setLoading(false); },
+      () => { setGpsError('Konum alınamadı, izin vermelisin.'); setLoading(false); },
       { enableHighAccuracy: true, timeout: 10000 }
     );
   };
@@ -66,74 +77,179 @@ export default function LocationPicker({ lat, lng, onSelect, height = 'h-72' }: 
     setResults([]);
   };
 
+  const openFullscreen = () => {
+    setFsLat(lat);
+    setFsLng(lng);
+    setFsQuery('');
+    setFsResults([]);
+    setFullscreen(true);
+  };
+
+  const confirmFullscreen = () => {
+    if (fsLat !== null && fsLng !== null) {
+      onSelect(fsLat, fsLng);
+    }
+    setFullscreen(false);
+  };
+
   return (
-    <div className="space-y-2">
-      {/* Üst araçlar */}
-      <div className="flex gap-2">
-        {/* Arama */}
-        <div className="flex-1 relative">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#536471' }} />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Adres veya yer ara... (ör: Galata Kulesi)"
-            className="w-full rounded-xl pl-9 pr-8 py-2.5 text-sm focus:outline-none"
-            style={{ background: '#f7f8f8', border: '1px solid #eff3f4', color: '#0f1419' }}
-          />
-          {query && (
-            <button onClick={() => { setQuery(''); setResults([]); }} className="absolute right-2.5 top-1/2 -translate-y-1/2" style={{ color: '#536471' }}>
-              <X size={13} />
-            </button>
-          )}
-          {/* Arama sonuçları */}
-          {results.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-1 rounded-xl overflow-hidden z-[2000] shadow-lg" style={{ background: '#fff', border: '1px solid #eff3f4' }}>
-              {results.map((r, i) => (
-                <button key={i} onClick={() => pickResult(r)}
-                  className="w-full text-left px-3 py-2.5 text-sm hover:bg-gray-50 flex items-start gap-2"
-                  style={{ borderBottom: i < results.length - 1 ? '1px solid #eff3f4' : 'none', color: '#0f1419' }}>
-                  <MapPin size={12} className="shrink-0 mt-0.5" style={{ color: '#ff6b2b' }} />
-                  <span className="line-clamp-2 leading-snug">{r.display_name}</span>
-                </button>
-              ))}
-            </div>
-          )}
-          {searching && (
-            <div className="absolute top-full left-0 right-0 mt-1 rounded-xl p-3 text-sm text-center z-[2000]" style={{ background: '#fff', border: '1px solid #eff3f4', color: '#536471' }}>
-              <Loader2 size={14} className="animate-spin inline mr-1" /> Aranıyor...
-            </div>
-          )}
+    <>
+      <div className="space-y-2">
+        {/* Üst araçlar */}
+        <div className="flex gap-2">
+          {/* Arama */}
+          <div className="flex-1 relative">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#536471' }} />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Adres veya yer ara... (ör: Galata Kulesi)"
+              className="w-full rounded-xl pl-9 pr-8 py-2.5 text-sm focus:outline-none"
+              style={{ background: '#f7f8f8', border: '1px solid #eff3f4', color: '#0f1419' }}
+            />
+            {query && (
+              <button onClick={() => { setQuery(''); setResults([]); }} className="absolute right-2.5 top-1/2 -translate-y-1/2" style={{ color: '#536471' }}>
+                <X size={13} />
+              </button>
+            )}
+            {results.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 rounded-xl overflow-hidden z-[2000] shadow-lg" style={{ background: '#fff', border: '1px solid #eff3f4' }}>
+                {results.map((r, i) => (
+                  <button key={i} onClick={() => pickResult(r)}
+                    className="w-full text-left px-3 py-2.5 text-sm hover:bg-gray-50 flex items-start gap-2"
+                    style={{ borderBottom: i < results.length - 1 ? '1px solid #eff3f4' : 'none', color: '#0f1419' }}>
+                    <MapPin size={12} className="shrink-0 mt-0.5" style={{ color: '#ff6b2b' }} />
+                    <span className="line-clamp-2 leading-snug">{r.display_name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            {searching && (
+              <div className="absolute top-full left-0 right-0 mt-1 rounded-xl p-3 text-sm text-center z-[2000]" style={{ background: '#fff', border: '1px solid #eff3f4', color: '#536471' }}>
+                <Loader2 size={14} className="animate-spin inline mr-1" /> Aranıyor...
+              </div>
+            )}
+          </div>
+
+          {/* GPS butonu */}
+          <button
+            onClick={() => getLiveLocation(onSelect, setGpsLoading)}
+            disabled={gpsLoading}
+            title="Şu anki konumumu al"
+            className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-bold shrink-0 disabled:opacity-60"
+            style={{ background: 'linear-gradient(135deg,#ff6b2b,#ff3d00)', color: '#fff' }}>
+            {gpsLoading ? <Loader2 size={14} className="animate-spin" /> : <Navigation size={14} />}
+            <span className="hidden sm:inline">Konumum</span>
+          </button>
+
+          {/* Tam Ekran butonu */}
+          <button
+            onClick={openFullscreen}
+            title="Haritayı tam ekran aç"
+            className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-bold shrink-0"
+            style={{ background: '#f7f8f8', border: '1px solid #eff3f4', color: '#536471' }}>
+            <Expand size={14} />
+            <span className="hidden sm:inline">Haritayı Aç</span>
+          </button>
         </div>
 
-        {/* GPS butonu */}
-        <button
-          onClick={getLiveLocation}
-          disabled={gpsLoading}
-          title="Şu anki konumumu al"
-          className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-bold shrink-0 disabled:opacity-60"
-          style={{ background: 'linear-gradient(135deg,#ff6b2b,#ff3d00)', color: '#fff' }}>
-          {gpsLoading ? <Loader2 size={14} className="animate-spin" /> : <Navigation size={14} />}
-          <span className="hidden sm:inline">Konumum</span>
-        </button>
+        {gpsError && <p className="text-xs" style={{ color: '#ef4444' }}>{gpsError}</p>}
+
+        {/* Harita */}
+        <div className={`${height} rounded-xl overflow-hidden relative`} style={{ border: '1px solid #eff3f4' }}>
+          <MapPicker
+            onLocationSelect={onSelect}
+            initialLat={lat || undefined}
+            initialLng={lng || undefined}
+            zoom={lat ? 15 : 6}
+          />
+        </div>
+
+        {lat && lng && (
+          <p className="text-xs flex items-center gap-1" style={{ color: '#22c55e' }}>
+            <MapPin size={11} /> {lat.toFixed(5)}, {lng.toFixed(5)} — seçildi
+          </p>
+        )}
       </div>
 
-      {gpsError && <p className="text-xs" style={{ color: '#ef4444' }}>{gpsError}</p>}
+      {/* Tam Ekran Harita Modalı */}
+      {fullscreen && (
+        <div className="fixed inset-0 z-[3000] flex flex-col" style={{ background: '#fff' }}>
+          {/* Başlık */}
+          <div className="flex items-center gap-2 px-4 py-3 shrink-0" style={{ borderBottom: '1px solid #eff3f4' }}>
+            <div className="flex-1 relative">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#536471' }} />
+              <input
+                value={fsQuery}
+                onChange={(e) => setFsQuery(e.target.value)}
+                placeholder="Adres ara..."
+                autoFocus
+                className="w-full rounded-xl pl-9 pr-8 py-2.5 text-sm focus:outline-none"
+                style={{ background: '#f7f8f8', border: '1px solid #eff3f4', color: '#0f1419' }}
+              />
+              {fsQuery && (
+                <button onClick={() => { setFsQuery(''); setFsResults([]); }} className="absolute right-2.5 top-1/2 -translate-y-1/2" style={{ color: '#536471' }}>
+                  <X size={13} />
+                </button>
+              )}
+              {(fsResults.length > 0 || fsSearching) && (
+                <div className="absolute top-full left-0 right-0 mt-1 rounded-xl overflow-hidden z-[3100] shadow-xl" style={{ background: '#fff', border: '1px solid #eff3f4' }}>
+                  {fsSearching ? (
+                    <div className="p-3 text-sm text-center" style={{ color: '#536471' }}>
+                      <Loader2 size={14} className="animate-spin inline mr-1" /> Aranıyor...
+                    </div>
+                  ) : fsResults.map((r, i) => (
+                    <button key={i}
+                      onClick={() => { setFsLat(parseFloat(r.lat)); setFsLng(parseFloat(r.lon)); setFsQuery(r.display_name.split(',').slice(0, 2).join(',')); setFsResults([]); }}
+                      className="w-full text-left px-3 py-2.5 text-sm hover:bg-gray-50 flex items-start gap-2"
+                      style={{ borderBottom: i < fsResults.length - 1 ? '1px solid #eff3f4' : 'none', color: '#0f1419' }}>
+                      <MapPin size={12} className="shrink-0 mt-0.5" style={{ color: '#ff6b2b' }} />
+                      <span className="line-clamp-2 leading-snug">{r.display_name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
-      {/* Harita */}
-      <div className={`${height} rounded-xl overflow-hidden relative`} style={{ border: '1px solid #eff3f4' }}>
-        <MapPicker
-          onLocationSelect={onSelect}
-          initialLat={lat || undefined}
-          initialLng={lng || undefined}
-          zoom={lat ? 15 : 6}
-        />
-      </div>
+            <button
+              onClick={() => getLiveLocation((la, ln) => { setFsLat(la); setFsLng(ln); }, setFsGpsLoading)}
+              disabled={fsGpsLoading}
+              className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-bold shrink-0 disabled:opacity-60"
+              style={{ background: 'linear-gradient(135deg,#ff6b2b,#ff3d00)', color: '#fff' }}>
+              {fsGpsLoading ? <Loader2 size={14} className="animate-spin" /> : <Navigation size={14} />}
+              <span className="hidden xs:inline">Konumum</span>
+            </button>
 
-      {lat && lng && (
-        <p className="text-xs flex items-center gap-1" style={{ color: '#22c55e' }}>
-          <MapPin size={11} /> {lat.toFixed(5)}, {lng.toFixed(5)} — seçildi
-        </p>
+            <button onClick={() => setFullscreen(false)} className="p-2 rounded-xl" style={{ color: '#536471', background: '#f7f8f8' }}>
+              <X size={18} />
+            </button>
+          </div>
+
+          {/* Harita */}
+          <div className="flex-1 relative">
+            <MapPicker
+              onLocationSelect={(la, ln) => { setFsLat(la); setFsLng(ln); }}
+              initialLat={fsLat || undefined}
+              initialLng={fsLng || undefined}
+              zoom={fsLat ? 15 : 6}
+            />
+          </div>
+
+          {/* Alt bar */}
+          <div className="px-4 py-3 flex items-center justify-between gap-3 shrink-0" style={{ borderTop: '1px solid #eff3f4', background: '#fff' }}>
+            <span className="text-sm" style={{ color: fsLat ? '#22c55e' : '#536471' }}>
+              {fsLat ? <><MapPin size={13} className="inline mr-1" />{fsLat.toFixed(5)}, {fsLng?.toFixed(5)}</> : 'Haritaya tıkla veya pin bırak'}
+            </span>
+            <button
+              onClick={confirmFullscreen}
+              disabled={!fsLat}
+              className="px-6 py-2.5 rounded-xl text-sm font-black text-white disabled:opacity-40"
+              style={{ background: 'linear-gradient(135deg,#ff6b2b,#ff3d00)' }}>
+              Bu Konumu Seç ✓
+            </button>
+          </div>
+        </div>
       )}
-    </div>
+    </>
   );
 }
