@@ -27,25 +27,27 @@ export default function ForgotPasswordPage() {
     }
   };
 
+  const inputBase = { background: '#f7f8f8', border: '1px solid #eff3f4', color: '#0f1419' };
+
   return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#0a0a0f' }}>
+    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#f7f8f8' }}>
       <div className="w-full max-w-md">
         <Link href="/" className="flex items-center justify-center gap-2 mb-8">
           <div className="rounded-2xl p-2.5" style={{ background: 'linear-gradient(135deg, #ff6b2b, #ff3d00)' }}>
             <MapPin size={24} className="text-white" />
           </div>
-          <span className="text-2xl font-black" style={{ background: 'linear-gradient(135deg, #ff6b2b, #ff8c5a)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          <span className="text-2xl font-black" style={{ background: 'linear-gradient(135deg, #ff6b2b, #ff3d00)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
             İzi Bul
           </span>
         </Link>
 
-        <div className="rounded-3xl p-8" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <div className="rounded-3xl p-8" style={{ background: '#fff', border: '1px solid #eff3f4' }}>
           {sent ? (
             <div className="text-center">
               <div className="text-5xl mb-4">📧</div>
-              <h1 className="text-xl font-black text-white mb-2">Mail gönderildi!</h1>
-              <p className="text-white/40 text-sm mb-6">
-                <span className="text-white/60">{email}</span> adresine şifre sıfırlama linki gönderdik. Spam klasörünü de kontrol et.
+              <h1 className="text-xl font-black mb-2" style={{ color: '#0f1419' }}>Mail gönderildi!</h1>
+              <p className="text-sm mb-6" style={{ color: '#536471' }}>
+                <span className="font-semibold" style={{ color: '#0f1419' }}>{email}</span> adresine şifre sıfırlama linki gönderdik. Spam klasörünü de kontrol et.
               </p>
               <Link href="/login" className="text-sm font-semibold" style={{ color: '#ff6b2b' }}>
                 Giriş sayfasına dön →
@@ -53,33 +55,33 @@ export default function ForgotPasswordPage() {
             </div>
           ) : (
             <>
-              <Link href="/login" className="inline-flex items-center gap-1.5 text-white/30 hover:text-white/60 text-sm mb-5 transition-colors">
+              <Link href="/login" className="inline-flex items-center gap-1.5 text-sm mb-5 transition-colors" style={{ color: '#8e9aab' }}>
                 <ArrowLeft size={14} /> Geri
               </Link>
-              <h1 className="text-2xl font-black text-white mb-1">Şifremi Unuttum</h1>
-              <p className="text-white/40 text-sm mb-6">E-posta adresini gir, sıfırlama linki gönderelim.</p>
+              <h1 className="text-2xl font-black mb-1" style={{ color: '#0f1419' }}>Şifremi Unuttum</h1>
+              <p className="text-sm mb-6" style={{ color: '#536471' }}>E-posta adresini gir, sıfırlama linki gönderelim.</p>
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="text-white/60 text-sm font-medium block mb-1.5">E-posta</label>
+                  <label className="text-sm font-medium block mb-1.5" style={{ color: '#536471' }}>E-posta</label>
                   <div className="relative">
-                    <Mail size={16} className="absolute left-3.5 top-3.5 text-white/20" />
+                    <Mail size={16} className="absolute left-3.5 top-3.5" style={{ color: '#c4c9d0' }} />
                     <input
                       type="email"
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-white/20 focus:outline-none transition-all"
-                      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+                      className="w-full rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none transition-all"
+                      style={inputBase}
                       placeholder="ornek@email.com"
-                      onFocus={(e) => e.target.style.borderColor = 'rgba(255,107,43,0.5)'}
-                      onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.08)'}
+                      onFocus={(e) => e.target.style.borderColor = '#ff6b2b'}
+                      onBlur={(e) => e.target.style.borderColor = '#eff3f4'}
                     />
                   </div>
                 </div>
 
                 {error && (
-                  <div className="rounded-xl p-3 text-sm" style={{ background: 'rgba(239,68,68,0.1)', color: '#f87171', border: '1px solid rgba(239,68,68,0.2)' }}>
+                  <div className="rounded-xl p-3 text-sm" style={{ background: 'rgba(239,68,68,0.08)', color: '#dc2626', border: '1px solid rgba(239,68,68,0.2)' }}>
                     {error}
                   </div>
                 )}
@@ -88,9 +90,9 @@ export default function ForgotPasswordPage() {
                   type="submit"
                   disabled={loading}
                   className="w-full font-bold py-3 rounded-xl flex items-center justify-center gap-2 text-white transition-all"
-                  style={{ background: loading ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg, #ff6b2b, #ff3d00)' }}
+                  style={{ background: loading ? '#e5e7eb' : 'linear-gradient(135deg, #ff6b2b, #ff3d00)' }}
                 >
-                  {loading ? <><Loader2 size={16} className="animate-spin" /> Gönderiliyor...</> : 'Link Gönder'}
+                  {loading ? <><Loader2 size={16} className="animate-spin" style={{ color: '#536471' }} /><span style={{ color: '#536471' }}>Gönderiliyor...</span></> : 'Link Gönder'}
                 </button>
               </form>
             </>

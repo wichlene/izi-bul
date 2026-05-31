@@ -88,6 +88,81 @@ export default async function HomePage() {
         </div>
       </div>
 
+      {/* Nasıl Çalışır */}
+      <div style={{ background: '#fff', borderBottom: '1px solid #eff3f4', padding: '64px 16px' }}>
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-black mb-3" style={{ color: '#0f1419' }}>Nasıl Çalışır?</h2>
+            <p style={{ color: '#536471' }}>Üç adımda ödülü kap</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            {[
+              {
+                step: '1',
+                icon: '📸',
+                title: 'Fotoğrafa Bak',
+                desc: 'İşletme gizli bir konum fotoğrafı yayınlar. İpuçlarını çöz, nerede olduğunu tahmin et.',
+              },
+              {
+                step: '2',
+                icon: '🗺️',
+                title: 'Konuma Git',
+                desc: 'Haritada işaretlediğin yere fiziksel olarak git. GPS\'in seni doğrular.',
+              },
+              {
+                step: '3',
+                icon: '🏆',
+                title: 'Ödülü Al',
+                desc: 'Yerinde çektiğin fotoğrafı gönder, onaylanırsa nakit ödül ya da indirim senin!',
+              },
+            ].map((item) => (
+              <div key={item.step} className="text-center rounded-2xl p-6" style={{ background: '#f7f8f8', border: '1px solid #eff3f4' }}>
+                <div className="text-4xl mb-3">{item.icon}</div>
+                <div className="inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-black text-white mb-3" style={{ background: 'linear-gradient(135deg,#ff6b2b,#ff3d00)' }}>
+                  {item.step}
+                </div>
+                <h3 className="font-black text-lg mb-2" style={{ color: '#0f1419' }}>{item.title}</h3>
+                <p className="text-sm leading-relaxed" style={{ color: '#536471' }}>{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* İşletmeler için */}
+      <div style={{ background: 'rgba(255,107,43,0.04)', borderBottom: '1px solid rgba(255,107,43,0.12)', padding: '48px 16px' }}>
+        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center gap-8">
+          <div className="flex-1">
+            <div className="text-3xl mb-3">🏪</div>
+            <h2 className="text-2xl font-black mb-2" style={{ color: '#0f1419' }}>İşletmen var mı?</h2>
+            <p className="text-sm leading-relaxed mb-4" style={{ color: '#536471' }}>
+              Kafeler, restoranlar ve işletmeler İzi Bul ile müşterilerine sürpriz deneyimler yaşatıyor. Görev yayınla, store trafiğini artır.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/register" className="px-5 py-2.5 rounded-full font-bold text-white text-sm" style={{ background: 'linear-gradient(135deg,#ff6b2b,#ff3d00)' }}>
+                Hemen Başla
+              </Link>
+              <Link href="/business/plans" className="px-5 py-2.5 rounded-full font-semibold text-sm border" style={{ color: '#ff6b2b', borderColor: 'rgba(255,107,43,0.3)' }}>
+                Planları Gör
+              </Link>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3 flex-shrink-0">
+            {[
+              { val: '3x', label: 'Daha fazla müşteri' },
+              { val: '%0', label: 'İlk ay komisyon' },
+              { val: '24s', label: 'Kolay kurulum' },
+              { val: '5★', label: 'Memnuniyet' },
+            ].map((s) => (
+              <div key={s.label} className="rounded-xl p-4 text-center" style={{ background: '#fff', border: '1px solid #eff3f4', minWidth: 110 }}>
+                <div className="text-xl font-black" style={{ color: '#ff6b2b' }}>{s.val}</div>
+                <div className="text-xs mt-1" style={{ color: '#536471' }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
       <main className="max-w-7xl mx-auto px-4 pb-16 pt-6">
         {featured.length > 0 && (
           <section className="mb-10">
@@ -113,6 +188,24 @@ export default async function HomePage() {
           <QuestList quests={regular} categories={categories} />
         )}
       </main>
+
+      {/* Footer */}
+      <footer style={{ background: '#fff', borderTop: '1px solid #eff3f4', padding: '24px 16px' }}>
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <div style={{ width: 28, height: 28, borderRadius: 8, background: 'linear-gradient(135deg,#ff6b2b,#ff3d00)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <MapPin size={14} className="text-white" />
+            </div>
+            <span className="font-black" style={{ color: '#0f1419' }}>İzi Bul</span>
+            <span className="text-sm" style={{ color: '#8e9aab' }}>© 2026</span>
+          </div>
+          <div className="flex items-center gap-6 text-sm">
+            <Link href="/kvkk" style={{ color: '#536471' }}>Gizlilik & KVKK</Link>
+            <Link href="/contact" style={{ color: '#536471' }}>İletişim</Link>
+            <Link href="/business/plans" style={{ color: '#536471' }}>İşletmeler</Link>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
