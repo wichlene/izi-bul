@@ -46,6 +46,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="tr" className="h-full">
+      <head>
+        {/* Leaflet CSS — önceden yükle, harita render beklemesi olmasın */}
+        <link rel="preload" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" as="style" />
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+        {/* Harita tile sunucusu için DNS prefetch */}
+        <link rel="dns-prefetch" href="https://a.basemaps.cartocdn.com" />
+        <link rel="preconnect" href="https://a.basemaps.cartocdn.com" />
+      </head>
       <body className="min-h-full flex flex-col" style={{ background: '#f7f8f8' }}>
         {children}
         <ServiceWorkerRegister />

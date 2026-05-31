@@ -3,29 +3,60 @@
 import { useState, useEffect, useRef } from 'react';
 import { Bell } from 'lucide-react';
 import { playNotification } from '@/lib/sounds';
+import { createClient } from '@/lib/supabase/client';
 
 export default function NotificationBell() {
   const [count, setCount] = useState(0);
   const prevCount = useRef(-1);
 
+  const fetchCount = async () => {
+    try {
+      const res = await fetch('/api/notifications');
+      if (!res.ok) return;
+      const json = await res.json();
+      const total = json.counts?.total || 0;
+      if (prevCount.current !== -1 && total > prevCount.current) {
+        playNotification();
+      }
+      prevCount.current = total;
+      setCount(total);
+    } catch {}
+  };
+
   useEffect(() => {
-    const fetchCount = async () => {
-      try {
-        const res = await fetch('/api/notifications');
-        if (res.ok) {
-          const json = await res.json();
-          const total = json.counts?.total || 0;
-          if (prevCount.current !== -1 && total > prevCount.current) {
-            playNotification();
-          }
-          prevCount.current = total;
-          setTimeout(() => setCount(total), 0);
-        }
-      } catch {}
+    const supabase = createClient();
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      // İlk yükleme + Realtime kanalı — hepsi async callback içinde
+      fetchCount();
+      if (!user) return;
+
+      channel = supabase
+        .channel('notif-bell')
+        .on('postgres_changes', {
+          event: 'INSERT', schema: 'public', table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        }, fetchCount)
+        .on('postgres_changes', {
+          event: 'INSERT', schema: 'public', table: 'messages',
+          filter: `to_user_id=eq.${user.id}`,
+        }, fetchCount)
+        .on('postgres_changes', {
+          event: 'INSERT', schema: 'public', table: 'friend_requests',
+          filter: `to_user_id=eq.${user.id}`,
+        }, fetchCount)
+        .subscribe();
+    });
+
+    const onFocus = () => fetchCount();
+    window.addEventListener('focus', onFocus);
+
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+      window.removeEventListener('focus', onFocus);
     };
-    fetchCount();
-    const i = setInterval(fetchCount, 5000);
-    return () => clearInterval(i);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
