@@ -8,8 +8,6 @@ import ProfileAvatar from './ProfileImageEditor';
 import ProfileEditModal from './ProfileEditModal';
 import LogoutButton from './LogoutButton';
 import ProfilePosts from './ProfilePosts';
-import ReferralBox from './ReferralBox';
-import StreakBadges from './StreakBadges';
 
 export default async function ProfilePage() {
   const supabase = await createClient();
@@ -124,8 +122,6 @@ export default async function ProfilePage() {
         />
       </div>
 
-      <StreakBadges userId={user.id} />
-      <ReferralBox userId={user.id} />
       <ProfilePosts userId={user.id} submissions={submissions} />
     </AppShell>
   );
