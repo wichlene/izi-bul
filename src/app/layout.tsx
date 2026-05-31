@@ -13,10 +13,16 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: 'İzi Bul — Konumu Bul, Ödülü Kazan',
   description: 'Fotoğraftan konumu bul, ödülü kap! Kafeler ve işletmeler gizli konum yayınlar, sen bulursun.',
+  metadataBase: new URL('https://izibul.com'),
   openGraph: {
     title: 'İzi Bul',
     description: 'Fotoğraftan konumu bul, ödülü kazan!',
     type: 'website',
+    url: 'https://izibul.com',
+    siteName: 'İzi Bul',
+  },
+  verification: {
+    google: '5ea9338c3fbe2a1d',
   },
   manifest: '/manifest.json',
   icons: {
