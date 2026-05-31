@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { MapPin, Loader2, Mail, Lock, User, AtSign, Phone } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [refCode] = useState(() => searchParams.get('ref') || '');
@@ -16,9 +16,7 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState(false);
 
   const normalizePhone = (v: string) => {
-    // Sadece rakam bırak
     const digits = v.replace(/\D/g, '');
-    // Başında 90 varsa at, 0 ile başlıyorsa bırak
     if (digits.startsWith('90') && digits.length === 12) return '0' + digits.slice(2);
     return digits;
   };
@@ -56,14 +54,12 @@ export default function RegisterPage() {
       return;
     }
 
-    // Email onayı açıksa session oluşmaz → kullanıcı maildeki linke tıklamalı
     if (!data.session) {
       setLoading(false);
       setSuccess(true);
       return;
     }
 
-    // Session var → telefonu + referral bonus işle, dashboard'a geç
     await Promise.all([
       phone ? fetch('/api/profile/phone', {
         method: 'POST',
@@ -184,5 +180,17 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0a0a0f' }}>
+        <Loader2 size={32} className="animate-spin" style={{ color: '#ff6b2b' }} />
+      </div>
+    }>
+      <RegisterForm />
+    </Suspense>
   );
 }

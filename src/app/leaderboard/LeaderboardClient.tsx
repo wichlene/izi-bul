@@ -49,16 +49,22 @@ function Avatar({ entry, rank }: { entry: Entry; rank: number }) {
 export default function LeaderboardClient() {
   const [period, setPeriod] = useState<Period>('all');
   const [data, setData] = useState<Entry[] | null>(null);
-  const [loading, setLoading] = useState(true);
+
+  const changePeriod = (p: Period) => {
+    setData(null);
+    setPeriod(p);
+  };
 
   useEffect(() => {
-    setLoading(true);
-    setData(null);
+    let cancelled = false;
     fetch(`/api/leaderboard?period=${period}`)
       .then(r => r.json())
-      .then(d => { setData(Array.isArray(d) ? d : []); setLoading(false); })
-      .catch(() => setLoading(false));
+      .then(d => { if (!cancelled) setData(Array.isArray(d) ? d : []); })
+      .catch(() => { if (!cancelled) setData([]); });
+    return () => { cancelled = true; };
   }, [period]);
+
+  const loading = data === null;
 
   return (
     <>
@@ -73,7 +79,7 @@ export default function LeaderboardClient() {
           {TABS.map(t => (
             <button
               key={t.id}
-              onClick={() => setPeriod(t.id)}
+              onClick={() => changePeriod(t.id)}
               className="flex-1 py-1.5 rounded-full text-xs font-bold transition-all"
               style={period === t.id
                 ? { background: '#fff', color: '#ff6b2b', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }
