@@ -3,6 +3,7 @@ import { MapPin, Shield, Star } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import AppShell from '@/components/AppShell';
+import FollowButton from './FollowButton';
 import UserProfilePosts from './UserProfilePosts';
 
 export default async function UserProfilePage({ params }: { params: Promise<{ id: string }> }) {
@@ -35,58 +36,58 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
 
   return (
     <AppShell>
-      {/* Banner */}
-      <div className="relative">
-        <div className="h-32 w-full" style={{ background: profile.banner_url ? undefined : 'linear-gradient(135deg,#ff6b2b22,#a855f722)' }}>
-          {profile.banner_url && <img src={profile.banner_url} className="w-full h-full object-cover" alt="" />}
-        </div>
-        <div className="absolute -bottom-10 left-4">
-          <div className="w-20 h-20 rounded-full border-4 border-white overflow-hidden flex items-center justify-center font-black text-2xl text-white"
-            style={{ background: 'linear-gradient(135deg,#ff6b2b,#a855f7)' }}>
+      {/* ── HEADER ── */}
+      <div className="px-4 pt-5 pb-4" style={{ borderBottom: '1px solid #eff3f4' }}>
+        <div className="flex items-center gap-4 mb-4">
+          {/* Avatar */}
+          <div
+            className="w-20 h-20 rounded-full overflow-hidden flex items-center justify-center text-2xl font-black text-white flex-shrink-0 border-2"
+            style={{ background: 'linear-gradient(135deg,#ff6b2b,#a855f7)', borderColor: '#eff3f4' }}>
             {profile.avatar_url
               ? <img src={profile.avatar_url} className="w-full h-full object-cover" alt="" />
               : profile.username?.charAt(0).toUpperCase()}
           </div>
-        </div>
-      </div>
 
-      {/* Info */}
-      <div className="px-4 pt-14 pb-4" style={{ borderBottom: '1px solid #eff3f4' }}>
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-black" style={{ color: '#0f1419' }}>{profile.full_name || profile.username}</h1>
-              {profile.is_admin && <Shield size={16} style={{ color: '#ff6b2b' }} />}
-              {profile.is_premium && <Star size={14} style={{ color: '#ff6b2b' }} fill="#ff6b2b" />}
+          {/* İsim */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-base font-black truncate" style={{ color: '#0f1419' }}>
+                {profile.full_name || profile.username}
+              </span>
+              {profile.is_admin && <Shield size={14} style={{ color: '#ff6b2b' }} />}
+              {profile.is_premium && <Star size={13} style={{ color: '#ff6b2b' }} fill="#ff6b2b" />}
             </div>
             <p className="text-sm" style={{ color: '#536471' }}>@{profile.username}</p>
+            {profile.city && (
+              <p className="text-xs flex items-center gap-1 mt-0.5" style={{ color: '#8e9aab' }}>
+                <MapPin size={10} />{profile.city}
+              </p>
+            )}
           </div>
+
+          {/* Takip butonu */}
           {!isMe && me && (
             <FollowButton userId={me.id} targetId={id} initialFollowing={isFollowing} />
           )}
         </div>
 
         {profile.bio && (
-          <p className="text-sm mt-2 leading-relaxed" style={{ color: '#0f1419' }}>{profile.bio}</p>
+          <p className="text-sm mb-3 leading-relaxed" style={{ color: '#0f1419' }}>{profile.bio}</p>
         )}
-        {profile.city && (
-          <p className="text-xs flex items-center gap-1 mt-1" style={{ color: '#536471' }}>
-            <MapPin size={11} />{profile.city}
-          </p>
-        )}
-        <div className="flex gap-5 flex-wrap mt-3">
-          <span className="text-sm" style={{ color: '#536471' }}>
-            <span className="font-black" style={{ color: '#0f1419' }}>{followingCount}</span> Takip
-          </span>
-          <span className="text-sm" style={{ color: '#536471' }}>
-            <span className="font-black" style={{ color: '#0f1419' }}>{followersCount}</span> Takipçi
-          </span>
-          <span className="text-sm" style={{ color: '#536471' }}>
-            <span className="font-black" style={{ color: '#0f1419' }}>{profile.total_finds || 0}</span> Buldu
-          </span>
-          <span className="text-sm" style={{ color: '#536471' }}>
-            <span className="font-black" style={{ color: '#0f1419' }}>{wonCount}</span> Kazandı
-          </span>
+
+        {/* Sayaçlar */}
+        <div className="grid grid-cols-4 gap-2">
+          {[
+            { val: followingCount, label: 'Takip' },
+            { val: followersCount, label: 'Takipçi' },
+            { val: profile.total_finds || 0, label: 'Buldu' },
+            { val: wonCount, label: 'Kazandı' },
+          ].map(({ val, label }) => (
+            <div key={label} className="rounded-xl py-2.5 text-center" style={{ background: '#f7f8f8' }}>
+              <p className="text-base font-black leading-none" style={{ color: '#0f1419' }}>{val}</p>
+              <p className="text-[11px] mt-0.5" style={{ color: '#536471' }}>{label}</p>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -94,6 +95,3 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
     </AppShell>
   );
 }
-
-// Inline follow button (client)
-import FollowButton from './FollowButton';
