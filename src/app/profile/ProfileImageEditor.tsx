@@ -37,22 +37,31 @@ export default function ProfileAvatar({ avatarUrl, username }: Props) {
   };
 
   return (
-    <div className="relative group cursor-pointer w-fit" onClick={() => inputRef.current?.click()}>
-      <div
-        className="w-20 h-20 rounded-full overflow-hidden flex items-center justify-center text-2xl font-black text-white border-2"
-        style={{ background: 'linear-gradient(135deg,#ff6b2b,#a855f7)', borderColor: '#eff3f4' }}>
+    <div
+      onClick={() => inputRef.current?.click()}
+      style={{ position: 'relative', width: 72, height: 72, flexShrink: 0, cursor: 'pointer' }}>
+      <div style={{
+        width: 72, height: 72, borderRadius: '50%', overflow: 'hidden',
+        background: 'linear-gradient(135deg,#ff6b2b,#a855f7)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 26, fontWeight: 900, color: '#fff',
+        border: '2px solid #eff3f4',
+      }}>
         {avatar
-          ? <img src={avatar} className="w-full h-full object-cover" alt="" />
+          ? <img src={avatar} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
           : username?.charAt(0).toUpperCase()}
       </div>
-      <div
-        className="absolute inset-0 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-        style={{ background: 'rgba(0,0,0,0.45)' }}>
+      <div style={{
+        position: 'absolute', bottom: 0, right: 0,
+        width: 22, height: 22, borderRadius: '50%',
+        background: '#ff6b2b', border: '2px solid #fff',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
         {uploading
-          ? <Loader2 size={16} className="text-white animate-spin" />
-          : <Camera size={16} className="text-white" />}
+          ? <Loader2 size={11} color="#fff" className="animate-spin" />
+          : <Camera size={11} color="#fff" />}
       </div>
-      <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleChange} />
+      <input ref={inputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleChange} />
     </div>
   );
 }

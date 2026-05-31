@@ -18,7 +18,9 @@ export default async function ProfilePage() {
 
   const [profileRes, submissionsRes, followingRes, followersRes] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).single(),
-    supabase.from('submissions').select('*, quest:quests(id, title, photo_url, cash_reward, category:categories(*))').eq('user_id', user.id).order('created_at', { ascending: false }).limit(20),
+    supabase.from('submissions')
+      .select('*, quest:quests(id,title,photo_url,cash_reward,category:categories(*))')
+      .eq('user_id', user.id).order('created_at', { ascending: false }).limit(20),
     supabase.from('friendships').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
     supabase.from('friendships').select('id', { count: 'exact', head: true }).eq('friend_id', user.id),
   ]);
@@ -29,13 +31,22 @@ export default async function ProfilePage() {
   const followersCount = followersRes.count || 0;
   const wonCount = submissions.filter((s) => s.is_winner).length;
 
+  const stats = [
+    { val: followingCount, label: 'Takip' },
+    { val: followersCount, label: 'Takipçi' },
+    { val: profile?.total_finds || 0, label: 'Buldu' },
+    { val: wonCount, label: 'Kazandı' },
+  ];
+
   return (
     <AppShell>
       {/* ── HEADER ── */}
-      <div className="px-4 pt-5 pb-4" style={{ borderBottom: '1px solid #eff3f4' }}>
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-lg font-black" style={{ color: '#0f1419' }}>Profil</h1>
-          <div className="flex items-center gap-2">
+      <div style={{ padding: '16px 16px 0', borderBottom: '1px solid #eff3f4' }}>
+
+        {/* Üst satır: başlık + butonlar */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <span style={{ fontSize: 18, fontWeight: 900, color: '#0f1419' }}>Profil</span>
+          <div style={{ display: 'flex', gap: 8 }}>
             <ProfileEditModal
               userId={user.id}
               initialData={{
@@ -52,60 +63,57 @@ export default async function ProfilePage() {
           </div>
         </div>
 
-        {/* Avatar + isim yan yana */}
-        <div className="flex items-center gap-4">
+        {/* Avatar + İsim yan yana */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
           <ProfileAvatar avatarUrl={profile?.avatar_url ?? null} username={profile?.username ?? '?'} />
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-base font-black truncate" style={{ color: '#0f1419' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 16, fontWeight: 900, color: '#0f1419' }}>
                 {profile?.full_name || profile?.username}
               </span>
-              {profile?.is_admin && <Shield size={14} style={{ color: '#ff6b2b' }} />}
-              {profile?.is_premium && <Star size={13} style={{ color: '#ff6b2b' }} fill="#ff6b2b" />}
+              {profile?.is_admin && <Shield size={14} color="#ff6b2b" />}
+              {profile?.is_premium && <Star size={13} color="#ff6b2b" fill="#ff6b2b" />}
             </div>
-            <p className="text-sm" style={{ color: '#536471' }}>@{profile?.username}</p>
+            <p style={{ fontSize: 13, color: '#536471', marginTop: 1 }}>@{profile?.username}</p>
             {profile?.city && (
-              <p className="text-xs flex items-center gap-1 mt-0.5" style={{ color: '#8e9aab' }}>
-                <MapPin size={10} />{profile.city}
+              <p style={{ fontSize: 11, color: '#8e9aab', marginTop: 2, display: 'flex', alignItems: 'center', gap: 3 }}>
+                <MapPin size={10} /> {profile.city}
               </p>
+            )}
+            {profile?.bio && (
+              <p style={{ fontSize: 13, color: '#0f1419', marginTop: 6, lineHeight: 1.45 }}>{profile.bio}</p>
             )}
           </div>
         </div>
 
-        {profile?.bio && (
-          <p className="text-sm mt-3 leading-relaxed" style={{ color: '#0f1419' }}>{profile.bio}</p>
-        )}
-
-        {/* Sayaçlar */}
-        <div className="grid grid-cols-4 gap-2 mt-4">
-          {[
-            { val: followingCount, label: 'Takip' },
-            { val: followersCount, label: 'Takipçi' },
-            { val: profile?.total_finds || 0, label: 'Buldu' },
-            { val: wonCount, label: 'Kazandı' },
-          ].map(({ val, label }) => (
-            <div key={label} className="rounded-xl py-2.5 text-center" style={{ background: '#f7f8f8' }}>
-              <p className="text-base font-black leading-none" style={{ color: '#0f1419' }}>{val}</p>
-              <p className="text-[11px] mt-0.5" style={{ color: '#536471' }}>{label}</p>
+        {/* 4 stat kutusu */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 12 }}>
+          {stats.map(({ val, label }) => (
+            <div key={label} style={{ background: '#f7f8f8', borderRadius: 12, padding: '10px 4px', textAlign: 'center' }}>
+              <p style={{ fontSize: 17, fontWeight: 900, color: '#0f1419', lineHeight: 1 }}>{val}</p>
+              <p style={{ fontSize: 11, color: '#536471', marginTop: 3 }}>{label}</p>
             </div>
           ))}
         </div>
 
         {/* Puan */}
-        <div className="mt-3 rounded-xl px-4 py-2.5 flex items-center justify-between"
-          style={{ background: 'rgba(255,107,43,0.06)', border: '1px solid rgba(255,107,43,0.12)' }}>
-          <span className="text-sm font-semibold" style={{ color: '#ff6b2b' }}>Toplam Puan</span>
-          <span className="text-base font-black" style={{ color: '#ff6b2b' }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          background: 'rgba(255,107,43,0.06)', border: '1px solid rgba(255,107,43,0.12)',
+          borderRadius: 12, padding: '10px 14px', marginBottom: 16,
+        }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: '#ff6b2b' }}>Toplam Puan</span>
+          <span style={{ fontSize: 15, fontWeight: 900, color: '#ff6b2b' }}>
             {(profile?.total_points || 0).toLocaleString('tr-TR')} p
           </span>
         </div>
       </div>
 
       {/* Konum gizliliği */}
-      <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid #eff3f4' }}>
+      <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #eff3f4' }}>
         <div>
-          <p className="text-sm font-semibold" style={{ color: '#0f1419' }}>Canlı Konum</p>
-          <p className="text-xs" style={{ color: '#8e9aab' }}>Haritada görünürlük</p>
+          <p style={{ fontSize: 13, fontWeight: 600, color: '#0f1419' }}>Canlı Konum</p>
+          <p style={{ fontSize: 11, color: '#8e9aab', marginTop: 2 }}>Haritada görünürlük</p>
         </div>
         <PrivacyToggle
           userId={user.id}
@@ -116,13 +124,8 @@ export default async function ProfilePage() {
         />
       </div>
 
-      {/* Streak + Rozetler */}
       <StreakBadges userId={user.id} />
-
-      {/* Davet */}
       <ReferralBox userId={user.id} />
-
-      {/* Paylaşımlar + Geçmiş */}
       <ProfilePosts userId={user.id} submissions={submissions} />
     </AppShell>
   );
