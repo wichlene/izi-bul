@@ -5,6 +5,7 @@ import SignOutButton from './SignOutButton';
 import NotificationBell from './NotificationBell';
 import PushSubscriber from './PushSubscriber';
 import SoundUnlocker from './SoundUnlocker';
+import MobileNav from './MobileNav';
 
 interface Props {
   children: React.ReactNode;
@@ -139,25 +140,7 @@ export default async function AppShell({ children, aside }: Props) {
       )}
 
       {/* ALT NAVİGASYON — sadece mobil */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden flex items-center justify-around"
-        style={{ background: '#ffffff', borderTop: '1px solid #eff3f4', height: '56px' }}>
-        {bottomNav.map((item) => (
-          <Link key={item.href} href={item.href}
-            className="flex items-center justify-center w-12 h-12 rounded-full relative"
-            style={{ color: '#0f1419' }}>
-            {item.icon}
-            {item.badge > 0 && (
-              <span className="absolute top-1 right-1 min-w-[16px] h-[16px] rounded-full text-[9px] font-black text-white flex items-center justify-center px-0.5"
-                style={{ background: '#ff6b2b' }}>
-                {item.badge > 99 ? '99+' : item.badge}
-              </span>
-            )}
-          </Link>
-        ))}
-        <Link href="/notifications" className="flex items-center justify-center w-12 h-12 rounded-full" style={{ color: '#0f1419' }}>
-          <NotificationBell />
-        </Link>
-      </nav>
+      <MobileNav unreadMessages={unreadMessages} />
     </div>
   );
 }

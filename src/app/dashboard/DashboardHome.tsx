@@ -6,9 +6,10 @@ import { Quest, Category, DIFFICULTIES } from '@/types';
 import { calculateDistance } from '@/lib/distance';
 import QuestCard from '@/components/QuestCard';
 import PostActions from '@/components/PostActions';
-import { Search, Flame, Clock, Coins } from 'lucide-react';
+import { Search, Flame, Clock, Coins, Bell } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { tr } from 'date-fns/locale';
+import NotificationBell from '@/components/NotificationBell';
 
 interface DailyQuest {
   id: string; title: string; photo_url: string; difficulty: string;
@@ -35,32 +36,28 @@ function DailyBanner() {
   const m = Math.floor((secsLeft % 3600) / 60);
 
   return (
-    <Link href={`/quest/${quest.id}`} className="block mx-4 mt-4 rounded-2xl overflow-hidden group"
-      style={{ background: 'linear-gradient(135deg,#ff6b2b,#ff3d00)', border: '1px solid rgba(255,107,43,0.3)' }}>
+    <Link href={`/quest/${quest.id}`} className="block mx-3 mt-3 rounded-2xl overflow-hidden group"
+      style={{ background: 'linear-gradient(135deg,#ff6b2b,#ff3d00)' }}>
       <div className="relative">
         <img src={quest.photo_url} alt={quest.title}
-          className="w-full h-36 object-cover opacity-25 group-hover:opacity-35 transition-opacity" />
-        <div className="absolute inset-0 p-4 flex flex-col justify-between">
+          className="w-full h-32 object-cover opacity-25 group-hover:opacity-35 transition-opacity" />
+        <div className="absolute inset-0 p-3.5 flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full" style={{ background: 'rgba(0,0,0,0.35)' }}>
-              <Flame size={13} className="text-white" />
-              <span className="text-xs font-black text-white">GÜNÜN GÖREVİ</span>
+              <Flame size={12} className="text-white" />
+              <span className="text-[11px] font-black text-white tracking-wide">GÜNÜN GÖREVİ</span>
             </div>
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full" style={{ background: 'rgba(0,0,0,0.35)' }}>
-              <Clock size={12} className="text-white" />
-              <span className="text-xs font-bold text-white">{h}s {m}dk</span>
+              <Clock size={11} className="text-white" />
+              <span className="text-[11px] font-bold text-white">{h}s {m}dk</span>
             </div>
           </div>
           <div>
-            <h2 className="text-white font-black text-lg leading-tight mb-1">{quest.title}</h2>
-            <div className="flex items-center gap-3">
-              {quest.region && <span className="text-xs text-white opacity-80">{quest.region}</span>}
-              {diff && <span className="text-xs font-bold px-2 py-0.5 rounded-full text-white" style={{ background: diff.color + '60' }}>{diff.label}</span>}
-              <div className="flex items-center gap-1 text-xs text-white font-black">
-                <Coins size={12} />{quest.points}p
-                {quest.cash_reward > 0 && <span className="ml-1 text-yellow-300">+{quest.cash_reward}₺</span>}
-              </div>
-              <span className="text-xs text-white opacity-70">{quest.total_solved} çözdü</span>
+            <h2 className="text-white font-black text-base leading-tight mb-1">{quest.title}</h2>
+            <div className="flex items-center gap-2 flex-wrap">
+              {quest.region && <span className="text-[11px] text-white opacity-80">{quest.region}</span>}
+              {diff && <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-full text-white" style={{ background: diff.color + '55' }}>{diff.label}</span>}
+              <span className="text-[11px] text-white font-black">{quest.points}p{quest.cash_reward > 0 ? ` +${quest.cash_reward}₺` : ''}</span>
             </div>
           </div>
         </div>
@@ -76,6 +73,7 @@ interface Post {
   photo_url?: string | null;
   created_at: string;
   quest_id?: string | null;
+  user_id?: string;
   profiles?: { username?: string; avatar_url?: string | null } | null;
   quests?: { title?: string; photo_url?: string; cash_reward?: number } | null;
   like_count: number;
@@ -99,6 +97,7 @@ export default function DashboardHome({ quests, categories }: Props) {
   const [filter, setFilter] = useState('all');
   const [posts, setPosts] = useState<Post[]>([]);
   const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
+  const [showSearch, setShowSearch] = useState(false);
 
   useEffect(() => {
     if (!navigator.geolocation) return;
@@ -172,25 +171,101 @@ export default function DashboardHome({ quests, categories }: Props) {
 
   return (
     <div>
-      <div className="sticky top-0 z-10 px-4 pt-3 pb-2"
-        style={{ background: 'rgba(255,255,255,0.95)', borderBottom: '1px solid #eff3f4', backdropFilter: 'blur(8px)' }}>
-        <div className="relative">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#8b98a5' }} />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Görev, iyilik, bölge ara..."
-            className="w-full pl-9 pr-4 py-2.5 rounded-full text-sm focus:outline-none"
-            style={{ background: '#f7f8f8', border: '1px solid #eff3f4', color: '#0f1419' }}
-          />
+      {/* ── MOBİL HEADER ── */}
+      <div className="sticky top-0 z-20 md:hidden" style={{ background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(12px)', borderBottom: '1px solid #eff3f4' }}>
+        {showSearch ? (
+          <div className="flex items-center gap-2 px-3 h-14">
+            <button onClick={() => { setShowSearch(false); setSearch(''); }} className="p-2 -ml-1 flex-shrink-0" style={{ color: '#536471' }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+            </button>
+            <input
+              autoFocus
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Görev, bölge, içerik ara..."
+              className="flex-1 text-sm focus:outline-none bg-transparent"
+              style={{ color: '#0f1419' }}
+            />
+            {search && (
+              <button onClick={() => setSearch('')} className="p-1.5 flex-shrink-0" style={{ color: '#8e9aab' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center justify-between px-4 h-14">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#ff6b2b,#ff3d00)' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              </div>
+              <span className="text-base font-black" style={{ color: '#0f1419' }}>İzi Bul</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <button onClick={() => setShowSearch(true)} className="w-10 h-10 flex items-center justify-center rounded-full" style={{ color: '#536471' }}>
+                <Search size={20} />
+              </button>
+              <Link href="/notifications" className="w-10 h-10 flex items-center justify-center rounded-full">
+                <NotificationBell />
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* Filtre chipleri */}
+        <div className="flex gap-2 px-3 pb-2.5 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+          {chips.map((chip) => (
+            <button
+              key={chip.id}
+              onClick={() => setFilter(chip.id)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold flex-shrink-0 transition-all"
+              style={filter === chip.id
+                ? { background: '#ff6b2b', color: '#fff' }
+                : { background: '#f3f4f6', color: '#536471' }}>
+              <span>{chip.icon}</span>
+              {chip.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Günlük Görev Banner — client side fetch */}
+      {/* ── MASAÜSTÜ HEADER ── */}
+      <div className="hidden md:block sticky top-0 z-10 px-4 pt-3 pb-2"
+        style={{ background: 'rgba(255,255,255,0.95)', borderBottom: '1px solid #eff3f4', backdropFilter: 'blur(8px)' }}>
+        <div className="flex gap-3 items-center">
+          <div className="relative flex-1">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#8b98a5' }} />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Görev, iyilik, bölge ara..."
+              className="w-full pl-9 pr-4 py-2.5 rounded-full text-sm focus:outline-none"
+              style={{ background: '#f7f8f8', border: '1px solid #eff3f4', color: '#0f1419' }}
+            />
+          </div>
+        </div>
+        {/* Masaüstü filtre chipleri */}
+        <div className="flex gap-2 mt-2 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+          {chips.map((chip) => (
+            <button
+              key={chip.id}
+              onClick={() => setFilter(chip.id)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold flex-shrink-0 transition-all"
+              style={filter === chip.id
+                ? { background: '#ff6b2b', color: '#fff' }
+                : { background: '#f3f4f6', color: '#536471' }}>
+              <span>{chip.icon}</span>
+              {chip.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Günlük Görev Banner */}
       <DailyBanner />
 
-      <div className="p-4 space-y-3">
+      {/* Feed */}
+      <div className="p-3 space-y-3">
         {filtered.length === 0 && (
           <div className="text-center py-16">
             <div className="text-5xl mb-3">🔍</div>
@@ -217,15 +292,17 @@ export default function DashboardHome({ quests, categories }: Props) {
             <div key={`p-${post.id}`} className="rounded-2xl p-4"
               style={{ background: '#ffffff', border: '1px solid #eff3f4' }}>
               <div className="flex items-start gap-2.5">
-                <div className="w-9 h-9 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center text-base"
-                  style={{ background: '#f7f8f8', border: '1px solid #eff3f4' }}>
-                  {post.profiles?.avatar_url
-                    ? <img src={post.profiles.avatar_url} className="w-full h-full object-cover" alt="" />
-                    : <span>👤</span>}
-                </div>
+                <Link href={`/user/${post.user_id || '#'}`}>
+                  <div className="w-9 h-9 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center text-base"
+                    style={{ background: '#f7f8f8', border: '1px solid #eff3f4' }}>
+                    {post.profiles?.avatar_url
+                      ? <img src={post.profiles.avatar_url} className="w-full h-full object-cover" alt="" />
+                      : <span>👤</span>}
+                  </div>
+                </Link>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                    <Link href={`/user/${(post as Post & { user_id?: string }).user_id || '#'}`} className="font-bold text-sm hover:underline" style={{ color: '#0f1419' }}>
+                    <Link href={`/user/${post.user_id || '#'}`} className="font-bold text-sm hover:underline" style={{ color: '#0f1419' }}>
                       @{post.profiles?.username || 'kullanıcı'}
                     </Link>
                     <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
