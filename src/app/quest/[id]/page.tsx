@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Coins, Users, Trophy, MapPin } from 'lucide-react';
 import ShareButtons from './ShareButtons';
+import QuestComments from './QuestComments';
 import { createClient } from '@/lib/supabase/server';
 import { Quest, DIFFICULTIES } from '@/types';
 import Header from '@/components/Header';
@@ -185,6 +186,11 @@ export default async function QuestPage({ params }: { params: Promise<{ id: stri
             </div>
             <ShareButtons questTitle={quest.title} questUrl={questUrl} questDescription={quest.description} />
           </div>
+        </div>
+
+        {/* Yorumlar — full width */}
+        <div className="mt-5">
+          <QuestComments questId={quest.id} isLoggedIn={isLoggedIn} />
         </div>
       </main>
     </div>

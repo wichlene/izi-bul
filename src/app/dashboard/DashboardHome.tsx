@@ -2,13 +2,72 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { Quest, Category } from '@/types';
+import { Quest, Category, DIFFICULTIES } from '@/types';
 import { calculateDistance } from '@/lib/distance';
 import QuestCard from '@/components/QuestCard';
 import PostActions from '@/components/PostActions';
-import { Search } from 'lucide-react';
+import { Search, Flame, Clock, Coins } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { tr } from 'date-fns/locale';
+
+interface DailyQuest {
+  id: string; title: string; photo_url: string; difficulty: string;
+  points: number; cash_reward: number; total_solved: number; region?: string;
+}
+
+function DailyBanner() {
+  const [quest, setQuest] = useState<DailyQuest | null | undefined>(undefined);
+
+  useEffect(() => {
+    fetch('/api/quests/daily')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => setQuest(d || null))
+      .catch(() => setQuest(null));
+  }, []);
+
+  if (quest === undefined || quest === null) return null;
+
+  const diff = DIFFICULTIES[quest.difficulty as keyof typeof DIFFICULTIES];
+  const now = new Date();
+  const midnight = new Date(now); midnight.setHours(24, 0, 0, 0);
+  const secsLeft = Math.floor((midnight.getTime() - now.getTime()) / 1000);
+  const h = Math.floor(secsLeft / 3600);
+  const m = Math.floor((secsLeft % 3600) / 60);
+
+  return (
+    <Link href={`/quest/${quest.id}`} className="block mx-4 mt-4 rounded-2xl overflow-hidden group"
+      style={{ background: 'linear-gradient(135deg,#ff6b2b,#ff3d00)', border: '1px solid rgba(255,107,43,0.3)' }}>
+      <div className="relative">
+        <img src={quest.photo_url} alt={quest.title}
+          className="w-full h-36 object-cover opacity-25 group-hover:opacity-35 transition-opacity" />
+        <div className="absolute inset-0 p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full" style={{ background: 'rgba(0,0,0,0.35)' }}>
+              <Flame size={13} className="text-white" />
+              <span className="text-xs font-black text-white">GÜNÜN GÖREVİ</span>
+            </div>
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full" style={{ background: 'rgba(0,0,0,0.35)' }}>
+              <Clock size={12} className="text-white" />
+              <span className="text-xs font-bold text-white">{h}s {m}dk</span>
+            </div>
+          </div>
+          <div>
+            <h2 className="text-white font-black text-lg leading-tight mb-1">{quest.title}</h2>
+            <div className="flex items-center gap-3">
+              {quest.region && <span className="text-xs text-white opacity-80">{quest.region}</span>}
+              {diff && <span className="text-xs font-bold px-2 py-0.5 rounded-full text-white" style={{ background: diff.color + '60' }}>{diff.label}</span>}
+              <div className="flex items-center gap-1 text-xs text-white font-black">
+                <Coins size={12} />{quest.points}p
+                {quest.cash_reward > 0 && <span className="ml-1 text-yellow-300">+{quest.cash_reward}₺</span>}
+              </div>
+              <span className="text-xs text-white opacity-70">{quest.total_solved} çözdü</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}
 
 interface Post {
   id: string;
@@ -127,6 +186,9 @@ export default function DashboardHome({ quests, categories }: Props) {
           />
         </div>
       </div>
+
+      {/* Günlük Görev Banner — client side fetch */}
+      <DailyBanner />
 
       <div className="p-4 space-y-3">
         {filtered.length === 0 && (

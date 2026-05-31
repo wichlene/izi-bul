@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Trophy, Medal, Loader2 } from 'lucide-react';
+import { Trophy, Medal, Loader2, Clock } from 'lucide-react';
 
 type Period = 'all' | 'week' | 'month';
 
@@ -16,9 +16,48 @@ interface Entry {
 
 const TABS: { id: Period; label: string }[] = [
   { id: 'all', label: 'Tüm Zamanlar' },
-  { id: 'month', label: 'Bu Ay' },
+  { id: 'month', label: 'Bu Sezon' },
   { id: 'week', label: 'Bu Hafta' },
 ];
+
+const SEASON_NAMES = [
+  'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+  'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık',
+];
+
+function SeasonBanner() {
+  const now = new Date();
+  const monthName = SEASON_NAMES[now.getMonth()];
+  const year = now.getFullYear();
+  const endOfMonth = new Date(year, now.getMonth() + 1, 0, 23, 59, 59);
+  const daysLeft = Math.ceil((endOfMonth.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  const totalDays = endOfMonth.getDate();
+  const progress = Math.round(((totalDays - daysLeft) / totalDays) * 100);
+
+  return (
+    <div className="mx-4 mt-4 rounded-2xl p-4" style={{ background: 'linear-gradient(135deg,rgba(255,107,43,0.08),rgba(168,85,247,0.08))', border: '1px solid rgba(255,107,43,0.15)' }}>
+      <div className="flex items-center justify-between mb-2">
+        <div>
+          <p className="text-xs font-bold" style={{ color: '#ff6b2b' }}>AKTİF SEZON</p>
+          <p className="text-base font-black" style={{ color: '#0f1419' }}>{monthName} Sezonu {year}</p>
+        </div>
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full" style={{ background: '#fff', border: '1px solid #eff3f4' }}>
+          <Clock size={12} style={{ color: '#536471' }} />
+          <span className="text-xs font-bold" style={{ color: '#0f1419' }}>{daysLeft} gün kaldı</span>
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: '#eff3f4' }}>
+          <div className="h-full rounded-full transition-all" style={{ width: `${progress}%`, background: 'linear-gradient(90deg,#ff6b2b,#a855f7)' }} />
+        </div>
+        <span className="text-xs font-bold" style={{ color: '#536471' }}>{progress}%</span>
+      </div>
+      <p className="text-xs mt-2" style={{ color: '#536471' }}>
+        Sezon sonu ilk 3 kişi özel <strong>sezon rozeti</strong> kazanır 🏅
+      </p>
+    </div>
+  );
+}
 
 const MEDAL_COLORS = ['#ffd700', '#c0c0c0', '#cd7f32'];
 
@@ -68,6 +107,8 @@ export default function LeaderboardClient() {
 
   return (
     <>
+      {period === 'month' && <SeasonBanner />}
+
       {/* Başlık */}
       <div className="sticky top-0 z-10 px-4 py-4" style={{ background: 'rgba(255,255,255,0.94)', backdropFilter: 'blur(12px)', borderBottom: '1px solid #eff3f4' }}>
         <h1 className="text-xl font-black flex items-center gap-2" style={{ color: '#0f1419' }}>
