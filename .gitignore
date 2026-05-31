@@ -42,7 +42,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Android signing
-android-signing/
+# android signing keys (sensitive credentials)
+/android-signing/
 *.keystore
-app/
+*.jks
+*.b64

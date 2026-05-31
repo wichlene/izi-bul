@@ -34,61 +34,63 @@ function LoginForm() {
     }
   };
 
+  const inputBase = { background: '#f7f8f8', border: '1px solid #eff3f4', color: '#0f1419' };
+
   return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#0a0a0f' }}>
+    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#f7f8f8' }}>
       <div className="w-full max-w-md">
         <Link href="/" className="flex items-center justify-center gap-2 mb-8">
           <div className="rounded-2xl p-2.5 flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #ff6b2b, #ff3d00)' }}>
             <MapPin size={24} className="text-white" />
           </div>
-          <span className="text-2xl font-black" style={{ background: 'linear-gradient(135deg, #ff6b2b, #ff8c5a)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          <span className="text-2xl font-black" style={{ background: 'linear-gradient(135deg, #ff6b2b, #ff3d00)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
             İzi Bul
           </span>
         </Link>
 
-        <div className="rounded-3xl p-8" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
-          <h1 className="text-2xl font-black text-white mb-1">Tekrar hoş geldin!</h1>
-          <p className="text-white/40 text-sm mb-6">Hesabına giriş yap, keşfe devam et.</p>
+        <div className="rounded-3xl p-8" style={{ background: '#fff', border: '1px solid #eff3f4' }}>
+          <h1 className="text-2xl font-black mb-1" style={{ color: '#0f1419' }}>Tekrar hoş geldin!</h1>
+          <p className="text-sm mb-6" style={{ color: '#536471' }}>Hesabına giriş yap, keşfe devam et.</p>
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="text-white/60 text-sm font-medium block mb-1.5">E-posta</label>
+              <label className="text-sm font-medium block mb-1.5" style={{ color: '#536471' }}>E-posta</label>
               <div className="relative">
-                <Mail size={16} className="absolute left-3.5 top-3.5 text-white/20" />
+                <Mail size={16} className="absolute left-3.5 top-3.5" style={{ color: '#c4c9d0' }} />
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-white/20 focus:outline-none transition-all"
-                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+                  className="w-full rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none transition-all"
+                  style={inputBase}
                   placeholder="ornek@email.com"
-                  onFocus={(e) => e.target.style.borderColor = 'rgba(255,107,43,0.5)'}
-                  onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.08)'}
+                  onFocus={(e) => e.target.style.borderColor = '#ff6b2b'}
+                  onBlur={(e) => e.target.style.borderColor = '#eff3f4'}
                 />
               </div>
             </div>
 
             <div>
-              <label className="text-white/60 text-sm font-medium block mb-1.5">Şifre</label>
+              <label className="text-sm font-medium block mb-1.5" style={{ color: '#536471' }}>Şifre</label>
               <div className="relative">
-                <Lock size={16} className="absolute left-3.5 top-3.5 text-white/20" />
+                <Lock size={16} className="absolute left-3.5 top-3.5" style={{ color: '#c4c9d0' }} />
                 <input
                   type="password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-white/20 focus:outline-none transition-all"
-                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+                  className="w-full rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none transition-all"
+                  style={inputBase}
                   placeholder="••••••••"
-                  onFocus={(e) => e.target.style.borderColor = 'rgba(255,107,43,0.5)'}
-                  onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.08)'}
+                  onFocus={(e) => e.target.style.borderColor = '#ff6b2b'}
+                  onBlur={(e) => e.target.style.borderColor = '#eff3f4'}
                 />
               </div>
             </div>
 
             {error && (
-              <div className="rounded-xl p-3 text-sm" style={{ background: 'rgba(239,68,68,0.1)', color: '#f87171', border: '1px solid rgba(239,68,68,0.2)' }}>
+              <div className="rounded-xl p-3 text-sm" style={{ background: 'rgba(239,68,68,0.08)', color: '#dc2626', border: '1px solid rgba(239,68,68,0.2)' }}>
                 {error}
               </div>
             )}
@@ -97,19 +99,19 @@ function LoginForm() {
               type="submit"
               disabled={loading}
               className="w-full font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all text-white"
-              style={{ background: loading ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg, #ff6b2b, #ff3d00)' }}
+              style={{ background: loading ? '#e5e7eb' : 'linear-gradient(135deg, #ff6b2b, #ff3d00)' }}
             >
-              {loading ? <><Loader2 size={16} className="animate-spin" /> Giriş yapılıyor...</> : 'Giriş Yap'}
+              {loading ? <><Loader2 size={16} className="animate-spin" style={{ color: '#536471' }} /><span style={{ color: '#536471' }}>Giriş yapılıyor...</span></> : 'Giriş Yap'}
             </button>
           </form>
 
           <div className="mt-6 space-y-3 text-center text-sm">
             <div>
-              <Link href="/forgot-password" className="text-white/30 hover:text-white/60 transition-colors">
+              <Link href="/forgot-password" className="transition-colors" style={{ color: '#8e9aab' }}>
                 Şifremi Unuttum
               </Link>
             </div>
-            <p className="text-white/30">
+            <p style={{ color: '#8e9aab' }}>
               Hesabın yok mu?{' '}
               <Link href="/register" className="font-semibold" style={{ color: '#ff6b2b' }}>
                 Kayıt ol

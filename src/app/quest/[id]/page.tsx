@@ -10,6 +10,38 @@ import QuestPlay from './QuestPlay';
 
 export const revalidate = 30;
 
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const { createAdminClient } = await import('@/lib/supabase/admin');
+  const admin = createAdminClient();
+  const { data: quest } = await admin
+    .from('quests')
+    .select('title, description, cash_reward, region, category:categories(name)')
+    .eq('id', id)
+    .single();
+
+  if (!quest) return {};
+
+  const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://izibul.com';
+  const category = (quest.category as { name?: string } | null)?.name ?? '';
+  const ogUrl = `${base}/api/og?title=${encodeURIComponent(quest.title)}&reward=${quest.cash_reward || ''}&category=${encodeURIComponent(category)}&region=${encodeURIComponent(quest.region || 'Türkiye')}`;
+
+  return {
+    title: `${quest.title} — İzi Bul`,
+    description: quest.description?.slice(0, 150),
+    openGraph: {
+      title: quest.title,
+      description: quest.description?.slice(0, 150),
+      images: [{ url: ogUrl, width: 1200, height: 630 }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: quest.title,
+      images: [ogUrl],
+    },
+  };
+}
+
 interface QuestStep {
   id: string;
   step_number: number;

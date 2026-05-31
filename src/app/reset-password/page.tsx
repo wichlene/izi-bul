@@ -31,66 +31,66 @@ export default function ResetPasswordPage() {
     }
   };
 
-  const inputStyle = { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' };
+  const inputBase = { background: '#f7f8f8', border: '1px solid #eff3f4', color: '#0f1419' };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#0a0a0f' }}>
+    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#f7f8f8' }}>
       <div className="w-full max-w-md">
         <Link href="/" className="flex items-center justify-center gap-2 mb-8">
           <div className="rounded-2xl p-2.5" style={{ background: 'linear-gradient(135deg, #ff6b2b, #ff3d00)' }}>
             <MapPin size={24} className="text-white" />
           </div>
-          <span className="text-2xl font-black" style={{ background: 'linear-gradient(135deg, #ff6b2b, #ff8c5a)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          <span className="text-2xl font-black" style={{ background: 'linear-gradient(135deg, #ff6b2b, #ff3d00)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
             İzi Bul
           </span>
         </Link>
 
-        <div className="rounded-3xl p-8" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <div className="rounded-3xl p-8" style={{ background: '#fff', border: '1px solid #eff3f4' }}>
           {done ? (
             <div className="text-center">
               <div className="text-5xl mb-4">✅</div>
-              <h1 className="text-xl font-black text-white mb-2">Şifre güncellendi!</h1>
-              <p className="text-white/40 text-sm">Ana sayfaya yönlendiriliyorsun...</p>
+              <h1 className="text-xl font-black mb-2" style={{ color: '#0f1419' }}>Şifre güncellendi!</h1>
+              <p className="text-sm" style={{ color: '#536471' }}>Ana sayfaya yönlendiriliyorsun...</p>
             </div>
           ) : (
             <>
-              <h1 className="text-2xl font-black text-white mb-1">Yeni Şifre Belirle</h1>
-              <p className="text-white/40 text-sm mb-6">En az 6 karakter olsun.</p>
+              <h1 className="text-2xl font-black mb-1" style={{ color: '#0f1419' }}>Yeni Şifre Belirle</h1>
+              <p className="text-sm mb-6" style={{ color: '#536471' }}>En az 6 karakter olsun.</p>
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="text-white/60 text-sm font-medium block mb-1.5">Yeni Şifre</label>
+                  <label className="text-sm font-medium block mb-1.5" style={{ color: '#536471' }}>Yeni Şifre</label>
                   <div className="relative">
-                    <Lock size={16} className="absolute left-3.5 top-3.5 text-white/20" />
+                    <Lock size={16} className="absolute left-3.5 top-3.5" style={{ color: '#c4c9d0' }} />
                     <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
-                      className="w-full rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-white/20 focus:outline-none transition-all"
-                      style={inputStyle} placeholder="••••••••"
-                      onFocus={(e) => e.target.style.borderColor = 'rgba(255,107,43,0.5)'}
-                      onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.08)'} />
+                      className="w-full rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none transition-all"
+                      style={inputBase} placeholder="••••••••"
+                      onFocus={(e) => e.target.style.borderColor = '#ff6b2b'}
+                      onBlur={(e) => e.target.style.borderColor = '#eff3f4'} />
                   </div>
                 </div>
                 <div>
-                  <label className="text-white/60 text-sm font-medium block mb-1.5">Şifre Tekrar</label>
+                  <label className="text-sm font-medium block mb-1.5" style={{ color: '#536471' }}>Şifre Tekrar</label>
                   <div className="relative">
-                    <Lock size={16} className="absolute left-3.5 top-3.5 text-white/20" />
+                    <Lock size={16} className="absolute left-3.5 top-3.5" style={{ color: '#c4c9d0' }} />
                     <input type="password" required value={confirm} onChange={(e) => setConfirm(e.target.value)}
-                      className="w-full rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-white/20 focus:outline-none transition-all"
-                      style={inputStyle} placeholder="••••••••"
-                      onFocus={(e) => e.target.style.borderColor = 'rgba(255,107,43,0.5)'}
-                      onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.08)'} />
+                      className="w-full rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none transition-all"
+                      style={inputBase} placeholder="••••••••"
+                      onFocus={(e) => e.target.style.borderColor = '#ff6b2b'}
+                      onBlur={(e) => e.target.style.borderColor = '#eff3f4'} />
                   </div>
                 </div>
 
                 {error && (
-                  <div className="rounded-xl p-3 text-sm" style={{ background: 'rgba(239,68,68,0.1)', color: '#f87171', border: '1px solid rgba(239,68,68,0.2)' }}>
+                  <div className="rounded-xl p-3 text-sm" style={{ background: 'rgba(239,68,68,0.08)', color: '#dc2626', border: '1px solid rgba(239,68,68,0.2)' }}>
                     {error}
                   </div>
                 )}
 
                 <button type="submit" disabled={loading}
                   className="w-full font-bold py-3 rounded-xl flex items-center justify-center gap-2 text-white transition-all"
-                  style={{ background: loading ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg, #ff6b2b, #ff3d00)' }}>
-                  {loading ? <><Loader2 size={16} className="animate-spin" /> Güncelleniyor...</> : 'Şifreyi Güncelle'}
+                  style={{ background: loading ? '#e5e7eb' : 'linear-gradient(135deg, #ff6b2b, #ff3d00)' }}>
+                  {loading ? <><Loader2 size={16} className="animate-spin" style={{ color: '#536471' }} /><span style={{ color: '#536471' }}>Güncelleniyor...</span></> : 'Şifreyi Güncelle'}
                 </button>
               </form>
             </>
