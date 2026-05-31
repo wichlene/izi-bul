@@ -1,0 +1,47 @@
+{
+  "packageId": "com.izibul.app",
+  "host": "izibul.com",
+  "name": "İzi Bul — Konumu Bul, Ödülü Kazan",
+  "launcherName": "İzi Bul",
+  "display": "standalone",
+  "orientation": "portrait",
+  "themeColor": "#ff6b2b",
+  "backgroundColor": "#ffffff",
+  "startUrl": "/dashboard",
+  "iconUrl": "https://izibul.com/icon-512.png",
+  "maskableIconUrl": "https://izibul.com/icon-512.png",
+  "shortcuts": [
+    {
+      "name": "Harita",
+      "shortName": "Harita",
+      "url": "/map",
+      "chosenIconUrl": "https://izibul.com/icon-192.png"
+    },
+    {
+      "name": "Sıralama",
+      "shortName": "Sıralama",
+      "url": "/leaderboard",
+      "chosenIconUrl": "https://izibul.com/icon-192.png"
+    }
+  ],
+  "signingKey": {
+    "path": "izibul.keystore",
+    "alias": "izibul"
+  },
+  "minSdkVersion": 19,
+  "targetSdkVersion": 34,
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://izibul.com/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {
+    "locationDelegation": {
+      "enabled": true
+    }
+  },
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableNotifications": true,
+  "appVersion": "1.0.0",
+  "appVersionCode": 1
+}

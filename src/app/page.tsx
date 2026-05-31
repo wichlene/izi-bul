@@ -57,6 +57,25 @@ export default async function HomePage() {
             </Link>
           </div>
 
+          {/* APK İndir */}
+          <div className="flex items-center justify-center gap-3 mt-4 flex-wrap">
+            <a
+              href="https://github.com/wichlene/izi-bul/releases/latest/download/izibul.apk"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-2xl font-semibold border transition-all hover:bg-gray-50 text-sm"
+              style={{ color: '#0f1419', borderColor: '#eff3f4', background: '#fff' }}
+              download>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.523 15.3414C17.523 18.5796 14.9482 21.154 11.7103 21.154C8.4724 21.154 5.8976 18.5796 5.8976 15.3414C5.8976 13.8469 6.4908 12.4918 7.4482 11.4868L9.3073 9.6277C10.2647 8.6234 11.1384 7.7497 11.7103 7.1778C12.2822 7.7497 13.1559 8.6234 14.1133 9.6277L15.9724 11.4868C16.9298 12.4918 17.523 13.8469 17.523 15.3414Z"/><path d="M11.7103 3L11.7103 15.3414"/><path d="M8.5 12.1416L11.7103 15.3414L14.9206 12.1416" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
+              Android APK İndir
+            </a>
+            <a
+              href="/manifest.json"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-2xl font-semibold border transition-all hover:bg-gray-50 text-sm"
+              style={{ color: '#536471', borderColor: '#eff3f4', background: '#fff' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>
+              PWA Olarak Yükle
+            </a>
+          </div>
+
           <div className="grid grid-cols-3 gap-4 max-w-md mx-auto mt-14">
             {[
               { icon: <MapPin size={18} />, val: quests.length + '+', label: 'Görev' },

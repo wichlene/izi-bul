@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.izibul.app",
+      "sha256_cert_fingerprints": [
+        "40:25:91:36:94:70:73:22:7E:EE:26:AA:91:80:93:71:F2:EB:D7:CA:6E:25:4C:ED:18:E1:75:C6:3C:7A:E2:84"
+      ]
+    }
+  }
+]
