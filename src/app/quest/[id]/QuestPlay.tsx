@@ -403,11 +403,21 @@ export default function QuestPlay({ quest, alreadyWon, isLoggedIn, steps: rawSte
                 </div>
               )}
 
+              {/* Referans fotoğrafı — kullanıcı ne çekeceğini görsün */}
+              {isLastStep && quest.photo_url && (
+                <div>
+                  <p className="font-bold text-xs mb-2 uppercase tracking-wide" style={{ color: '#536471' }}>Referans Fotoğraf</p>
+                  <div className="rounded-xl overflow-hidden" style={{ aspectRatio: '4/3' }}>
+                    <img src={quest.photo_url} alt="Referans" className="w-full h-full object-cover" />
+                  </div>
+                </div>
+              )}
+
               {/* Fotoğraf - if has_image OR old step_type === 'image' */}
               {(step.has_image || step.step_type === 'image') && (
                 <div>
                   <p className="font-bold text-sm mb-2" style={{ color: '#0f1419' }}>
-                    {isLastStep ? 'Hazineyi fotoğrafla — hazineyi bul!' : 'Bu adım için fotoğraf çek'}
+                    {isLastStep ? 'Şimdi sen çek — hazineyi bul!' : 'Bu adım için fotoğraf çek'}
                   </p>
                   <PhotoUpload onUpload={setPhoto} />
                 </div>

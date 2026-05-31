@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-import { Home, MapPin, MessageCircle, Users, User, Shield, Plus, BarChart2, Heart } from 'lucide-react';
+import { Home, MapPin, MessageCircle, Users, User, Shield, Plus, BarChart2, Heart, Trophy } from 'lucide-react';
 import SignOutButton from './SignOutButton';
 import NotificationBell from './NotificationBell';
 import PushSubscriber from './PushSubscriber';
@@ -36,6 +36,7 @@ export default async function AppShell({ children, aside }: Props) {
     { href: '/friends', icon: <Users size={26} />, label: 'Arkadaşlar', badge: pendingRequests },
     { href: '/messages', icon: <MessageCircle size={26} />, label: 'Mesajlar', badge: unreadMessages },
     { href: '/good-deed', icon: <Heart size={26} />, label: 'İyilik Hareketi', badge: 0 },
+    { href: '/leaderboard', icon: <Trophy size={26} />, label: 'Sıralama', badge: 0 },
     { href: '/profile', icon: <User size={26} />, label: 'Profil', badge: 0 },
     ...(profile?.is_admin ? [{ href: '/admin', icon: <Shield size={26} />, label: 'Admin', badge: 0 }] : []),
     ...((profile?.is_business || profile?.is_admin) ? [{ href: '/business/stats', icon: <BarChart2 size={26} />, label: 'İstatistik', badge: 0 }] : []),
