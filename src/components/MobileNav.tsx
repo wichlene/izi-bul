@@ -2,22 +2,23 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, MapPin, Trophy, ShoppingBag, User } from 'lucide-react';
+import { Home, MapPin, MessageCircle, Users, User } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 
 interface Props {
   unreadMessages: number;
+  pendingRequests: number;
 }
 
 const NAV = [
-  { href: '/dashboard', icon: Home, label: 'Keşfet' },
-  { href: '/map', icon: MapPin, label: 'Harita' },
-  { href: '/leaderboard', icon: Trophy, label: 'Sıralama' },
-  { href: '/store', icon: ShoppingBag, label: 'Mağaza' },
-  { href: '/profile', icon: User, label: 'Profil' },
+  { href: '/dashboard', icon: Home, label: 'Keşfet', badge: 0 },
+  { href: '/map', icon: MapPin, label: 'Harita', badge: 0 },
+  { href: '/messages', icon: MessageCircle, label: 'Mesajlar', badge: -1 },
+  { href: '/friends', icon: Users, label: 'Arkadaşlar', badge: -2 },
+  { href: '/profile', icon: User, label: 'Profil', badge: 0 },
 ];
 
-export default function MobileNav({ unreadMessages }: Props) {
+export default function MobileNav({ unreadMessages, pendingRequests }: Props) {
   const pathname = usePathname();
 
   return (
@@ -29,8 +30,9 @@ export default function MobileNav({ unreadMessages }: Props) {
         paddingBottom: 'env(safe-area-inset-bottom)',
       }}>
       <div className="flex items-center justify-around h-14">
-        {NAV.map(({ href, icon: Icon, label }) => {
+        {NAV.map(({ href, icon: Icon, label, badge }) => {
           const active = pathname === href || (href === '/dashboard' && pathname === '/');
+          const badgeCount = badge === -1 ? unreadMessages : badge === -2 ? pendingRequests : badge;
           return (
             <Link
               key={href}
@@ -43,7 +45,15 @@ export default function MobileNav({ unreadMessages }: Props) {
                   style={{ background: '#ff6b2b' }}
                 />
               )}
-              <Icon size={22} strokeWidth={active ? 2.5 : 1.8} />
+              <span className="relative">
+                <Icon size={22} strokeWidth={active ? 2.5 : 1.8} />
+                {badgeCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 min-w-[15px] h-[15px] rounded-full text-[9px] font-black text-white flex items-center justify-center px-0.5"
+                    style={{ background: '#ff6b2b' }}>
+                    {badgeCount > 9 ? '9+' : badgeCount}
+                  </span>
+                )}
+              </span>
               <span className="text-[10px] font-semibold leading-none">{label}</span>
             </Link>
           );

@@ -140,7 +140,7 @@ export default async function AppShell({ children, aside }: Props) {
       )}
 
       {/* ALT NAVİGASYON — sadece mobil */}
-      <MobileNav unreadMessages={unreadMessages} />
+      <MobileNav unreadMessages={unreadMessages} pendingRequests={pendingRequests} />
     </div>
   );
 }
