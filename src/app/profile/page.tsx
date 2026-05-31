@@ -9,6 +9,7 @@ import ProfileEditModal from './ProfileEditModal';
 import LogoutButton from './LogoutButton';
 import ProfilePosts from './ProfilePosts';
 import ReferralBox from './ReferralBox';
+import StreakBadges from './StreakBadges';
 
 export default async function ProfilePage() {
   const supabase = await createClient();
@@ -100,6 +101,9 @@ export default async function ProfilePage() {
             onIcon={<Eye size={14} />} offIcon={<EyeOff size={14} />} />
         </div>
       </div>
+
+      {/* Streak + Rozetler */}
+      <StreakBadges userId={user.id} />
 
       {/* Arkadaş davet kutusu */}
       <ReferralBox userId={user.id} />

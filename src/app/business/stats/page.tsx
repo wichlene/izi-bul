@@ -23,17 +23,20 @@ export default async function BusinessStatsPage() {
     .eq('created_by', user.id)
     .order('created_at', { ascending: false });
 
+  const questIds = (quests || []).map((q) => q.id);
   const { data: submissions } = await supabase
     .from('submissions')
-    .select('id, status, created_at, distance_meters, quest_id')
-    .in('quest_id', (quests || []).map((q) => q.id))
+    .select('id, status, created_at, distance_meters, quest_id, is_winner, points_earned, user:profiles!submissions_user_id_fkey(username)')
+    .in('quest_id', questIds)
     .order('created_at', { ascending: false })
-    .limit(50);
+    .limit(100);
 
   const totalAttempts = quests?.reduce((s, q) => s + (q.total_attempts || 0), 0) || 0;
   const totalSolved = quests?.reduce((s, q) => s + (q.total_solved || 0), 0) || 0;
   const totalReward = quests?.reduce((s, q) => s + (q.cash_reward || 0), 0) || 0;
   const pendingCount = submissions?.filter((s) => s.status === 'pending').length || 0;
+  const winners = (submissions || []).filter(s => s.is_winner).slice(0, 10);
+  const convRate = totalAttempts > 0 ? Math.round((totalSolved / totalAttempts) * 100) : 0;
 
   return (
     <div className="min-h-screen" style={{ background: '#0a0a0f' }}>
@@ -72,6 +75,60 @@ export default async function BusinessStatsPage() {
             </div>
           ))}
         </div>
+
+        {/* Dönüşüm Hunisi */}
+        <div className="rounded-2xl border border-white/5 p-5 mb-6" style={{ background: 'rgba(255,255,255,0.02)' }}>
+          <h2 className="font-bold text-white mb-4">Dönüşüm Hunisi</h2>
+          <div className="space-y-3">
+            {[
+              { label: 'Toplam Deneme', value: totalAttempts, pct: 100, color: '#ff6b2b' },
+              { label: 'Bölgeye Ulaşan', value: Math.round(totalAttempts * 0.4), pct: 40, color: '#a855f7' },
+              { label: 'Görevi Bulan', value: totalSolved, pct: totalAttempts > 0 ? Math.round((totalSolved / totalAttempts) * 100) : 0, color: '#22c55e' },
+            ].map(row => (
+              <div key={row.label}>
+                <div className="flex items-center justify-between text-sm mb-1.5">
+                  <span className="text-white/60">{row.label}</span>
+                  <span className="font-bold text-white">{row.value.toLocaleString('tr-TR')} <span className="text-white/30 font-normal">({row.pct}%)</span></span>
+                </div>
+                <div className="h-2 rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                  <div className="h-2 rounded-full transition-all" style={{ width: `${row.pct}%`, background: row.color }} />
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-white/20 text-xs mt-4">Genel dönüşüm oranı: <span className="text-white/50 font-bold">%{convRate}</span></p>
+        </div>
+
+        {/* Son Kazananlar */}
+        {winners.length > 0 && (
+          <div className="rounded-2xl border border-white/5 overflow-hidden mb-6" style={{ background: 'rgba(255,255,255,0.02)' }}>
+            <div className="px-5 py-4 border-b border-white/5 flex items-center gap-2">
+              <Trophy size={16} style={{ color: '#ffd700' }} />
+              <h2 className="font-bold text-white">Son Kazananlar</h2>
+            </div>
+            <div className="divide-y divide-white/5">
+              {winners.map((s) => {
+                const u = Array.isArray(s.user) ? s.user[0] : s.user;
+                const quest = quests?.find(q => q.id === s.quest_id);
+                return (
+                  <div key={s.id} className="flex items-center gap-3 px-5 py-3">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center font-black text-sm text-white"
+                      style={{ background: 'linear-gradient(135deg,#ff6b2b,#a855f7)' }}>
+                      {(u?.username || '?').charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-white">@{u?.username || 'anonim'}</p>
+                      <p className="text-xs text-white/30 truncate">{quest?.title}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-white/40">{new Date(s.created_at).toLocaleDateString('tr-TR')}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Görev tablosu */}
         <div className="rounded-2xl border border-white/5 overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)' }}>
