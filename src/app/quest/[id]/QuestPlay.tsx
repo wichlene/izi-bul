@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Trophy, Loader2, AlertCircle, LogIn, Navigation, CheckCircle, Lock, Clock, ScanLine, Map } from 'lucide-react';
+import { Trophy, Loader2, AlertCircle, LogIn, Navigation, Lock, Clock, Map, CheckCircle } from 'lucide-react';
 import { playQuestComplete, playError } from '@/lib/sounds';
 import { Quest } from '@/types';
 import { calculateDistance, formatDistance } from '@/lib/distance';
@@ -62,11 +62,9 @@ export default function QuestPlay({ quest, alreadyWon, isLoggedIn, steps: rawSte
   const [showAR, setShowAR] = useState(false);
   const [showMap, setShowMap] = useState(false);
   const [started, setStarted] = useState(initialStep > 1);
-  const [done, setDone] = useState<null | { points: number; cash: number; coop: number; pending: boolean }>(null);
+  const [done, setDone] = useState<null | { points: number; cash: number; coop: number; pending: boolean; aiMatch?: number; aiReasoning?: string }>(null);
   const [blocked, setBlocked] = useState<null | { message: string; questId: string }>(null);
   const [abandoning, setAbandoning] = useState(false);
-  const [aiResult, setAiResult] = useState<null | { match: number; accepted: boolean; reasoning: string }>(null);
-  const [aiLoading, setAiLoading] = useState(false);
   const watchRef = useRef<number | null>(null);
 
   // Canlı GPS takibi
@@ -133,7 +131,14 @@ export default function QuestPlay({ quest, alreadyWon, isLoggedIn, steps: rawSte
         if (!res.ok) throw new Error(data.error || 'Hata');
         if (!data.isClose) { playError(); setError(`Yeterince yakın değilsin (${formatDistance(data.distance)}).`); setShowAR(false); return false; }
         playQuestComplete();
-        setDone({ points: data.pointsEarned || quest.points, cash: quest.cash_reward || 0, coop: 1, pending: data.status === 'pending' });
+        setDone({
+          points: data.pointsEarned || quest.points,
+          cash: quest.cash_reward || 0,
+          coop: 1,
+          pending: data.status === 'pending',
+          aiMatch: data.aiMatch,
+          aiReasoning: data.aiReasoning,
+        });
         return true;
       }
     } catch (e) {
@@ -287,10 +292,30 @@ export default function QuestPlay({ quest, alreadyWon, isLoggedIn, steps: rawSte
     return (
       <div className="flex flex-col items-center p-6">
         {done.pending ? (
-          <div className="w-full max-w-sm text-center">
-            <Clock size={56} className="mx-auto mb-4" style={{ color: '#3b82f6' }} />
-            <h3 className="text-xl font-black mb-2" style={{ color: '#0f1419' }}>İncelemeye gönderildi</h3>
-            <p className="text-sm mb-6" style={{ color: '#536471' }}>Fotoğrafın onaylanınca puanın eklenecek.</p>
+          <div className="w-full max-w-sm rounded-3xl overflow-hidden mb-5" style={{ background: 'linear-gradient(135deg,#0f1419,#1a2332)', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+            {quest.photo_url && (
+              <div className="relative h-36 overflow-hidden">
+                <img src={quest.photo_url} alt={quest.title} className="w-full h-full object-cover opacity-40" />
+                <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent 10%, #0f1419)' }} />
+              </div>
+            )}
+            <div className="p-5 text-center">
+              <Clock size={40} className="mx-auto mb-3" style={{ color: '#3b82f6' }} />
+              <h3 className="text-xl font-black mb-1 text-white">İncelemeye gönderildi</h3>
+              {done.aiMatch !== undefined && done.aiMatch > 0 && (
+                <div className="mt-3 mb-3">
+                  <p className="text-white/40 text-xs mb-1.5">Yapay Zeka Analizi</p>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-2 rounded-full" style={{ background: 'rgba(255,255,255,0.1)' }}>
+                      <div className="h-2 rounded-full transition-all" style={{ width: `${done.aiMatch}%`, background: done.aiMatch >= 70 ? '#22c55e' : done.aiMatch >= 40 ? '#f97316' : '#ef4444' }} />
+                    </div>
+                    <span className="text-xs font-black text-white">%{done.aiMatch}</span>
+                  </div>
+                  {done.aiReasoning && <p className="text-white/30 text-xs mt-1.5">{done.aiReasoning}</p>}
+                </div>
+              )}
+              <p className="text-white/40 text-sm">Fotoğrafın onaylanınca puanın eklenecek.</p>
+            </div>
           </div>
         ) : (
           /* Paylaşılabilir kazanma kartı */
@@ -481,63 +506,22 @@ export default function QuestPlay({ quest, alreadyWon, isLoggedIn, steps: rawSte
                 </div>
               )}
 
-              {/* AI sonucu */}
-              {aiResult && (
-                <div className="rounded-xl p-4 text-sm" style={{
-                  background: aiResult.accepted ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)',
-                  border: `1px solid ${aiResult.accepted ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}`,
-                  color: aiResult.accepted ? '#16a34a' : '#dc2626',
-                }}>
-                  <div className="flex items-center gap-2 font-bold mb-1">
-                    {aiResult.accepted ? <CheckCircle size={15} /> : <AlertCircle size={15} />}
-                    Eşleşme: %{aiResult.match}
-                  </div>
-                  <p className="text-xs opacity-80">{aiResult.reasoning}</p>
-                </div>
-              )}
 
               {/* Aksiyon */}
               {isLastStep ? (
                 <button
-                  onClick={async () => {
+                  onClick={() => {
                     const needsQuestion = step.has_question || step.step_type === 'question';
                     const needsImage = step.has_image || step.step_type === 'image';
                     if (needsQuestion && !answer.trim()) { setError('Önce soruyu cevapla.'); return; }
                     if (needsImage && !photo) { setError('Önce fotoğraf çek.'); return; }
                     setError('');
-
-                    // Fotoğraflı görevde AI kontrolü yap
-                    if (needsImage && photo) {
-                      setAiLoading(true);
-                      setAiResult(null);
-                      try {
-                        const res = await fetch('/api/submissions/verify', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ quest_id: quest.id, user_photo_url: photo }),
-                        });
-                        const data = await res.json();
-                        setAiResult(data);
-                        setAiLoading(false);
-                        if (!data.accepted) {
-                          setError('Fotoğraf uyuşmadı. Doğru konumdan tekrar çekmeyi dene.');
-                          return;
-                        }
-                      } catch {
-                        setAiLoading(false);
-                      }
-                    }
-
                     setShowAR(true);
                   }}
-                  disabled={submitting || aiLoading}
+                  disabled={submitting}
                   className="w-full font-black py-3.5 rounded-xl flex items-center justify-center gap-2 text-white"
                   style={{ background: 'linear-gradient(135deg,#ffd700,#ff6b2b)', boxShadow: '0 6px 20px rgba(255,107,43,0.4)' }}>
-                  {aiLoading ? (
-                    <><ScanLine size={16} className="animate-pulse" /> Yapay Zeka Analiz Ediyor...</>
-                  ) : (
-                    <>✨ Kamerayı Aç — Hazineyi Bul</>
-                  )}
+                  ✨ Kamerayı Aç — Hazineyi Bul
                 </button>
               ) : (
                 (() => {

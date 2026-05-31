@@ -4,6 +4,7 @@ import { calculateDistance } from '@/lib/distance';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { isValidCoord, isInTurkey } from '@/lib/validateCoords';
 import { sendEmail, ADMIN_EMAIL } from '@/lib/email';
+import { verifyPhotoMatch } from '@/lib/aiVerify';
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -65,12 +66,29 @@ export async function POST(req: NextRequest) {
   let isWinner = false;
   let pointsEarned = 0;
 
+  let aiMatch = 0;
+  let aiReasoning = '';
+
   if (isClose) {
     if (quest.requires_photo_proof) {
       if (!photo_url) {
         return NextResponse.json({ error: 'Fotoğraf kanıtı gerekli' }, { status: 400 });
       }
-      status = 'pending';
+      // Yapay zeka ile doğrulama — referans fotoğrafla karşılaştır
+      if (quest.photo_url) {
+        const aiResult = await verifyPhotoMatch(quest.photo_url, photo_url);
+        aiMatch = aiResult.match;
+        aiReasoning = aiResult.reasoning;
+        if (aiResult.accepted) {
+          status = 'auto_won';
+          isWinner = true;
+          pointsEarned = quest.points;
+        } else {
+          status = 'pending';
+        }
+      } else {
+        status = 'pending';
+      }
     } else {
       status = 'auto_won';
       isWinner = true;
@@ -163,5 +181,7 @@ export async function POST(req: NextRequest) {
     isWinner,
     pointsEarned,
     photoRequired: quest.requires_photo_proof,
+    aiMatch,
+    aiReasoning,
   });
 }
