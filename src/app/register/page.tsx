@@ -1,13 +1,15 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { MapPin, Loader2, Mail, Lock, User, AtSign, Phone } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [refCode] = useState(() => searchParams.get('ref') || '');
   const [form, setForm] = useState({ email: '', password: '', username: '', full_name: '', phone: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -42,6 +44,7 @@ export default function RegisterPage() {
           username: form.username.toLowerCase(),
           full_name: form.full_name,
           ...(phone && { phone }),
+          ...(refCode && { referred_by: refCode }),
         },
         emailRedirectTo: `${location.origin}/auth/callback`,
       },
@@ -60,14 +63,19 @@ export default function RegisterPage() {
       return;
     }
 
-    // Session var → telefonu güncelle ve dashboard'a geç
-    if (phone) {
-      await fetch('/api/profile/phone', {
+    // Session var → telefonu + referral bonus işle, dashboard'a geç
+    await Promise.all([
+      phone ? fetch('/api/profile/phone', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone }),
-      });
-    }
+      }) : Promise.resolve(),
+      refCode ? fetch('/api/referral', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ref_code: refCode }),
+      }) : Promise.resolve(),
+    ]);
 
     router.push('/dashboard');
     router.refresh();
@@ -121,6 +129,12 @@ export default function RegisterPage() {
         </Link>
 
         <div className="rounded-3xl p-8" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+          {refCode && (
+            <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl mb-4" style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' }}>
+              <span className="text-lg">🎁</span>
+              <p className="text-sm font-bold" style={{ color: '#22c55e' }}>Davet bonusu aktif — kayıt olunca +50 puan kazanırsın!</p>
+            </div>
+          )}
           <h1 className="text-2xl font-black text-white mb-1">Maceraya başla!</h1>
           <p className="text-white/40 text-sm mb-6">Ücretsiz hesap aç, keşfe çık, ödülleri topla.</p>
 

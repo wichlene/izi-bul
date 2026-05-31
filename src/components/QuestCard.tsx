@@ -59,14 +59,24 @@ export default function QuestCard({ quest, distance }: Props) {
           <h3 className="font-bold mb-1.5 line-clamp-1 transition-colors" style={{ color: '#0f1419' }}>{quest.title}</h3>
           <p className="text-sm line-clamp-2 mb-4 flex-1" style={{ color: '#536471' }}>{quest.description}</p>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1 text-sm font-bold" style={{ color: '#22c55e' }}>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1 text-sm font-bold flex-shrink-0" style={{ color: '#22c55e' }}>
               {quest.cash_reward > 0 ? <span>{quest.cash_reward}₺ Ödül</span> : <span style={{ color: '#536471' }}>Ödülsüz</span>}
             </div>
-            <div className="flex items-center gap-3 text-xs" style={{ color: '#536471' }}>
-              <span className="flex items-center gap-1"><Users size={11} />{quest.total_solved}</span>
-              {quest.total_solved === 0 && (
-                <span className="flex items-center gap-1 text-yellow-500"><Zap size={11} />İlk ol!</span>
+            <div className="flex items-center gap-2 text-xs flex-wrap justify-end" style={{ color: '#536471' }}>
+              {quest.total_solved === 0 && quest.total_attempts > 0 ? (
+                <span className="flex items-center gap-1 font-bold text-orange-500">
+                  <Zap size={11} />{quest.total_attempts} denedi, kimse bulamadı!
+                </span>
+              ) : quest.total_solved === 0 ? (
+                <span className="flex items-center gap-1 font-bold text-yellow-500"><Zap size={11} />İlk ol!</span>
+              ) : (
+                <>
+                  {quest.total_attempts > 0 && (
+                    <span className="flex items-center gap-1"><Users size={11} />{quest.total_attempts} deneme</span>
+                  )}
+                  <span className="flex items-center gap-1 font-bold" style={{ color: '#22c55e' }}>✓ {quest.total_solved} buldu</span>
+                </>
               )}
             </div>
           </div>

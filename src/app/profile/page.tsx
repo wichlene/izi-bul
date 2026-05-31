@@ -8,6 +8,7 @@ import ProfileImageEditor from './ProfileImageEditor';
 import ProfileEditModal from './ProfileEditModal';
 import LogoutButton from './LogoutButton';
 import ProfilePosts from './ProfilePosts';
+import ReferralBox from './ReferralBox';
 
 export default async function ProfilePage() {
   const supabase = await createClient();
@@ -99,6 +100,9 @@ export default async function ProfilePage() {
             onIcon={<Eye size={14} />} offIcon={<EyeOff size={14} />} />
         </div>
       </div>
+
+      {/* Arkadaş davet kutusu */}
+      <ReferralBox userId={user.id} />
 
       {/* Paylaşımlar + Geçmiş sekmeleri */}
       <ProfilePosts userId={user.id} submissions={submissions} />

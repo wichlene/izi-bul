@@ -272,26 +272,78 @@ export default function QuestPlay({ quest, alreadyWon, isLoggedIn, steps: rawSte
   }
 
   if (done) {
+    const shareWin = async () => {
+      const text = done.pending
+        ? `İzi Bul'da "${quest.title}" görevini tamamladım, onay bekliyorum! Sen de dene: https://izibul.com/quest/${quest.id}`
+        : `İzi Bul'da "${quest.title}" hazinesini buldum 🎯 +${done.points} puan kazandım! Sen de bulabilir misin? 👉 https://izibul.com/quest/${quest.id}`;
+      if (navigator.share) {
+        await navigator.share({ title: 'İzi Bul — Hazineyi buldum!', text, url: `https://izibul.com/quest/${quest.id}` }).catch(() => null);
+      } else {
+        await navigator.clipboard.writeText(text).catch(() => null);
+        alert('Link kopyalandı!');
+      }
+    };
+
     return (
-      <div className="p-8 text-center">
+      <div className="flex flex-col items-center p-6">
         {done.pending ? (
-          <>
-            <Clock size={48} className="mx-auto mb-3" style={{ color: '#3b82f6' }} />
+          <div className="w-full max-w-sm text-center">
+            <Clock size={56} className="mx-auto mb-4" style={{ color: '#3b82f6' }} />
             <h3 className="text-xl font-black mb-2" style={{ color: '#0f1419' }}>İncelemeye gönderildi</h3>
-            <p className="text-sm mb-4" style={{ color: '#536471' }}>Fotoğrafın onaylanınca puanın eklenecek.</p>
-          </>
+            <p className="text-sm mb-6" style={{ color: '#536471' }}>Fotoğrafın onaylanınca puanın eklenecek.</p>
+          </div>
         ) : (
-          <>
-            <div className="text-6xl mb-4 animate-bounce">🎉</div>
-            <h3 className="text-2xl font-black mb-2" style={{ color: '#22c55e' }}>Hazineyi buldun!</h3>
-            {done.coop > 1 && <p className="text-sm mb-2" style={{ color: '#536471' }}>{done.coop} kişiyle ortak — ödül eşit bölündü</p>}
-            <div className="rounded-2xl p-4 mb-4" style={{ background: 'rgba(255,107,43,0.08)', border: '1px solid rgba(255,107,43,0.2)' }}>
-              <p className="font-black text-3xl" style={{ color: '#0f1419' }}>+{done.points} puan</p>
-              {done.cash > 0 && <p className="font-bold text-lg mt-1" style={{ color: '#22c55e' }}>+{done.cash}₺ nakit</p>}
+          /* Paylaşılabilir kazanma kartı */
+          <div className="w-full max-w-sm rounded-3xl overflow-hidden mb-5" style={{ background: 'linear-gradient(135deg,#0f1419 0%,#1a2332 100%)', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+            {/* Görev fotoğrafı */}
+            {quest.photo_url && (
+              <div className="relative h-40 overflow-hidden">
+                <img src={quest.photo_url} alt={quest.title} className="w-full h-full object-cover opacity-60" />
+                <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent 20%, #0f1419)' }} />
+                <div className="absolute bottom-3 left-4 right-4">
+                  <p className="text-white font-black text-lg leading-tight">{quest.title}</p>
+                </div>
+              </div>
+            )}
+            {/* Puan bilgisi */}
+            <div className="p-5 text-center">
+              <div className="text-5xl mb-2">🎉</div>
+              <p className="text-white/60 text-xs font-bold uppercase tracking-widest mb-1">Hazineyi Buldun!</p>
+              <p className="font-black text-5xl mb-1" style={{ color: '#ff6b2b' }}>+{done.points}</p>
+              <p className="text-white/50 text-sm mb-3">puan kazandın</p>
+              {done.cash > 0 && (
+                <div className="inline-block px-4 py-1.5 rounded-full text-sm font-black mb-3" style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e' }}>
+                  +{done.cash}₺ nakit ödül
+                </div>
+              )}
+              {done.coop > 1 && (
+                <p className="text-white/40 text-xs">{done.coop} kişiyle ortak — ödül paylaşıldı</p>
+              )}
+              <div className="mt-4 pt-4 flex items-center justify-center gap-1.5" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                <span className="text-white/30 text-xs">izibul.com</span>
+                <span className="w-1 h-1 rounded-full bg-white/20" />
+                <span className="text-white/30 text-xs">🗺️ Konumu bul, ödülü kazan</span>
+              </div>
             </div>
-          </>
+          </div>
         )}
-        <button onClick={() => router.push('/dashboard')} className="px-6 py-2.5 rounded-xl font-semibold text-white text-sm" style={{ background: 'linear-gradient(135deg,#ff6b2b,#ff3d00)' }}>Ana Sayfaya Dön</button>
+
+        <div className="w-full max-w-sm flex flex-col gap-2">
+          <button
+            onClick={shareWin}
+            className="w-full py-3.5 rounded-xl font-black text-white flex items-center justify-center gap-2"
+            style={{ background: 'linear-gradient(135deg,#ff6b2b,#ff3d00)', boxShadow: '0 6px 20px rgba(255,107,43,0.4)' }}
+          >
+            🚀 Paylaş — Arkadaşlarını zorla!
+          </button>
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="w-full py-3 rounded-xl font-semibold text-sm"
+            style={{ background: '#f7f8f8', color: '#536471' }}
+          >
+            Ana Sayfaya Dön
+          </button>
+        </div>
       </div>
     );
   }
