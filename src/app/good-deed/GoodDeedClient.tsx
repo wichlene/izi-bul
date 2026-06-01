@@ -45,6 +45,7 @@ export default function GoodDeedClient({ currentUserId }: { currentUserId: strin
   const [showPhoto, setShowPhoto] = useState(false);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [posting, setPosting] = useState(false);
+  const [postError, setPostError] = useState('');
   const [locating, setLocating] = useState(false);
   const [locError, setLocError] = useState('');
   const [showMap, setShowMap] = useState(false);
@@ -135,21 +136,30 @@ export default function GoodDeedClient({ currentUserId }: { currentUserId: strin
 
   const post = async () => {
     if (!content.trim() || posting) return;
+    setPostError('');
     setPosting(true);
-    const res = await fetch('/api/posts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content, post_type: 'good_deed', photo_url: photo || null, latitude: coords?.lat, longitude: coords?.lng }),
-    });
-    if (res.ok) {
-      setContent('');
-      setPhoto('');
-      setShowPhoto(false);
-      setCoords(null);
-      loadPosts(); // sunucudan taze veri çek
-      router.refresh();
+    try {
+      const res = await fetch('/api/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content, post_type: 'good_deed', photo_url: photo || null, latitude: coords?.lat ?? null, longitude: coords?.lng ?? null }),
+      });
+      if (res.ok) {
+        setContent('');
+        setPhoto('');
+        setShowPhoto(false);
+        setCoords(null);
+        loadPosts();
+        router.refresh();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setPostError(data.error || `Paylaşım başarısız (${res.status}). Tekrar dene.`);
+      }
+    } catch {
+      setPostError('Bağlantı hatası. İnternet bağlantını kontrol et.');
+    } finally {
+      setPosting(false);
     }
-    setPosting(false);
   };
 
   return (
@@ -209,6 +219,11 @@ export default function GoodDeedClient({ currentUserId }: { currentUserId: strin
           </p>
         )}
 
+        {postError && (
+          <div className="mt-2 px-3 py-2 rounded-xl text-xs font-semibold" style={{ background: 'rgba(239,68,68,0.08)', color: '#dc2626', border: '1px solid rgba(239,68,68,0.2)' }}>
+            {postError}
+          </div>
+        )}
         <div className="flex items-center justify-between mt-3">
           <button onClick={() => setShowPhoto((v) => !v)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold hover:bg-pink-50"
