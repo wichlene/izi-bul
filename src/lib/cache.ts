@@ -1,14 +1,15 @@
 import { unstable_cache } from 'next/cache';
 import { createAdminClient } from './supabase/admin';
 
-// Görevler — 60 saniye cache (tüm kullanıcılar için aynı)
+// Görevler — aktif + son 7 günde kapanan görevler (feed için)
 export const getCachedQuests = unstable_cache(
   async () => {
     const admin = createAdminClient();
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const { data } = await admin
       .from('quests')
       .select('*, category:categories(*)')
-      .eq('is_active', true)
+      .or(`is_active.eq.true,updated_at.gte.${sevenDaysAgo}`)
       .order('is_featured', { ascending: false })
       .order('created_at', { ascending: false })
       .limit(100);

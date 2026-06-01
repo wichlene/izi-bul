@@ -28,8 +28,17 @@ export default function QuestCard({ quest, distance }: Props) {
             src={quest.photo_url}
             alt={quest.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            style={!quest.is_active ? { filter: 'grayscale(0.6) brightness(0.85)' } : undefined}
           />
           <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.6))' }} />
+          {!quest.is_active && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-xs font-black px-3 py-1.5 rounded-full"
+                style={{ background: 'rgba(0,0,0,0.65)', color: '#fff', backdropFilter: 'blur(8px)', letterSpacing: '0.05em' }}>
+                ✓ TAMAMLANDI
+              </span>
+            </div>
+          )}
 
           {/* Sol üst: kategori */}
           <div className="absolute top-2.5 left-2.5 flex gap-1.5">
