@@ -27,7 +27,7 @@ function RegisterForm() {
 
     if (form.password.length < 6) { setError('Şifre en az 6 karakter olmalı'); return; }
     if (form.username.length < 3) { setError('Kullanıcı adı en az 3 karakter olmalı'); return; }
-    if (!/^[a-zA-Z0-9_]+$/.test(form.username)) { setError('Kullanıcı adı sadece harf, rakam ve _ içerebilir'); return; }
+    if (!/^[a-zA-Z0-9_çğışöüÇĞİŞÖÜ]+$/.test(form.username)) { setError('Kullanıcı adı sadece harf, rakam ve _ içerebilir (boşluk kullanma)'); return; }
 
     const phone = form.phone ? normalizePhone(form.phone) : '';
     if (phone && !/^05\d{9}$/.test(phone)) { setError('Geçerli bir Türkiye telefon numarası gir (05xx...)'); return; }
