@@ -6,10 +6,11 @@ import { getCachedQuests, getCachedLiveUsers } from '@/lib/cache';
 export const revalidate = 10;
 
 export default async function MapPage() {
-  const [quests, mapped] = await Promise.all([
+  const [allQuests, mapped] = await Promise.all([
     getCachedQuests(),
     getCachedLiveUsers(),
   ]);
+  const quests = allQuests.filter((q) => q.is_active);
 
   return (
     <div className="h-screen flex flex-col">
