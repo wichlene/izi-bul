@@ -60,7 +60,7 @@ export default function QuestPlay({ quest, alreadyWon, isLoggedIn, steps: rawSte
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [showAR, setShowAR] = useState(false);
-  const [showMap, setShowMap] = useState(false);
+  const [showMap, setShowMap] = useState(true);
   const [started, setStarted] = useState(initialStep > 1);
   const [done, setDone] = useState<null | { points: number; cash: number; coop: number; pending: boolean; aiMatch?: number; aiReasoning?: string }>(null);
   const [blocked, setBlocked] = useState<null | { message: string; questId: string }>(null);
@@ -436,29 +436,33 @@ export default function QuestPlay({ quest, alreadyWon, isLoggedIn, steps: rawSte
           )}
         </div>
 
-        {/* Harita toggle */}
+        {/* Harita */}
         <div style={{ borderBottom: '1px solid #eff3f4' }}>
           <button
             onClick={() => setShowMap(!showMap)}
-            className="w-full py-2 text-xs font-semibold flex items-center justify-center gap-1.5"
-            style={{ color: showMap ? '#ff6b2b' : '#536471' }}
+            className="w-full py-2.5 text-xs font-semibold flex items-center justify-center gap-1.5"
+            style={{ color: '#536471' }}
           >
             <Map size={13} /> {showMap ? 'Haritayı Gizle' : 'Haritayı Göster'}
           </button>
-          {showMap && (
-            <div className="px-3 pb-3">
-              <div style={{ height: 200 }} className="rounded-xl overflow-hidden">
-                <QuestMap
-                  userLat={coords?.lat ?? null}
-                  userLng={coords?.lng ?? null}
-                  targetLat={step.target_lat}
-                  targetLng={step.target_lng}
-                  radiusMeters={step.approach_radius_meters}
-                  inRange={inRange}
-                />
-              </div>
+          {/* height:0 ile gizle, display:none kullanma — Leaflet boyut kaybeder */}
+          <div style={{
+            height: showMap ? 264 : 0,
+            overflow: 'hidden',
+            transition: 'height 0.25s ease',
+          }}>
+            <div style={{ height: 240, margin: '0 12px 12px', borderRadius: 12, overflow: 'hidden' }}>
+              <QuestMap
+                userLat={coords?.lat ?? null}
+                userLng={coords?.lng ?? null}
+                targetLat={step.target_lat}
+                targetLng={step.target_lng}
+                radiusMeters={step.approach_radius_meters}
+                inRange={inRange}
+                visible={showMap}
+              />
             </div>
-          )}
+          </div>
         </div>
 
         {/* Görev alanı — sadece bölgedeyken aktif */}

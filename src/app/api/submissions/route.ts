@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { calculateDistance } from '@/lib/distance';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { isValidCoord, isInTurkey } from '@/lib/validateCoords';
@@ -148,6 +149,19 @@ export async function POST(req: NextRequest) {
         is_active: false,
       })
       .eq('id', quest_id);
+
+    // Ana akışa kazanma postu ekle
+    const admin = createAdminClient();
+    const cashText = quest.cash_reward > 0 ? ` +${quest.cash_reward}₺` : '';
+    await admin.from('posts').insert({
+      user_id: user.id,
+      post_type: 'quest_complete',
+      content: `"${quest.title}" görevini çözdüm! 🏆 +${pointsEarned} puan${cashText} kazandım.`,
+      quest_id: quest_id,
+      photo_url: photo_url || null,
+      latitude,
+      longitude,
+    });
   } else {
     await supabase
       .from('quests')
