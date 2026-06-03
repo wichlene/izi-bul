@@ -210,26 +210,10 @@ export default function DashboardHome({ quests, categories }: Props) {
             </div>
           </div>
         )}
-
-        {/* Filtre chipleri */}
-        <div className="flex gap-2 px-3 pb-2.5 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-          {chips.map((chip) => (
-            <button
-              key={chip.id}
-              onClick={() => setFilter(chip.id)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold flex-shrink-0 transition-all"
-              style={filter === chip.id
-                ? { background: '#ff6b2b', color: '#fff' }
-                : { background: '#f3f4f6', color: '#536471' }}>
-              <span>{chip.icon}</span>
-              {chip.label}
-            </button>
-          ))}
-        </div>
       </div>
 
       {/* ── MASAÜSTÜ HEADER ── */}
-      <div className="hidden md:block sticky top-0 z-10 px-4 pt-3 pb-2"
+      <div className="hidden md:block sticky top-0 z-10 px-4 pt-3 pb-3"
         style={{ background: 'rgba(255,255,255,0.95)', borderBottom: '1px solid #eff3f4', backdropFilter: 'blur(8px)' }}>
         <div className="flex gap-3 items-center">
           <div className="relative flex-1">
@@ -243,21 +227,6 @@ export default function DashboardHome({ quests, categories }: Props) {
               style={{ background: '#f7f8f8', border: '1px solid #eff3f4', color: '#0f1419' }}
             />
           </div>
-        </div>
-        {/* Masaüstü filtre chipleri */}
-        <div className="flex gap-2 mt-2 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-          {chips.map((chip) => (
-            <button
-              key={chip.id}
-              onClick={() => setFilter(chip.id)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold flex-shrink-0 transition-all"
-              style={filter === chip.id
-                ? { background: '#ff6b2b', color: '#fff' }
-                : { background: '#f3f4f6', color: '#536471' }}>
-              <span>{chip.icon}</span>
-              {chip.label}
-            </button>
-          ))}
         </div>
       </div>
 

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, MapPin, MessageCircle, Users, User } from 'lucide-react';
+import { Home, MapPin, Heart, MessageCircle, Users, User } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 
 interface Props {
@@ -13,6 +13,7 @@ interface Props {
 const NAV = [
   { href: '/dashboard', icon: Home, label: 'Keşfet', badge: 0 },
   { href: '/map', icon: MapPin, label: 'Harita', badge: 0 },
+  { href: '/good-deed', icon: Heart, label: 'İyilik', badge: 0 },
   { href: '/messages', icon: MessageCircle, label: 'Mesajlar', badge: -1 },
   { href: '/friends', icon: Users, label: 'Arkadaşlar', badge: -2 },
   { href: '/profile', icon: User, label: 'Profil', badge: 0 },
@@ -31,22 +32,22 @@ export default function MobileNav({ unreadMessages, pendingRequests }: Props) {
       }}>
       <div className="flex items-center justify-around h-14">
         {NAV.map(({ href, icon: Icon, label, badge }) => {
-          const active = pathname === href || (href === '/dashboard' && pathname === '/');
+          const active = pathname === href || pathname.startsWith(href + '/') || (href === '/dashboard' && pathname === '/');
           const badgeCount = badge === -1 ? unreadMessages : badge === -2 ? pendingRequests : badge;
           return (
             <Link
               key={href}
               href={href}
-              className="flex flex-col items-center justify-center gap-0.5 w-14 h-14 relative transition-all"
-              style={{ color: active ? '#ff6b2b' : '#8e9aab' }}>
+              className="flex flex-col items-center justify-center gap-0.5 flex-1 h-14 relative transition-all"
+              style={{ color: active ? (href === '/good-deed' ? '#ec4899' : '#ff6b2b') : '#8e9aab' }}>
               {active && (
                 <span
-                  className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full"
-                  style={{ background: '#ff6b2b' }}
+                  className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full"
+                  style={{ background: href === '/good-deed' ? '#ec4899' : '#ff6b2b' }}
                 />
               )}
               <span className="relative">
-                <Icon size={22} strokeWidth={active ? 2.5 : 1.8} />
+                <Icon size={20} strokeWidth={active ? 2.5 : 1.8} fill={active && href === '/good-deed' ? '#ec4899' : 'none'} />
                 {badgeCount > 0 && (
                   <span className="absolute -top-1.5 -right-1.5 min-w-[15px] h-[15px] rounded-full text-[9px] font-black text-white flex items-center justify-center px-0.5"
                     style={{ background: '#ff6b2b' }}>
@@ -54,7 +55,7 @@ export default function MobileNav({ unreadMessages, pendingRequests }: Props) {
                   </span>
                 )}
               </span>
-              <span className="text-[10px] font-semibold leading-none">{label}</span>
+              <span className="text-[9px] font-semibold leading-none">{label}</span>
             </Link>
           );
         })}

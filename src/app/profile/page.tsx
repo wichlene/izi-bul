@@ -86,12 +86,24 @@ export default async function ProfilePage() {
 
         {/* 4 stat kutusu */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 12 }}>
-          {stats.map(({ val, label }) => (
-            <div key={label} style={{ background: '#f7f8f8', borderRadius: 12, padding: '10px 4px', textAlign: 'center' }}>
-              <p style={{ fontSize: 17, fontWeight: 900, color: '#0f1419', lineHeight: 1 }}>{val}</p>
-              <p style={{ fontSize: 11, color: '#536471', marginTop: 3 }}>{label}</p>
-            </div>
-          ))}
+          {stats.map(({ val, label }) => {
+            const href = label === 'Takip' ? `/user/${user.id}/following` : label === 'Takipçi' ? `/user/${user.id}/followers` : null;
+            const inner = (
+              <>
+                <p style={{ fontSize: 17, fontWeight: 900, color: '#0f1419', lineHeight: 1 }}>{val}</p>
+                <p style={{ fontSize: 11, color: href ? '#ff6b2b' : '#536471', marginTop: 3 }}>{label}</p>
+              </>
+            );
+            return href ? (
+              <a key={label} href={href} style={{ background: '#f7f8f8', borderRadius: 12, padding: '10px 4px', textAlign: 'center', display: 'block', textDecoration: 'none' }}>
+                {inner}
+              </a>
+            ) : (
+              <div key={label} style={{ background: '#f7f8f8', borderRadius: 12, padding: '10px 4px', textAlign: 'center' }}>
+                {inner}
+              </div>
+            );
+          })}
         </div>
 
         {/* Puan */}

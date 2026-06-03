@@ -198,13 +198,13 @@ export default function FriendsClient({ initialRequests, initialFriends, current
           <div>
             {friends.map((f) => (
               <div key={f.id} className="flex items-center gap-3 p-4" style={{ borderBottom: '1px solid #eff3f4' }}>
-                <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 text-white" style={{ background: 'linear-gradient(135deg, #ff6b2b, #ff3d00)' }}>
+                <Link href={`/user/${f.friend.id}`} className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 text-white" style={{ background: 'linear-gradient(135deg, #ff6b2b, #ff3d00)' }}>
                   {f.friend.username.charAt(0).toUpperCase()}
-                </div>
-                <div className="flex-1">
+                </Link>
+                <Link href={`/user/${f.friend.id}`} className="flex-1 min-w-0">
                   <div className="text-sm font-medium" style={{ color: '#0f1419' }}>@{f.friend.username}</div>
                   <div className="text-xs" style={{ color: '#536471' }}>{f.friend.total_finds} görev buldu</div>
-                </div>
+                </Link>
                 <Link href={`/messages?with=${f.friend.id}`}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white"
                   style={{ background: '#ff6b2b' }}>
