@@ -6,7 +6,7 @@ import { Quest, Category, DIFFICULTIES } from '@/types';
 import { calculateDistance } from '@/lib/distance';
 import QuestCard from '@/components/QuestCard';
 import PostActions from '@/components/PostActions';
-import { Search, Flame, Clock, Coins, Bell } from 'lucide-react';
+import { Search, Flame, Clock, Coins } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import NotificationBell from '@/components/NotificationBell';
@@ -90,12 +90,13 @@ type FeedItem =
 interface Props {
   quests: Quest[];
   categories: Category[];
+  initialPosts?: Post[];
 }
 
-export default function DashboardHome({ quests, categories }: Props) {
+export default function DashboardHome({ quests, categories, initialPosts = [] }: Props) {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
-  const [posts, setPosts] = useState<Post[]>([]);
+  const [posts] = useState<Post[]>(initialPosts);
   const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
   const [showSearch, setShowSearch] = useState(false);
 
@@ -106,13 +107,6 @@ export default function DashboardHome({ quests, categories }: Props) {
       () => {},
       { enableHighAccuracy: false, timeout: 8000 },
     );
-  }, []);
-
-  useEffect(() => {
-    fetch('/api/posts')
-      .then((r) => (r.ok ? r.json() : []))
-      .then(setPosts)
-      .catch(() => {});
   }, []);
 
   const feed = useMemo<FeedItem[]>(() => {

@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
     .from('posts')
     .select('*, profiles(username, avatar_url), quests(title, photo_url, cash_reward)')
     .order('created_at', { ascending: false })
-    .limit(50);
+    .limit(20);
   if (type) query = query.eq('post_type', type);
   if (userId) query = query.eq('user_id', userId);
   const { data, error } = await query;
@@ -22,30 +22,25 @@ export async function GET(req: NextRequest) {
 
   const posts = data || [];
 
-  // Beğenileri ayrı çek — tablo yoksa feed yine çalışır
+  if (!posts.length) return NextResponse.json([]);
+
+  const postIds = posts.map((p: { id: string }) => p.id);
+
+  // Beğeni + yorum sorgularını paralel çalıştır
+  const [likeRows, commentRows] = await Promise.all([
+    supabase.from('post_likes').select('post_id, user_id').in('post_id', postIds),
+    supabase.from('post_comments').select('post_id').in('post_id', postIds),
+  ]);
+
   const likeCount: Record<string, number> = {};
   const likedSet = new Set<string>();
-  if (posts.length) {
-    const { data: likeRows } = await supabase
-      .from('post_likes')
-      .select('post_id, user_id')
-      .in('post_id', posts.map((p: { id: string }) => p.id));
-    for (const row of likeRows || []) {
-      likeCount[row.post_id] = (likeCount[row.post_id] || 0) + 1;
-      if (user && row.user_id === user.id) likedSet.add(row.post_id);
-    }
+  for (const row of likeRows.data || []) {
+    likeCount[row.post_id] = (likeCount[row.post_id] || 0) + 1;
+    if (user && row.user_id === user.id) likedSet.add(row.post_id);
   }
-
-  // Yorum sayıları
   const commentCount: Record<string, number> = {};
-  if (posts.length) {
-    const { data: commentRows } = await supabase
-      .from('post_comments')
-      .select('post_id')
-      .in('post_id', posts.map((p: { id: string }) => p.id));
-    for (const row of commentRows || []) {
-      commentCount[row.post_id] = (commentCount[row.post_id] || 0) + 1;
-    }
+  for (const row of commentRows.data || []) {
+    commentCount[row.post_id] = (commentCount[row.post_id] || 0) + 1;
   }
 
   const enriched = posts.map((p: { id: string } & Record<string, unknown>) => ({
