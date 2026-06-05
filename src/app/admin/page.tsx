@@ -136,7 +136,9 @@ export default async function AdminPage() {
                     {s.photo_url && <img src={s.photo_url} className="w-14 h-14 rounded-xl object-cover flex-shrink-0" alt="" />}
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-semibold truncate" style={{ color: '#0f1419' }}>
-                        {(s as { profiles?: { username?: string } }).profiles?.username} → {(s as { quests?: { title?: string } }).quests?.title}
+                        <span style={{ color: '#ff6b2b' }}>@{(s as { profiles?: { username?: string } }).profiles?.username}</span>
+                        {' → '}
+                        {(s as { quests?: { title?: string } }).quests?.title}
                       </div>
                       <div className="text-xs" style={{ color: '#536471' }}>{s.distance_meters}m uzakta</div>
                     </div>
@@ -228,15 +230,15 @@ export default async function AdminPage() {
                 {allUsers?.map((u, idx) => (
                   <tr key={u.id} className="transition-colors hover:bg-gray-50" style={{ borderBottom: idx < (allUsers?.length ?? 0) - 1 ? '1px solid #eff3f4' : 'none' }}>
                     <td className="px-5 py-3">
-                      <div className="flex items-center gap-2">
+                      <Link href={`/user/${u.id}`} className="flex items-center gap-2 hover:opacity-80">
                         <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ background: 'linear-gradient(135deg, #ff6b2b, #a855f7)' }}>
                           {u.username?.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <div className="font-medium" style={{ color: '#0f1419' }}>@{u.username}</div>
+                          <div className="font-medium" style={{ color: '#ff6b2b' }}>@{u.username}</div>
                           {u.business_name && <div className="text-xs" style={{ color: '#536471' }}>🏪 {u.business_name}</div>}
                         </div>
-                      </div>
+                      </Link>
                     </td>
                     <td className="px-5 py-3" style={{ color: '#536471' }}>{u.total_finds}</td>
                     <td className="px-5 py-3">

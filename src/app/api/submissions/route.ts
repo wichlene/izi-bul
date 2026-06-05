@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
       if (!photo_url) {
         return NextResponse.json({ error: 'Fotoğraf kanıtı gerekli' }, { status: 400 });
       }
-      // Yapay zeka ile doğrulama — referans fotoğrafla karşılaştır
+      // Yapay zeka ile doğrulama
       if (quest.photo_url) {
         const aiResult = await verifyPhotoMatch(quest.photo_url, photo_url);
         aiMatch = aiResult.match;
@@ -91,9 +91,8 @@ export async function POST(req: NextRequest) {
         status = 'pending';
       }
     } else {
-      status = 'auto_won';
-      isWinner = true;
-      pointsEarned = quest.points;
+      // Fotoğraf gerekmese bile admin onayına gönder
+      status = 'pending';
     }
   }
 
