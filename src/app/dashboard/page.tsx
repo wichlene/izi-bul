@@ -5,6 +5,8 @@ import AppShell from '@/components/AppShell';
 import NearbyUsers from '@/components/NearbyUsers';
 import DashboardHome from './DashboardHome';
 import { Quest, Category } from '@/types';
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyPost = any;
 import { getCachedQuests, getCachedCategories, getCachedLiveUsers } from '@/lib/cache';
 
 export const revalidate = 30;
@@ -56,7 +58,7 @@ export default async function DashboardPage() {
 
   return (
     <AppShell aside={aside}>
-      <DashboardHome quests={quests as Quest[]} categories={categories as Category[]} initialPosts={initialPosts} />
+      <DashboardHome quests={quests as Quest[]} categories={categories as Category[]} initialPosts={initialPosts as AnyPost[]} />
     </AppShell>
   );
 }
