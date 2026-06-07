@@ -35,6 +35,21 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Create web dir placeholder
+        run: |
+          mkdir -p out
+          cat > out/index.html << 'HTML'
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <meta http-equiv="refresh" content="0;url=https://izibul.com">
+            <title>İzi Bul</title>
+          </head>
+          <body>Yükleniyor...</body>
+          </html>
+          HTML
+
       - name: Sync Capacitor
         run: npx cap sync android
 
