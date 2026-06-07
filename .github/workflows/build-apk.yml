@@ -1,0 +1,91 @@
+name: Build Android APK
+
+on:
+  push:
+    branches:
+      - main
+      - claude/cafe-finder-app-BofnA
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      - name: Generate Keystore
+        run: |
+          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android-release.keystore
+            echo "KEYSTORE_FILE=$PWD/android-release.keystore" >> $GITHUB_ENV
+            echo "KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
+            echo "KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> $GITHUB_ENV
+            echo "KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> $GITHUB_ENV
+          else
+            keytool -genkeypair \
+              -alias izibul \
+              -keypass izibul2024 \
+              -keystore android-release.keystore \
+              -storepass izibul2024 \
+              -dname "CN=IziBul, OU=App, O=IziBul, L=Istanbul, S=Istanbul, C=TR" \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000
+            echo "KEYSTORE_FILE=$PWD/android-release.keystore" >> $GITHUB_ENV
+            echo "KEYSTORE_PASSWORD=izibul2024" >> $GITHUB_ENV
+            echo "KEY_ALIAS=izibul" >> $GITHUB_ENV
+            echo "KEY_PASSWORD=izibul2024" >> $GITHUB_ENV
+          fi
+
+      - name: Build Release APK
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: izibul-release-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 30
+
+      - name: Create Release (on main)
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: apk-${{ github.run_number }}
+          name: "İzi Bul APK v1.0.${{ github.run_number }}"
+          files: android/app/build/outputs/apk/release/app-release.apk
+          generate_release_notes: false
+          body: |
+            ## İzi Bul Android APK
+            
+            Bu APK Capacitor ile oluşturulmuştur (Chrome/TWA değil, native WebView kullanır).
+            
+            **Yüklemek için:** Telefonda "Bilinmeyen kaynaklardan yükle" izni açık olmalıdır.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
