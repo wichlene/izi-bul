@@ -36,19 +36,7 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Create web dir placeholder
-        run: |
-          mkdir -p out
-          cat > out/index.html << 'HTML'
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <meta charset="utf-8">
-            <meta http-equiv="refresh" content="0;url=https://izibul.com">
-            <title>İzi Bul</title>
-          </head>
-          <body>Yükleniyor...</body>
-          </html>
-          HTML
+        run: mkdir -p out && echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>IziBul</title></head><body></body></html>' > out/index.html
 
       - name: Sync Capacitor
         run: npx cap sync android
@@ -81,14 +69,14 @@ jobs:
         working-directory: android
         run: ./gradlew assembleRelease --no-daemon
 
-      - name: Upload APK
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: izibul-release-apk
           path: android/app/build/outputs/apk/release/app-release.apk
           retention-days: 30
 
-      - name: Create Release (on main)
+      - name: Create GitHub Release (on main only)
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v1
         with:
@@ -98,9 +86,7 @@ jobs:
           generate_release_notes: false
           body: |
             ## İzi Bul Android APK
-            
-            Bu APK Capacitor ile oluşturulmuştur (Chrome/TWA değil, native WebView kullanır).
-            
-            **Yüklemek için:** Telefonda "Bilinmeyen kaynaklardan yükle" izni açık olmalıdır.
+            Capacitor ile oluşturuldu — Chrome/TWA değil, sistem WebView kullanır.
+            Telefonda "Bilinmeyen kaynaklardan yükle" izni açık olmalıdır.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
