@@ -24,6 +24,7 @@ export interface Quest {
   points: number;
   cash_reward: number;
   max_distance_meters: number;
+  requires_photo_proof: boolean;
   is_active: boolean;
   is_featured?: boolean;
   total_solved: number;

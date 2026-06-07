@@ -7,7 +7,7 @@ import { useAuth } from '../AuthContext';
 import { colors } from '../theme';
 import { Profile } from '../types';
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ navigation }: any) {
   const { session } = useAuth();
   const uid = session?.user.id;
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -57,6 +57,24 @@ export default function ProfileScreen() {
         <Text style={s.infoValue}>{session?.user.email}</Text>
       </View>
 
+      <View style={s.menuSection}>
+        <TouchableOpacity style={s.menuItem} onPress={() => navigation.navigate('GoodDeed')}>
+          <Text style={s.menuIcon}>❤️</Text>
+          <Text style={s.menuLabel}>İyilik Hareketi</Text>
+          <Text style={s.menuArrow}>›</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={s.menuItem} onPress={() => navigation.navigate('Notifications')}>
+          <Text style={s.menuIcon}>🔔</Text>
+          <Text style={s.menuLabel}>Bildirimler</Text>
+          <Text style={s.menuArrow}>›</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={s.menuItem} onPress={() => navigation.navigate('CreateQuest')}>
+          <Text style={s.menuIcon}>➕</Text>
+          <Text style={s.menuLabel}>Görev Oluştur</Text>
+          <Text style={s.menuArrow}>›</Text>
+        </TouchableOpacity>
+      </View>
+
       <TouchableOpacity style={s.logout} onPress={() => supabase.auth.signOut()}>
         <Text style={s.logoutText}>Çıkış Yap</Text>
       </TouchableOpacity>
@@ -88,6 +106,17 @@ const s = StyleSheet.create({
   },
   infoLabel: { fontSize: 13, color: colors.textMuted },
   infoValue: { fontSize: 16, fontWeight: '700', color: colors.text, marginTop: 4 },
+  menuSection: {
+    backgroundColor: colors.card, borderRadius: 14, marginBottom: 16,
+    borderWidth: 1, borderColor: colors.border, overflow: 'hidden',
+  },
+  menuItem: {
+    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 15,
+    borderBottomWidth: 1, borderBottomColor: colors.border,
+  },
+  menuIcon: { fontSize: 20, marginRight: 12 },
+  menuLabel: { flex: 1, fontSize: 16, fontWeight: '700', color: colors.text },
+  menuArrow: { fontSize: 22, color: colors.textMuted, fontWeight: '300' },
   logout: {
     backgroundColor: '#fee', borderRadius: 14, paddingVertical: 16, alignItems: 'center',
     borderWidth: 1, borderColor: '#fcc',

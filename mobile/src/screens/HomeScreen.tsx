@@ -7,7 +7,7 @@ import { supabase } from '../lib/supabase';
 import { colors, difficulties } from '../theme';
 import { Quest } from '../types';
 
-export default function HomeScreen() {
+export default function HomeScreen({ navigation }: any) {
   const [quests, setQuests] = useState<Quest[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -30,7 +30,7 @@ export default function HomeScreen() {
   function renderItem({ item }: { item: Quest }) {
     const diff = difficulties[item.difficulty] ?? difficulties.medium;
     return (
-      <TouchableOpacity style={s.card} activeOpacity={0.9}>
+      <TouchableOpacity style={s.card} activeOpacity={0.9} onPress={() => navigation.navigate('QuestDetail', { questId: item.id })}>
         {item.photo_url ? (
           <Image source={{ uri: item.photo_url }} style={s.image} />
         ) : (

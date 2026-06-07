@@ -12,7 +12,7 @@ interface NearbyQuest extends Quest {
   _distance: number;
 }
 
-export default function MapScreen() {
+export default function MapScreen({ navigation }: any) {
   const [quests, setQuests] = useState<NearbyQuest[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState('Konum alınıyor...');
@@ -70,7 +70,7 @@ export default function MapScreen() {
         const diff = difficulties[item.difficulty] ?? difficulties.medium;
         const reachable = item._distance <= (item.max_distance_meters || 100);
         return (
-          <TouchableOpacity style={s.row} activeOpacity={0.85}>
+          <TouchableOpacity style={s.row} activeOpacity={0.85} onPress={() => navigation.navigate('QuestDetail', { questId: item.id })}>
             <View style={[s.pin, { backgroundColor: diff.color }]}>
               <Text style={s.pinText}>📍</Text>
             </View>
