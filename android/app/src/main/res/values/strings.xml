@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">İzi Bul</string>
-    <string name="title_activity_main">İzi Bul</string>
-    <string name="package_name">com.izibul.app</string>
-    <string name="custom_url_scheme">com.izibul.app</string>
-</resources>
