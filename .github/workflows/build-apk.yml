@@ -29,11 +29,11 @@ jobs:
           ls $ANDROID_HOME/platforms/ 2>/dev/null | head -10
           ls $ANDROID_HOME/build-tools/ 2>/dev/null | head -5
 
-      - name: Install SDK platform-35
+      - name: Install SDK platform-36
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
-            "platforms;android-35" \
-            "build-tools;35.0.0" 2>/dev/null | tail -5 || true
+            "platforms;android-36" \
+            "build-tools;36.0.0" 2>/dev/null | tail -5 || true
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
