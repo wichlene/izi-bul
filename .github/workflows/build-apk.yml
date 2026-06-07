@@ -35,6 +35,14 @@ jobs:
             "platforms;android-35" \
             "build-tools;35.0.0" 2>/dev/null | tail -5 || true
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install npm dependencies
+        run: npm install
+
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
