@@ -55,9 +55,8 @@ jobs:
       - name: Build Release APK
         working-directory: android
         run: |
+          set -o pipefail
           ./gradlew assembleRelease --no-daemon --warning-mode all 2>&1 | tee /tmp/build.log
-          echo "Exit: ${PIPESTATUS[0]}"
-          exit ${PIPESTATUS[0]}
 
       - name: Show build errors (on failure)
         if: failure()
@@ -65,11 +64,16 @@ jobs:
           echo "=== LAST 80 LINES OF BUILD LOG ==="
           tail -80 /tmp/build.log || true
 
+      - name: Find APK
+        run: |
+          echo "=== APK files found ==="
+          find android/app/build/outputs -name "*.apk" 2>/dev/null || echo "No APK found"
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: izibul-release-apk
-          path: android/app/build/outputs/apk/release/app-release.apk
+          path: android/app/build/outputs/apk/release/*.apk
           retention-days: 30
 
       - name: Create GitHub Release (on main only)
