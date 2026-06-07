@@ -17,31 +17,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Java 21
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '21'
-
-      - name: Android SDK info
-        run: |
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          ls $ANDROID_HOME/platforms/ 2>/dev/null | head -10
-          ls $ANDROID_HOME/build-tools/ 2>/dev/null | head -5
+          java-version: '17'
 
       - name: Install SDK platform-36
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
             "platforms;android-36" \
             "build-tools;36.0.0" 2>/dev/null | tail -5 || true
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install npm dependencies
-        run: npm install
 
       - name: Make gradlew executable
         run: chmod +x android/gradlew
@@ -83,16 +69,3 @@ jobs:
           name: izibul-release-apk
           path: android/app/build/outputs/apk/release/*.apk
           retention-days: 30
-
-      - name: Create GitHub Release (on main only)
-        if: github.ref == 'refs/heads/main'
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: apk-${{ github.run_number }}
-          name: "İzi Bul APK v1.0.${{ github.run_number }}"
-          files: android/app/build/outputs/apk/release/app-release.apk
-          body: |
-            ## İzi Bul Android APK
-            Capacitor ile oluşturuldu — Chrome/TWA değil, sistem WebView kullanır.
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
