@@ -17,57 +17,53 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Java
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Show pre-installed Android SDK info
+      - name: Android SDK info
         run: |
           echo "ANDROID_HOME=$ANDROID_HOME"
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
-          ls $ANDROID_HOME/platforms/ 2>/dev/null || echo "No platforms dir"
-          ls $ANDROID_HOME/build-tools/ 2>/dev/null || echo "No build-tools dir"
+          ls $ANDROID_HOME/platforms/ 2>/dev/null | head -10
+          ls $ANDROID_HOME/build-tools/ 2>/dev/null | head -5
 
-      - name: Install required SDK components
+      - name: Install SDK platform-35
         run: |
-          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install \
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
             "platforms;android-35" \
-            "build-tools;35.0.0" \
-            "platform-tools" || true
+            "build-tools;35.0.0" 2>/dev/null | tail -5 || true
 
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
       - name: Generate Keystore
         run: |
-          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
-            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android-release.keystore
-          else
-            keytool -genkeypair \
-              -alias izibul \
-              -keypass izibul2024 \
-              -keystore android-release.keystore \
-              -storepass izibul2024 \
-              -dname "CN=IziBul, OU=App, O=IziBul, L=Istanbul, S=Istanbul, C=TR" \
-              -keyalg RSA \
-              -keysize 2048 \
-              -validity 10000
-          fi
+          keytool -genkeypair \
+            -alias izibul \
+            -keypass izibul2024 \
+            -keystore android-release.keystore \
+            -storepass izibul2024 \
+            -dname "CN=IziBul, OU=App, O=IziBul, L=Istanbul, S=Istanbul, C=TR" \
+            -keyalg RSA -keysize 2048 -validity 10000 2>/dev/null
           echo "KEYSTORE_FILE=$PWD/android-release.keystore" >> $GITHUB_ENV
-          echo "KEYSTORE_PASSWORD=${KEYSTORE_PASSWORD:-izibul2024}" >> $GITHUB_ENV
-          echo "KEY_ALIAS=${KEY_ALIAS:-izibul}" >> $GITHUB_ENV
-          echo "KEY_PASSWORD=${KEY_PASSWORD:-izibul2024}" >> $GITHUB_ENV
+          echo "KEYSTORE_PASSWORD=izibul2024" >> $GITHUB_ENV
+          echo "KEY_ALIAS=izibul" >> $GITHUB_ENV
+          echo "KEY_PASSWORD=izibul2024" >> $GITHUB_ENV
 
       - name: Build Release APK
         working-directory: android
-        run: ./gradlew assembleRelease --no-daemon --stacktrace
-        env:
-          KEYSTORE_FILE: ${{ env.KEYSTORE_FILE }}
-          KEYSTORE_PASSWORD: ${{ env.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ env.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ env.KEY_PASSWORD }}
+        run: |
+          ./gradlew assembleRelease --no-daemon --warning-mode all 2>&1 | tee /tmp/build.log
+          echo "Exit: ${PIPESTATUS[0]}"
+          exit ${PIPESTATUS[0]}
+
+      - name: Show build errors (on failure)
+        if: failure()
+        run: |
+          echo "=== LAST 80 LINES OF BUILD LOG ==="
+          tail -80 /tmp/build.log || true
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -86,6 +82,5 @@ jobs:
           body: |
             ## İzi Bul Android APK
             Capacitor ile oluşturuldu — Chrome/TWA değil, sistem WebView kullanır.
-            Telefonda "Bilinmeyen kaynaklardan yükle" izni açık olmalıdır.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
