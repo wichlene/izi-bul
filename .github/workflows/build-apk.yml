@@ -36,6 +36,16 @@ jobs:
         working-directory: mobile
         run: npx expo prebuild --platform android --no-install
 
+      - name: Fix package declarations (Expo prebuild drops last segment)
+        working-directory: mobile
+        run: |
+          NS=$(grep -m1 "namespace" android/app/build.gradle | sed "s/.*namespace '\(.*\)'.*/\1/")
+          echo "Forcing package declaration to namespace: $NS"
+          find android/app/src/main/java \( -name "MainActivity.kt" -o -name "MainApplication.kt" \) | while read f; do
+            sed -i "1s/^package .*/package $NS/" "$f"
+          done
+          grep -rn "^package " android/app/src/main/java/
+
       - name: Make gradlew executable
         run: chmod +x mobile/android/gradlew
 
