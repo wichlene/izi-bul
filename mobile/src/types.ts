@@ -4,6 +4,7 @@ export interface Profile {
   full_name?: string;
   avatar_url?: string;
   city?: string;
+  bio?: string;
   total_points: number;
   total_finds: number;
   level: number;
