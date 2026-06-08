@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, ActivityIndicator,
+  View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Image,
 } from 'react-native';
 import MapLibreGL, { type CameraRef } from '@maplibre/maplibre-react-native';
 import * as Location from 'expo-location';
@@ -19,6 +19,7 @@ interface LiveUser {
   latitude: number;
   longitude: number;
   username?: string;
+  avatar_url?: string;
 }
 
 export default function MapScreen({ navigation }: any) {
@@ -38,7 +39,7 @@ export default function MapScreen({ navigation }: any) {
     const [questRes, usersRes] = await Promise.all([
       supabase.from('quests').select('*').eq('is_active', true).limit(200),
       supabase.from('live_locations')
-        .select('user_id, latitude, longitude, profiles(username)')
+        .select('user_id, latitude, longitude, profiles(username, avatar_url)')
         .limit(200),
     ]);
 
@@ -53,6 +54,7 @@ export default function MapScreen({ navigation }: any) {
           latitude: u.latitude,
           longitude: u.longitude,
           username: Array.isArray(u.profiles) ? u.profiles[0]?.username : u.profiles?.username,
+          avatar_url: Array.isArray(u.profiles) ? u.profiles[0]?.avatar_url : u.profiles?.avatar_url,
         }));
       setLiveUsers(others);
     }
@@ -164,7 +166,9 @@ export default function MapScreen({ navigation }: any) {
             allowOverlap
           >
             <View style={s.userPin}>
-              <Text style={s.userPinText}>{(u.username?.[0] || '?').toUpperCase()}</Text>
+              {u.avatar_url
+                ? <Image source={{ uri: u.avatar_url }} style={s.userPinAvatar} />
+                : <Text style={s.userPinIcon}>👤</Text>}
               <View style={s.userPinDot} />
             </View>
           </MapLibreGL.MarkerView>
@@ -220,6 +224,8 @@ const s = StyleSheet.create({
     shadowColor: colors.green, shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.5, shadowRadius: 6, elevation: 6,
   },
+  userPinAvatar: { width: 38, height: 38, borderRadius: 19 },
+  userPinIcon: { fontSize: 22 },
   userPinText: { color: '#fff', fontWeight: '900', fontSize: 17 },
   userPinDot: {
     position: 'absolute', bottom: 0, right: 0,
