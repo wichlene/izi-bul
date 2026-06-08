@@ -162,7 +162,7 @@ function UpdateBanner() {
       .then((data) => {
         const latestBuild = parseInt(data.body || '0', 10);
         if (latestBuild > CURRENT_BUILD) {
-          const asset = data.assets?.find((a: any) => a.name === 'izibul.apk');
+          const asset = data.assets?.find((a: any) => a.name.endsWith('.apk'));
           if (asset?.browser_download_url) setUpdateUrl(asset.browser_download_url);
         }
       })
