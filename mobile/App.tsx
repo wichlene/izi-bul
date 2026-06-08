@@ -3,7 +3,7 @@ import { View, Text, ActivityIndicator, TouchableOpacity, Linking } from 'react-
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import Constants from 'expo-constants';
 
@@ -169,9 +169,10 @@ function UpdateBanner() {
       .catch(() => {});
   }, []);
 
+  const insets = useSafeAreaInsets();
   if (!updateUrl || dismissed) return null;
   return (
-    <View style={{ backgroundColor: colors.primary, paddingHorizontal: 14, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+    <View style={{ backgroundColor: colors.primary, paddingHorizontal: 14, paddingTop: insets.top + 8, paddingBottom: 10, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
       <Text style={{ flex: 1, color: '#fff', fontWeight: '700', fontSize: 13 }}>🆕 Yeni güncelleme mevcut!</Text>
       <TouchableOpacity
         style={{ backgroundColor: '#fff', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }}

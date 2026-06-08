@@ -3,12 +3,13 @@ import {
   View, Text, StyleSheet, TouchableOpacity, ActivityIndicator,
 } from 'react-native';
 import MapLibreGL, { type CameraRef } from '@maplibre/maplibre-react-native';
+import * as Location from 'expo-location';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../AuthContext';
 import { colors, difficulties } from '../theme';
 import { Quest } from '../types';
 
-// Free OpenStreetMap tiles via MapLibre — no API key needed
 MapLibreGL.setAccessToken(null);
 
 const STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
@@ -24,12 +25,14 @@ export default function MapScreen({ navigation }: any) {
   const { session } = useAuth();
   const uid = session?.user.id;
   const cameraRef = useRef<CameraRef>(null);
+  const insets = useSafeAreaInsets();
 
   const [quests, setQuests] = useState<Quest[]>([]);
   const [liveUsers, setLiveUsers] = useState<LiveUser[]>([]);
   const [onlineCount, setOnlineCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [mapReady, setMapReady] = useState(false);
+  const [myCoords, setMyCoords] = useState<[number, number] | null>(null);
 
   const load = async () => {
     const [questRes, usersRes] = await Promise.all([
@@ -56,11 +59,51 @@ export default function MapScreen({ navigation }: any) {
     setLoading(false);
   };
 
+  // Get user location for auto-zoom
+  useEffect(() => {
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        const loc = await Location.getCurrentPositionAsync({});
+        setMyCoords([loc.coords.longitude, loc.coords.latitude]);
+      }
+    })();
+  }, []);
+
+  // Zoom to user location when map is ready
+  useEffect(() => {
+    if (mapReady && myCoords) {
+      cameraRef.current?.setCamera({
+        centerCoordinate: myCoords,
+        zoomLevel: 14,
+        animationDuration: 800,
+      });
+    }
+  }, [mapReady, myCoords]);
+
   useEffect(() => {
     load();
     const interval = setInterval(load, 8000);
     return () => clearInterval(interval);
   }, [uid]);
+
+  const goToMyLocation = () => {
+    if (myCoords) {
+      cameraRef.current?.setCamera({
+        centerCoordinate: myCoords,
+        zoomLevel: 14,
+        animationDuration: 500,
+      });
+    }
+  };
+
+  const goToTurkey = () => {
+    cameraRef.current?.setCamera({
+      centerCoordinate: [35.0, 39.0],
+      zoomLevel: 5,
+      animationDuration: 500,
+    });
+  };
 
   if (loading) {
     return (
@@ -128,9 +171,9 @@ export default function MapScreen({ navigation }: any) {
         ))}
       </MapLibreGL.MapView>
 
-      {/* Stats overlay */}
-      <View style={s.overlay}>
-        <Text style={s.overlayTitle}>🗺️ Türkiye</Text>
+      {/* Stats overlay — respects status bar */}
+      <View style={[s.overlay, { top: insets.top + 8 }]}>
+        <Text style={s.overlayTitle}>🗺️ Harita</Text>
         <Text style={s.overlayStat}>{quests.length} görev</Text>
         <View style={s.onlineRow}>
           <View style={s.onlineDot} />
@@ -138,22 +181,19 @@ export default function MapScreen({ navigation }: any) {
         </View>
       </View>
 
-      {/* Refresh + recenter buttons */}
-      <TouchableOpacity
-        style={s.myLocBtn}
-        onPress={() => {
-          cameraRef.current?.setCamera({
-            centerCoordinate: [35.0, 39.0],
-            zoomLevel: 5,
-            animationDuration: 500,
-          });
-        }}
-      >
+      {/* My location button */}
+      <TouchableOpacity style={[s.myLocBtn, { bottom: 132 }]} onPress={goToMyLocation}>
+        <Text style={s.myLocIcon}>📍</Text>
+      </TouchableOpacity>
+
+      {/* Turkey overview button */}
+      <TouchableOpacity style={[s.myLocBtn, { bottom: 76 }]} onPress={goToTurkey}>
         <Text style={s.myLocIcon}>🇹🇷</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={s.refreshBtn} onPress={load}>
-        <Text style={s.refreshIcon}>🔄</Text>
+      {/* Refresh button */}
+      <TouchableOpacity style={[s.myLocBtn, { bottom: 20 }]} onPress={load}>
+        <Text style={s.myLocIcon}>🔄</Text>
       </TouchableOpacity>
     </View>
   );
@@ -188,7 +228,7 @@ const s = StyleSheet.create({
   },
 
   overlay: {
-    position: 'absolute', top: 12, left: 12,
+    position: 'absolute', left: 12,
     backgroundColor: '#fff',
     borderRadius: 16, paddingVertical: 10, paddingHorizontal: 14,
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
@@ -201,7 +241,7 @@ const s = StyleSheet.create({
   onlineDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.green },
 
   myLocBtn: {
-    position: 'absolute', bottom: 76, right: 16,
+    position: 'absolute', right: 16,
     backgroundColor: '#fff', borderRadius: 28, width: 48, height: 48,
     alignItems: 'center', justifyContent: 'center',
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
@@ -209,14 +249,4 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: colors.border,
   },
   myLocIcon: { fontSize: 22 },
-
-  refreshBtn: {
-    position: 'absolute', bottom: 20, right: 16,
-    backgroundColor: '#fff', borderRadius: 28, width: 48, height: 48,
-    alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15, shadowRadius: 6, elevation: 4,
-    borderWidth: 1, borderColor: colors.border,
-  },
-  refreshIcon: { fontSize: 20 },
 });
