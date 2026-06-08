@@ -54,20 +54,39 @@ export default function GoodDeedScreen() {
 
   useEffect(() => { load(); }, [load]);
 
-  const pickPhoto = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') return;
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.7 });
-    if (result.canceled || !result.assets[0]) return;
-    const asset = result.assets[0];
-    const ext = asset.uri.split('.').pop() || 'jpg';
+  const uploadPhoto = async (uri: string) => {
+    const ext = uri.split('.').pop() || 'jpg';
     const fileName = `deed_${Date.now()}.${ext}`;
     const form = new FormData();
-    form.append('file', { uri: asset.uri, name: fileName, type: `image/${ext}` } as any);
+    form.append('file', { uri, name: fileName, type: `image/${ext}` } as any);
     const { data, error } = await supabase.storage.from('posts').upload(fileName, form);
     if (error) { Alert.alert('Hata', 'Fotoğraf yüklenemedi.'); return; }
     const { data: u } = supabase.storage.from('posts').getPublicUrl(data.path);
     setPhoto(u.publicUrl);
+  };
+
+  const pickPhoto = () => {
+    Alert.alert('Fotoğraf Ekle', 'Kaynak seç', [
+      {
+        text: '📷 Kamera',
+        onPress: async () => {
+          const { status } = await ImagePicker.requestCameraPermissionsAsync();
+          if (status !== 'granted') return;
+          const result = await ImagePicker.launchCameraAsync({ quality: 0.7 });
+          if (!result.canceled && result.assets[0]) uploadPhoto(result.assets[0].uri);
+        },
+      },
+      {
+        text: '🖼️ Galeri',
+        onPress: async () => {
+          const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (status !== 'granted') return;
+          const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.7 });
+          if (!result.canceled && result.assets[0]) uploadPhoto(result.assets[0].uri);
+        },
+      },
+      { text: 'İptal', style: 'cancel' },
+    ]);
   };
 
   const post = async () => {

@@ -26,6 +26,7 @@ import CreateQuestScreen from './src/screens/CreateQuestScreen';
 import LeaderboardScreen from './src/screens/LeaderboardScreen';
 import BusinessStatsScreen from './src/screens/BusinessStatsScreen';
 import AdminScreen from './src/screens/AdminScreen';
+import LocationSync from './src/components/LocationSync';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -196,7 +197,12 @@ function Root() {
   return (
     <NavigationContainer>
       <UpdateBanner />
-      {session ? <MainTabs /> : <AuthScreen />}
+      {session ? (
+        <>
+          <LocationSync userId={session.user.id} />
+          <MainTabs />
+        </>
+      ) : <AuthScreen />}
     </NavigationContainer>
   );
 }

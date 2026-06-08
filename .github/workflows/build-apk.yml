@@ -42,6 +42,8 @@ jobs:
 
       - name: Expo prebuild (generate native Android project)
         working-directory: mobile
+        env:
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
         run: npx expo prebuild --platform android --no-install
 
       - name: Fix package declarations (Expo prebuild drops last segment)

@@ -1,17 +1,29 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView,
+  View, Text, StyleSheet, TouchableOpacity, ActivityIndicator,
+  ScrollView, Image, Alert,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../AuthContext';
 import { colors } from '../theme';
 import { Profile } from '../types';
+
+function LevelBadge({ level }: { level: number }) {
+  const color = level >= 10 ? '#a855f7' : level >= 5 ? '#f97316' : colors.primary;
+  return (
+    <View style={[s.levelBadge, { backgroundColor: color }]}>
+      <Text style={s.levelBadgeText}>Lv.{level}</Text>
+    </View>
+  );
+}
 
 export default function ProfileScreen({ navigation }: any) {
   const { session } = useAuth();
   const uid = session?.user.id;
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   const load = () => {
     if (!uid) return;
@@ -27,6 +39,45 @@ export default function ProfileScreen({ navigation }: any) {
     return unsubscribe;
   }, [uid]);
 
+  const changeAvatar = async () => {
+    Alert.alert('Profil Fotoğrafı', 'Kaynak seç', [
+      { text: 'Kamera', onPress: () => pickPhoto('camera') },
+      { text: 'Galeri', onPress: () => pickPhoto('library') },
+      { text: 'İptal', style: 'cancel' },
+    ]);
+  };
+
+  const pickPhoto = async (source: 'camera' | 'library') => {
+    const perm = source === 'camera'
+      ? await ImagePicker.requestCameraPermissionsAsync()
+      : await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (perm.status !== 'granted') return;
+
+    const result = source === 'camera'
+      ? await ImagePicker.launchCameraAsync({ quality: 0.7 })
+      : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.7 });
+
+    if (result.canceled || !result.assets[0]) return;
+    const asset = result.assets[0];
+    const ext = asset.uri.split('.').pop() || 'jpg';
+    const fileName = `avatar_${uid}_${Date.now()}.${ext}`;
+
+    setUploadingPhoto(true);
+    try {
+      const form = new FormData();
+      form.append('file', { uri: asset.uri, name: fileName, type: `image/${ext}` } as any);
+      const { data, error } = await supabase.storage.from('avatars').upload(fileName, form, { upsert: true });
+      if (error) throw error;
+      const { data: u } = supabase.storage.from('avatars').getPublicUrl(data.path);
+      await supabase.from('profiles').update({ avatar_url: u.publicUrl }).eq('id', uid);
+      load();
+    } catch {
+      Alert.alert('Hata', 'Fotoğraf yüklenemedi.');
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
   if (loading) return <View style={s.center}><ActivityIndicator size="large" color={colors.primary} /></View>;
 
   const menus: { icon: string; label: string; screen: string; condition?: boolean }[] = [
@@ -39,58 +90,92 @@ export default function ProfileScreen({ navigation }: any) {
     { icon: '📊', label: 'İşletme İstatistikleri', screen: 'BusinessStats', condition: profile?.is_business },
     { icon: '🛡️', label: 'Admin Paneli', screen: 'Admin', condition: profile?.is_admin },
   ];
-
   const visibleMenus = menus.filter((m) => m.condition === undefined || m.condition);
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16 }}>
-      {/* Profil başlığı */}
-      <View style={s.head}>
-        <View style={s.avatar}>
-          <Text style={s.avatarText}>{profile?.username?.[0]?.toUpperCase() ?? '?'}</Text>
-        </View>
-        <View style={{ flex: 1, marginLeft: 14 }}>
-          <Text style={s.name}>{profile?.full_name || profile?.username}</Text>
-          <Text style={s.handle}>@{profile?.username}</Text>
-          {profile?.city ? <Text style={s.city}>📍 {profile.city}</Text> : null}
-          {(profile as any)?.bio ? <Text style={s.bio}>{(profile as any).bio}</Text> : null}
+    <ScrollView style={s.scroll} contentContainerStyle={s.container}>
+      {/* Instagram-style header */}
+      <View style={s.header}>
+        {/* Avatar */}
+        <TouchableOpacity style={s.avatarWrap} onPress={changeAvatar} disabled={uploadingPhoto}>
+          {profile?.avatar_url ? (
+            <Image source={{ uri: profile.avatar_url }} style={s.avatarImg} />
+          ) : (
+            <View style={s.avatarPlaceholder}>
+              <Text style={s.avatarInitial}>{profile?.username?.[0]?.toUpperCase() ?? '?'}</Text>
+            </View>
+          )}
+          {uploadingPhoto ? (
+            <View style={s.avatarOverlay}>
+              <ActivityIndicator color="#fff" size="small" />
+            </View>
+          ) : (
+            <View style={s.avatarEditBadge}>
+              <Text style={{ fontSize: 10 }}>📷</Text>
+            </View>
+          )}
+          <LevelBadge level={profile?.level ?? 1} />
+        </TouchableOpacity>
+
+        {/* Stats */}
+        <View style={s.statsRow}>
+          <View style={s.statCol}>
+            <Text style={s.statNum}>{profile?.total_points ?? 0}</Text>
+            <Text style={s.statLbl}>Puan</Text>
+          </View>
+          <View style={s.statDivider} />
+          <View style={s.statCol}>
+            <Text style={s.statNum}>{profile?.total_finds ?? 0}</Text>
+            <Text style={s.statLbl}>Buluş</Text>
+          </View>
+          <View style={s.statDivider} />
+          <View style={s.statCol}>
+            <Text style={s.statNum}>{profile?.level ?? 1}</Text>
+            <Text style={s.statLbl}>Seviye</Text>
+          </View>
         </View>
       </View>
 
-      {/* İstatistikler */}
-      <View style={s.statsRow}>
-        <View style={s.statBox}>
-          <Text style={s.statValue}>{profile?.total_points ?? 0}</Text>
-          <Text style={s.statLabel}>Puan</Text>
-        </View>
-        <View style={s.statBox}>
-          <Text style={s.statValue}>{profile?.total_finds ?? 0}</Text>
-          <Text style={s.statLabel}>Buluş</Text>
-        </View>
-        <View style={s.statBox}>
-          <Text style={s.statValue}>{profile?.level ?? 1}</Text>
-          <Text style={s.statLabel}>Seviye</Text>
-        </View>
+      {/* User info block */}
+      <View style={s.infoBlock}>
+        <Text style={s.fullName}>{profile?.full_name || profile?.username}</Text>
+        <Text style={s.handle}>@{profile?.username}</Text>
+        {profile?.city ? <Text style={s.city}>📍 {profile.city}</Text> : null}
+        {(profile as any)?.bio ? <Text style={s.bio}>{(profile as any).bio}</Text> : null}
       </View>
 
-      {/* E-posta */}
-      <View style={s.infoBox}>
-        <Text style={s.infoLabel}>E-posta</Text>
-        <Text style={s.infoValue}>{session?.user.email}</Text>
+      {/* Action buttons */}
+      <View style={s.actionRow}>
+        <TouchableOpacity style={s.editBtn} onPress={() => navigation.navigate('EditProfile')}>
+          <Text style={s.editBtnText}>Profili Düzenle</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={s.iconBtn} onPress={() => navigation.navigate('Friends')}>
+          <Text style={{ fontSize: 18 }}>👥</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Menü */}
-      <View style={s.menuSection}>
+      {/* Divider */}
+      <View style={s.divider} />
+
+      {/* Menu */}
+      <View style={s.menuCard}>
         {visibleMenus.map((m, i) => (
           <TouchableOpacity
             key={m.screen}
             style={[s.menuItem, i === visibleMenus.length - 1 && { borderBottomWidth: 0 }]}
-            onPress={() => navigation.navigate(m.screen)}>
+            onPress={() => navigation.navigate(m.screen)}
+          >
             <Text style={s.menuIcon}>{m.icon}</Text>
             <Text style={s.menuLabel}>{m.label}</Text>
             <Text style={s.menuArrow}>›</Text>
           </TouchableOpacity>
         ))}
+      </View>
+
+      {/* Email */}
+      <View style={s.emailBox}>
+        <Text style={s.emailLabel}>E-posta</Text>
+        <Text style={s.emailValue}>{session?.user.email}</Text>
       </View>
 
       <TouchableOpacity style={s.logout} onPress={() => supabase.auth.signOut()}>
@@ -101,44 +186,95 @@ export default function ProfileScreen({ navigation }: any) {
 }
 
 const s = StyleSheet.create({
+  scroll: { flex: 1, backgroundColor: colors.bg },
+  container: { paddingBottom: 32 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  head: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
-  avatar: {
-    width: 78, height: 78, borderRadius: 39, backgroundColor: colors.primary,
-    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+
+  header: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12,
+    gap: 16,
   },
-  avatarText: { color: '#fff', fontWeight: '900', fontSize: 32 },
-  name: { fontSize: 20, fontWeight: '900', color: colors.text },
-  handle: { fontSize: 14, color: colors.textMuted, marginTop: 2 },
-  city: { fontSize: 13, color: colors.textMuted, marginTop: 4 },
-  bio: { fontSize: 13, color: colors.text, marginTop: 6, lineHeight: 18 },
-  statsRow: { flexDirection: 'row', gap: 10, marginBottom: 14 },
-  statBox: {
-    flex: 1, backgroundColor: '#fff', borderRadius: 14, paddingVertical: 16,
-    alignItems: 'center', borderWidth: 1, borderColor: colors.border,
+
+  avatarWrap: { position: 'relative', flexShrink: 0 },
+  avatarImg: { width: 88, height: 88, borderRadius: 44, borderWidth: 3, borderColor: colors.primary },
+  avatarPlaceholder: {
+    width: 88, height: 88, borderRadius: 44, backgroundColor: colors.primary,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 3, borderColor: colors.primary,
   },
-  statValue: { fontSize: 22, fontWeight: '900', color: colors.primary },
-  statLabel: { fontSize: 12, color: colors.textMuted, marginTop: 4 },
-  infoBox: {
-    backgroundColor: '#fff', borderRadius: 14, padding: 14, marginBottom: 14,
+  avatarInitial: { color: '#fff', fontWeight: '900', fontSize: 34 },
+  avatarOverlay: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 44,
+    backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center',
+  },
+  avatarEditBadge: {
+    position: 'absolute', bottom: 0, right: 0,
+    backgroundColor: '#fff', borderRadius: 12, width: 24, height: 24,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1.5, borderColor: colors.border,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2,
+  },
+  levelBadge: {
+    position: 'absolute', top: -4, right: -4,
+    borderRadius: 10, paddingHorizontal: 5, paddingVertical: 2,
+  },
+  levelBadgeText: { color: '#fff', fontWeight: '900', fontSize: 10 },
+
+  statsRow: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around',
+    backgroundColor: '#fff', borderRadius: 16, paddingVertical: 14,
     borderWidth: 1, borderColor: colors.border,
   },
-  infoLabel: { fontSize: 12, color: colors.textMuted },
-  infoValue: { fontSize: 15, fontWeight: '700', color: colors.text, marginTop: 4 },
-  menuSection: {
-    backgroundColor: '#fff', borderRadius: 14, marginBottom: 14,
-    borderWidth: 1, borderColor: colors.border, overflow: 'hidden',
+  statCol: { flex: 1, alignItems: 'center' },
+  statNum: { fontSize: 22, fontWeight: '900', color: colors.text },
+  statLbl: { fontSize: 11, color: colors.textMuted, marginTop: 2, fontWeight: '600' },
+  statDivider: { width: 1, height: 30, backgroundColor: colors.border },
+
+  infoBlock: { paddingHorizontal: 20, paddingBottom: 12 },
+  fullName: { fontSize: 18, fontWeight: '900', color: colors.text },
+  handle: { fontSize: 14, color: colors.textMuted, marginTop: 2 },
+  city: { fontSize: 13, color: colors.textMuted, marginTop: 4 },
+  bio: { fontSize: 14, color: colors.text, marginTop: 6, lineHeight: 20 },
+
+  actionRow: {
+    flexDirection: 'row', gap: 10, paddingHorizontal: 20, marginBottom: 12,
+  },
+  editBtn: {
+    flex: 1, backgroundColor: '#fff', borderRadius: 10, paddingVertical: 10,
+    alignItems: 'center', borderWidth: 1.5, borderColor: colors.border,
+  },
+  editBtnText: { color: colors.text, fontWeight: '800', fontSize: 14 },
+  iconBtn: {
+    backgroundColor: '#fff', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10,
+    alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: colors.border,
+  },
+
+  divider: { height: 1, backgroundColor: colors.border, marginHorizontal: 0, marginBottom: 12 },
+
+  menuCard: {
+    backgroundColor: '#fff', marginHorizontal: 16, borderRadius: 16,
+    borderWidth: 1, borderColor: colors.border, overflow: 'hidden', marginBottom: 12,
   },
   menuItem: {
-    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 15,
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 16, paddingVertical: 14,
     borderBottomWidth: 1, borderBottomColor: colors.border,
   },
   menuIcon: { fontSize: 20, marginRight: 12, width: 28 },
   menuLabel: { flex: 1, fontSize: 15, fontWeight: '700', color: colors.text },
   menuArrow: { fontSize: 22, color: colors.textMuted, fontWeight: '300' },
+
+  emailBox: {
+    backgroundColor: '#fff', marginHorizontal: 16, borderRadius: 14,
+    padding: 14, marginBottom: 12, borderWidth: 1, borderColor: colors.border,
+  },
+  emailLabel: { fontSize: 12, color: colors.textMuted },
+  emailValue: { fontSize: 14, fontWeight: '700', color: colors.text, marginTop: 4 },
+
   logout: {
-    backgroundColor: '#fee', borderRadius: 14, paddingVertical: 16, alignItems: 'center',
-    borderWidth: 1, borderColor: '#fcc',
+    backgroundColor: '#fee', marginHorizontal: 16, borderRadius: 14,
+    paddingVertical: 16, alignItems: 'center', borderWidth: 1, borderColor: '#fcc',
   },
   logoutText: { color: colors.red, fontWeight: '800', fontSize: 15 },
 });
