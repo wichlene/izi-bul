@@ -28,6 +28,14 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Set version code from run number
+        run: |
+          VERSION_CODE=$GITHUB_RUN_NUMBER
+          echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
+          # Inject versionCode into app.json
+          sed -i "s/\"versionCode\": [0-9]*/\"versionCode\": $VERSION_CODE/" mobile/app.json
+          echo "versionCode set to $VERSION_CODE"
+
       - name: Install dependencies
         working-directory: mobile
         run: npm install --legacy-peer-deps
@@ -62,9 +70,23 @@ jobs:
       - name: Find APK
         run: find mobile/android/app/build/outputs -name "*.apk" 2>/dev/null || echo "No APK found"
 
-      - name: Upload APK
+      - name: Upload APK as artifact
         uses: actions/upload-artifact@v4
         with:
           name: izibul-app
           path: mobile/android/app/build/outputs/apk/release/*.apk
           retention-days: 30
+
+      - name: Publish to GitHub Releases (mobile-latest)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          APK=$(find mobile/android/app/build/outputs/apk/release -name "*.apk" | head -1)
+          echo "Publishing $APK as release mobile-latest (build $VERSION_CODE)"
+          # Delete old release so we can recreate with updated asset
+          gh release delete mobile-latest --yes 2>/dev/null || true
+          gh release create mobile-latest \
+            --title "İzi Bul v${VERSION_CODE}" \
+            --notes "${VERSION_CODE}" \
+            "${APK}#izibul.apk"
+          echo "✅ Release published: https://github.com/wichlene/izi-bul/releases/download/mobile-latest/izibul.apk"

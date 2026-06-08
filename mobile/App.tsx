@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator } from 'react-native';
+import { View, Text, ActivityIndicator, TouchableOpacity, Linking } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import Constants from 'expo-constants';
 
 import { AuthProvider, useAuth } from './src/AuthContext';
 import { supabase } from './src/lib/supabase';
@@ -147,6 +148,42 @@ function MainTabs() {
   );
 }
 
+const RELEASE_API = 'https://api.github.com/repos/wichlene/izi-bul/releases/tags/mobile-latest';
+const CURRENT_BUILD: number = (Constants.expoConfig?.android?.versionCode as number) || 1;
+
+function UpdateBanner() {
+  const [updateUrl, setUpdateUrl] = useState<string | null>(null);
+  const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    fetch(RELEASE_API, { headers: { Accept: 'application/vnd.github+json' } })
+      .then((r) => r.json())
+      .then((data) => {
+        const latestBuild = parseInt(data.body || '0', 10);
+        if (latestBuild > CURRENT_BUILD) {
+          const asset = data.assets?.find((a: any) => a.name === 'izibul.apk');
+          if (asset?.browser_download_url) setUpdateUrl(asset.browser_download_url);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  if (!updateUrl || dismissed) return null;
+  return (
+    <View style={{ backgroundColor: colors.primary, paddingHorizontal: 14, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+      <Text style={{ flex: 1, color: '#fff', fontWeight: '700', fontSize: 13 }}>🆕 Yeni güncelleme mevcut!</Text>
+      <TouchableOpacity
+        style={{ backgroundColor: '#fff', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }}
+        onPress={() => Linking.openURL(updateUrl)}>
+        <Text style={{ color: colors.primary, fontWeight: '900', fontSize: 12 }}>Yükle</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => setDismissed(true)}>
+        <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 18, fontWeight: '300' }}>✕</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 function Root() {
   const { session, loading } = useAuth();
   if (loading) {
@@ -158,6 +195,7 @@ function Root() {
   }
   return (
     <NavigationContainer>
+      <UpdateBanner />
       {session ? <MainTabs /> : <AuthScreen />}
     </NavigationContainer>
   );
