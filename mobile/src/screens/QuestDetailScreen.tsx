@@ -130,30 +130,56 @@ export default function QuestDetailScreen({ route, navigation }: any) {
 
     setSubmitting(true);
     try {
-      const res = await fetch('https://izibul.com/api/submissions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
-        },
-        body: JSON.stringify({
-          quest_id: quest.id,
-          latitude: coords.lat,
-          longitude: coords.lng,
-          photo_url: photoUrl || null,
-          answer: answer || null,
-          step_id: activeStep?.id || null,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Hata');
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session?.access_token}`,
+      };
 
-      if (steps.length > 0 && currentStep < steps.length - 1) {
-        setCurrentStep((s) => s + 1);
-        setAnswer('');
-        setPhotoUrl('');
-        Alert.alert('✅ Adım tamamlandı!', 'Bir sonraki adıma geç.');
+      if (activeStep) {
+        // Çok adımlı görev: web ile aynı şekilde adım adım /quest-progress'e gönder
+        const res = await fetch('https://izibul.com/api/quest-progress', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            quest_id: quest.id,
+            step_number: activeStep.step_number,
+            answer: answer || null,
+            latitude: coords.lat,
+            longitude: coords.lng,
+            photo_url: photoUrl || null,
+          }),
+        });
+        const data = await res.json();
+        if (data.correct === false) {
+          // Yanlış cevap / çok uzak / fotoğraf gerekli / başka aktif görev
+          Alert.alert(data.blocked ? 'Aktif görev var' : 'Olmadı', data.message || 'Tekrar dene.');
+          return;
+        }
+        if (!res.ok) throw new Error(data.error || data.message || 'Hata');
+
+        if (data.is_complete) {
+          setDone({ points: data.points ?? quest.points, cash: data.cash_reward ?? quest.cash_reward });
+          setAlreadyWon(true);
+        } else {
+          setCurrentStep((s) => s + 1);
+          setAnswer('');
+          setPhotoUrl('');
+          Alert.alert('✅ Doğru!', data.message || 'Bir sonraki adıma geç.');
+        }
       } else {
+        // Tek adımlı görev: doğrudan /submissions
+        const res = await fetch('https://izibul.com/api/submissions', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            quest_id: quest.id,
+            latitude: coords.lat,
+            longitude: coords.lng,
+            photo_url: photoUrl || null,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Hata');
         setDone({ points: data.points_earned || quest.points, cash: quest.cash_reward });
         setAlreadyWon(true);
       }
