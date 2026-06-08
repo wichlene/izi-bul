@@ -85,7 +85,7 @@ export default function GoodDeedScreen() {
       const res = await fetch('https://izibul.com/api/posts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
-        body: JSON.stringify({ content, photo_url: photo || null, type: 'good_deed', latitude: coords?.lat, longitude: coords?.lng }),
+        body: JSON.stringify({ content, photo_url: photo || null, post_type: 'good_deed', latitude: coords?.lat, longitude: coords?.lng }),
       });
       if (!res.ok) throw new Error('Gönderi paylaşılamadı');
       setContent('');

@@ -15,8 +15,8 @@ interface Step {
   id: string;
   step_number: number;
   step_type: string;
-  has_question: boolean;
-  has_image: boolean;
+  has_question?: boolean;
+  has_image?: boolean;
   question: string | null;
   photo_url: string | null;
   target_lat: number;
@@ -24,6 +24,10 @@ interface Step {
   approach_radius_meters: number;
   hint: string | null;
 }
+
+// Web ile birebir aynı fallback mantığı (has_question/has_image yoksa step_type'a bak)
+const stepNeedsQuestion = (s: Step) => !!s.has_question || s.step_type === 'question';
+const stepNeedsImage = (s: Step) => !!s.has_image || s.step_type === 'image';
 
 export default function QuestDetailScreen({ route, navigation }: any) {
   const { questId } = route.params;
@@ -115,11 +119,11 @@ export default function QuestDetailScreen({ route, navigation }: any) {
       return;
     }
 
-    if (activeStep?.has_question && !answer.trim()) {
+    if (activeStep && stepNeedsQuestion(activeStep) && !answer.trim()) {
       Alert.alert('Cevap gir', 'Soruyu cevapla.');
       return;
     }
-    if ((activeStep?.has_image || quest.requires_photo_proof) && !photoUrl) {
+    if (((activeStep && stepNeedsImage(activeStep)) || quest.requires_photo_proof) && !photoUrl) {
       Alert.alert('Fotoğraf gerekli', 'Fotoğraf yükle.');
       return;
     }
@@ -237,7 +241,7 @@ export default function QuestDetailScreen({ route, navigation }: any) {
             </View>
           ) : null}
 
-          {activeStep?.has_question && activeStep.question ? (
+          {activeStep && stepNeedsQuestion(activeStep) && activeStep.question ? (
             <View>
               <Text style={s.label}>❓ {activeStep.question}</Text>
               <TextInput
@@ -250,7 +254,7 @@ export default function QuestDetailScreen({ route, navigation }: any) {
             </View>
           ) : null}
 
-          {(activeStep?.has_image || quest.requires_photo_proof) && (
+          {((activeStep && stepNeedsImage(activeStep)) || quest.requires_photo_proof) && (
             <View>
               <Text style={s.label}>📸 Fotoğraf kanıtı</Text>
               {photoUrl ? (
