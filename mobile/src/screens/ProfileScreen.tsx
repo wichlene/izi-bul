@@ -68,11 +68,30 @@ export default function ProfileScreen({ navigation }: any) {
           <Text style={s.menuLabel}>Bildirimler</Text>
           <Text style={s.menuArrow}>›</Text>
         </TouchableOpacity>
+        <TouchableOpacity style={s.menuItem} onPress={() => navigation.navigate('Leaderboard')}>
+          <Text style={s.menuIcon}>🏆</Text>
+          <Text style={s.menuLabel}>Liderlik Tablosu</Text>
+          <Text style={s.menuArrow}>›</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={s.menuItem} onPress={() => navigation.navigate('CreateQuest')}>
           <Text style={s.menuIcon}>➕</Text>
           <Text style={s.menuLabel}>Görev Oluştur</Text>
           <Text style={s.menuArrow}>›</Text>
         </TouchableOpacity>
+        {profile?.is_business && (
+          <TouchableOpacity style={s.menuItem} onPress={() => navigation.navigate('BusinessStats')}>
+            <Text style={s.menuIcon}>📊</Text>
+            <Text style={s.menuLabel}>İşletme İstatistikleri</Text>
+            <Text style={s.menuArrow}>›</Text>
+          </TouchableOpacity>
+        )}
+        {profile?.is_admin && (
+          <TouchableOpacity style={s.menuItem} onPress={() => navigation.navigate('Admin')}>
+            <Text style={s.menuIcon}>🛡️</Text>
+            <Text style={s.menuLabel}>Admin Paneli</Text>
+            <Text style={s.menuArrow}>›</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <TouchableOpacity style={s.logout} onPress={() => supabase.auth.signOut()}>

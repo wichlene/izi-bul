@@ -21,6 +21,9 @@ import GoodDeedScreen from './src/screens/GoodDeedScreen';
 import NotificationsScreen from './src/screens/NotificationsScreen';
 import QuestDetailScreen from './src/screens/QuestDetailScreen';
 import CreateQuestScreen from './src/screens/CreateQuestScreen';
+import LeaderboardScreen from './src/screens/LeaderboardScreen';
+import BusinessStatsScreen from './src/screens/BusinessStatsScreen';
+import AdminScreen from './src/screens/AdminScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -85,6 +88,9 @@ function ProfileStack({ navigation }: any) {
       <Stack.Screen name="GoodDeed" component={GoodDeedScreen} options={{ title: 'İyilik Hareketi' }} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Bildirimler' }} />
       <Stack.Screen name="CreateQuest" component={CreateQuestScreen} />
+      <Stack.Screen name="Leaderboard" component={LeaderboardScreen} options={{ title: 'Liderlik' }} />
+      <Stack.Screen name="BusinessStats" component={BusinessStatsScreen} options={{ title: 'İstatistikler' }} />
+      <Stack.Screen name="Admin" component={AdminScreen} options={{ title: 'Admin' }} />
     </Stack.Navigator>
   );
 }
