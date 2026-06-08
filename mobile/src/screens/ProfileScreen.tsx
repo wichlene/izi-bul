@@ -24,6 +24,8 @@ export default function ProfileScreen({ navigation }: any) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [myPosts, setMyPosts] = useState<any[]>([]);
+  const [postsLoading, setPostsLoading] = useState(false);
 
   const load = () => {
     if (!uid) return;
@@ -33,9 +35,24 @@ export default function ProfileScreen({ navigation }: any) {
     });
   };
 
+  const loadPosts = async () => {
+    if (!uid) return;
+    setPostsLoading(true);
+    const { data } = await supabase
+      .from('posts')
+      .select('id, content, photo_url, created_at, like_count')
+      .eq('user_id', uid)
+      .eq('post_type', 'good_deed')
+      .order('created_at', { ascending: false })
+      .limit(6);
+    if (data) setMyPosts(data);
+    setPostsLoading(false);
+  };
+
   useEffect(() => {
     load();
-    const unsubscribe = navigation.addListener('focus', load);
+    loadPosts();
+    const unsubscribe = navigation.addListener('focus', () => { load(); loadPosts(); });
     return unsubscribe;
   }, [uid]);
 
@@ -81,8 +98,6 @@ export default function ProfileScreen({ navigation }: any) {
   if (loading) return <View style={s.center}><ActivityIndicator size="large" color={colors.primary} /></View>;
 
   const menus: { icon: string; label: string; screen: string; condition?: boolean }[] = [
-    { icon: '✏️', label: 'Profili Düzenle', screen: 'EditProfile' },
-    { icon: '👥', label: 'Arkadaşlar', screen: 'Friends' },
     { icon: '❤️', label: 'İyilik Hareketi', screen: 'GoodDeedFull' },
     { icon: '🏆', label: 'Liderlik Tablosu', screen: 'Leaderboard' },
     { icon: '🔔', label: 'Bildirimler', screen: 'Notifications' },
@@ -181,6 +196,33 @@ export default function ProfileScreen({ navigation }: any) {
       <TouchableOpacity style={s.logout} onPress={() => supabase.auth.signOut()}>
         <Text style={s.logoutText}>Çıkış Yap</Text>
       </TouchableOpacity>
+
+      {/* My Posts Section */}
+      <View style={s.postsSection}>
+        <Text style={s.postsSectionTitle}>❤️ Paylaşımlarım</Text>
+        {postsLoading ? (
+          <ActivityIndicator color={colors.primary} style={{ marginVertical: 16 }} />
+        ) : myPosts.length === 0 ? (
+          <View style={s.postsEmpty}>
+            <Text style={s.postsEmptyText}>Henüz paylaşım yok</Text>
+          </View>
+        ) : (
+          myPosts.map((post) => (
+            <View key={post.id} style={s.postCard}>
+              {post.photo_url ? (
+                <Image source={{ uri: post.photo_url }} style={s.postImage} />
+              ) : null}
+              <View style={s.postBody}>
+                <Text style={s.postContent} numberOfLines={3}>{post.content}</Text>
+                <View style={s.postMeta}>
+                  <Text style={s.postLikes}>❤️ {post.like_count ?? 0}</Text>
+                  <Text style={s.postDate}>{new Date(post.created_at).toLocaleDateString('tr-TR')}</Text>
+                </View>
+              </View>
+            </View>
+          ))
+        )}
+      </View>
     </ScrollView>
   );
 }
@@ -277,4 +319,19 @@ const s = StyleSheet.create({
     paddingVertical: 16, alignItems: 'center', borderWidth: 1, borderColor: '#fcc',
   },
   logoutText: { color: colors.red, fontWeight: '800', fontSize: 15 },
+
+  postsSection: { marginTop: 16, marginHorizontal: 16, marginBottom: 16 },
+  postsSectionTitle: { fontSize: 16, fontWeight: '900', color: colors.text, marginBottom: 10 },
+  postsEmpty: { paddingVertical: 20, alignItems: 'center' },
+  postsEmptyText: { color: colors.textMuted, fontSize: 14 },
+  postCard: {
+    backgroundColor: '#fff', borderRadius: 14, marginBottom: 10,
+    borderWidth: 1, borderColor: colors.border, overflow: 'hidden',
+  },
+  postImage: { width: '100%', height: 160, resizeMode: 'cover' },
+  postBody: { padding: 12 },
+  postContent: { fontSize: 14, color: colors.text, lineHeight: 20 },
+  postMeta: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
+  postLikes: { fontSize: 13, color: colors.red, fontWeight: '700' },
+  postDate: { fontSize: 12, color: colors.textMuted },
 });
