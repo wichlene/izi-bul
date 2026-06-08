@@ -14,9 +14,27 @@ const DIFF_LABELS: Record<string, string> = { easy: 'Kolay', medium: 'Orta', har
 
 interface Category { id: string; name: string; icon: string }
 
+interface StepDraft {
+  has_question: boolean;
+  question: string;
+  correct_answer: string;
+  has_image: boolean;
+  reference_photo_url: string;
+  approach_radius_meters: number;
+  hint: string;
+}
+
+const emptyStep = (): StepDraft => ({
+  has_question: true, question: '', correct_answer: '',
+  has_image: false, reference_photo_url: '',
+  approach_radius_meters: 500, hint: '',
+});
+
 export default function CreateQuestScreen({ navigation }: any) {
   const { session } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
+
+  // Quest fields
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [hint, setHint] = useState('');
@@ -32,6 +50,10 @@ export default function CreateQuestScreen({ navigation }: any) {
   const [locating, setLocating] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Multi-step
+  const [multiStep, setMultiStep] = useState(false);
+  const [steps, setSteps] = useState<StepDraft[]>([emptyStep()]);
+
   useEffect(() => {
     navigation.setOptions({ title: 'Görev Oluştur' });
     supabase.from('categories').select('*').then(({ data }) => {
@@ -39,7 +61,20 @@ export default function CreateQuestScreen({ navigation }: any) {
     });
   }, []);
 
-  const pickPhoto = () => {
+  // ── Photo upload ──────────────────────────────────────────────────────────
+
+  const uploadToSupabase = async (uri: string, bucket: string, prefix: string): Promise<string | null> => {
+    const ext = uri.split('.').pop() || 'jpg';
+    const fileName = `${prefix}_${Date.now()}.${ext}`;
+    const form = new FormData();
+    form.append('file', { uri, name: fileName, type: `image/${ext}` } as any);
+    const { data, error } = await supabase.storage.from(bucket).upload(fileName, form);
+    if (error) { Alert.alert('Hata', 'Fotoğraf yüklenemedi.'); return null; }
+    const { data: u } = supabase.storage.from(bucket).getPublicUrl(data.path);
+    return u.publicUrl;
+  };
+
+  const pickAndUpload = (onDone: (url: string) => void, bucket: string, prefix: string) => {
     Alert.alert('Fotoğraf Ekle', 'Kaynak seç', [
       {
         text: '📷 Kamera',
@@ -47,7 +82,10 @@ export default function CreateQuestScreen({ navigation }: any) {
           const { status } = await ImagePicker.requestCameraPermissionsAsync();
           if (status !== 'granted') return;
           const result = await ImagePicker.launchCameraAsync({ quality: 0.8 });
-          if (!result.canceled && result.assets[0]) uploadPhoto(result.assets[0].uri);
+          if (!result.canceled && result.assets[0]) {
+            const url = await uploadToSupabase(result.assets[0].uri, bucket, prefix);
+            if (url) onDone(url);
+          }
         },
       },
       {
@@ -56,24 +94,17 @@ export default function CreateQuestScreen({ navigation }: any) {
           const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
           if (status !== 'granted') return;
           const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
-          if (!result.canceled && result.assets[0]) uploadPhoto(result.assets[0].uri);
+          if (!result.canceled && result.assets[0]) {
+            const url = await uploadToSupabase(result.assets[0].uri, bucket, prefix);
+            if (url) onDone(url);
+          }
         },
       },
       { text: 'İptal', style: 'cancel' },
     ]);
   };
 
-  const uploadPhoto = async (uri: string) => {
-    const ext = uri.split('.').pop() || 'jpg';
-    const fileName = `quest_${Date.now()}.${ext}`;
-    const form = new FormData();
-    form.append('file', { uri, name: fileName, type: `image/${ext}` } as any);
-    const { data, error } = await supabase.storage.from('quest-photos').upload(fileName, form);
-    if (error) { Alert.alert('Hata', 'Fotoğraf yüklenemedi.'); return; }
-    const { data: u } = supabase.storage.from('quest-photos').getPublicUrl(data.path);
-    setPhotoUrl(u.publicUrl);
-    Alert.alert('✅', 'Fotoğraf yüklendi.');
-  };
+  // ── Location ──────────────────────────────────────────────────────────────
 
   const getMyLocation = async () => {
     setLocating(true);
@@ -86,24 +117,54 @@ export default function CreateQuestScreen({ navigation }: any) {
     Alert.alert('✅', 'Konum alındı.');
   };
 
+  // ── Steps ─────────────────────────────────────────────────────────────────
+
+  const updateStep = (i: number, patch: Partial<StepDraft>) =>
+    setSteps(prev => prev.map((s, idx) => idx === i ? { ...s, ...patch } : s));
+
+  const removeStep = (i: number) =>
+    setSteps(prev => prev.filter((_, idx) => idx !== i));
+
+  // ── Submit ────────────────────────────────────────────────────────────────
+
   const submit = async () => {
     if (!title || !description || !photoUrl || !lat || !lng) {
-      Alert.alert('Eksik', 'Başlık, açıklama, fotoğraf ve konum zorunlu.');
+      Alert.alert('Eksik', 'Başlık, açıklama, gizem fotoğrafı ve konum zorunlu.');
       return;
+    }
+    if (multiStep) {
+      for (let i = 0; i < steps.length; i++) {
+        const s = steps[i];
+        if (!s.has_question && !s.has_image) {
+          Alert.alert('Eksik', `${i + 1}. adımda Soru-Cevap veya Resim Karşılaştırma seçili olmalı.`);
+          return;
+        }
+        if (s.has_question && (!s.question || !s.correct_answer)) {
+          Alert.alert('Eksik', `${i + 1}. adımda soru ve cevap girilmeli.`);
+          return;
+        }
+        if (s.has_image && !s.reference_photo_url) {
+          Alert.alert('Eksik', `${i + 1}. adımda referans fotoğraf yüklenmeli.`);
+          return;
+        }
+      }
     }
     setLoading(true);
     try {
+      const body: any = {
+        category_id: categoryId,
+        title, description, hint, region, difficulty,
+        photo_url: photoUrl, latitude: lat, longitude: lng,
+        cash_reward: parseInt(cashReward) || 0,
+        max_distance_meters: parseInt(maxDist) || 50,
+        requires_photo_proof: requiresPhoto,
+      };
+      if (multiStep && steps.length > 0) body.steps = steps;
+
       const res = await fetch('https://izibul.com/api/quests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
-        body: JSON.stringify({
-          category_id: categoryId,
-          title, description, hint, region, difficulty,
-          photo_url: photoUrl, latitude: lat, longitude: lng,
-          cash_reward: parseInt(cashReward) || 0,
-          max_distance_meters: parseInt(maxDist) || 50,
-          requires_photo_proof: requiresPhoto,
-        }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Hata');
@@ -119,18 +180,20 @@ export default function CreateQuestScreen({ navigation }: any) {
 
   return (
     <ScrollView contentContainerStyle={{ padding: 16 }}>
+      {/* ── Basic Info ── */}
       <Text style={s.label}>Başlık *</Text>
       <TextInput style={s.input} value={title} onChangeText={setTitle} placeholder="Görev başlığı" placeholderTextColor={colors.textMuted} />
 
       <Text style={s.label}>Açıklama *</Text>
-      <TextInput style={[s.input, { minHeight: 80, textAlignVertical: 'top' }]} value={description} onChangeText={setDescription} placeholder="Görevin açıklaması..." placeholderTextColor={colors.textMuted} multiline />
+      <TextInput style={[s.input, { minHeight: 80, textAlignVertical: 'top' }]} value={description} onChangeText={setDescription} placeholder="Oyuncuya görev hakkında ipucu ver..." placeholderTextColor={colors.textMuted} multiline />
 
-      <Text style={s.label}>İpucu</Text>
+      <Text style={s.label}>Genel İpucu</Text>
       <TextInput style={s.input} value={hint} onChangeText={setHint} placeholder="İpucu (opsiyonel)" placeholderTextColor={colors.textMuted} />
 
       <Text style={s.label}>Bölge</Text>
       <TextInput style={s.input} value={region} onChangeText={setRegion} placeholder="Şehir / Bölge" placeholderTextColor={colors.textMuted} />
 
+      {/* ── Difficulty ── */}
       <Text style={s.label}>Zorluk</Text>
       <View style={s.diffRow}>
         {DIFFICULTIES.map((d) => (
@@ -143,7 +206,7 @@ export default function CreateQuestScreen({ navigation }: any) {
       <Text style={s.label}>Nakit Ödül (₺)</Text>
       <TextInput style={s.input} value={cashReward} onChangeText={setCashReward} keyboardType="numeric" placeholder="0" placeholderTextColor={colors.textMuted} />
 
-      <Text style={s.label}>Maksimum Mesafe (metre)</Text>
+      <Text style={s.label}>Final Konum Yarıçapı (metre)</Text>
       <TextInput style={s.input} value={maxDist} onChangeText={setMaxDist} keyboardType="numeric" placeholder="50" placeholderTextColor={colors.textMuted} />
 
       <View style={s.switchRow}>
@@ -151,6 +214,7 @@ export default function CreateQuestScreen({ navigation }: any) {
         <Switch value={requiresPhoto} onValueChange={setRequiresPhoto} trackColor={{ true: colors.primary }} />
       </View>
 
+      {/* ── Category ── */}
       <Text style={s.label}>Kategori</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
         {categories.map((c) => (
@@ -160,35 +224,153 @@ export default function CreateQuestScreen({ navigation }: any) {
         ))}
       </ScrollView>
 
-      <TouchableOpacity style={[s.btn, { backgroundColor: '#f0f2f4', marginBottom: 10 }]} onPress={pickPhoto}>
-        <Text style={{ color: colors.text, fontWeight: '700' }}>{photoUrl ? '✅ Fotoğraf Yüklendi — Değiştir' : '📷 Fotoğraf Yükle *'}</Text>
+      {/* ── Mystery Photo ── */}
+      <TouchableOpacity
+        style={[s.btn, { backgroundColor: '#f0f2f4', marginBottom: 10 }]}
+        onPress={() => pickAndUpload((url) => { setPhotoUrl(url); Alert.alert('✅', 'Gizem fotoğrafı yüklendi.'); }, 'quest-photos', 'quest')}
+      >
+        <Text style={{ color: colors.text, fontWeight: '700' }}>
+          {photoUrl ? '✅ Gizem Fotoğrafı Yüklendi — Değiştir' : '📷 Gizem Fotoğrafı Yükle *'}
+        </Text>
       </TouchableOpacity>
 
+      {/* ── Final Location ── */}
       <TouchableOpacity style={[s.btn, { backgroundColor: '#f0f2f4', marginBottom: 16 }]} onPress={getMyLocation} disabled={locating}>
         {locating ? <ActivityIndicator color={colors.primary} /> : (
-          <Text style={{ color: colors.text, fontWeight: '700' }}>{lat ? `✅ Konum Alındı (${lat.toFixed(4)}, ${lng?.toFixed(4)})` : '📍 Mevcut Konumu Kullan *'}</Text>
+          <Text style={{ color: colors.text, fontWeight: '700' }}>
+            {lat ? `✅ Final Konum: ${lat.toFixed(4)}, ${lng?.toFixed(4)}` : '📍 Gizli Final Konumunu Seç *'}
+          </Text>
         )}
       </TouchableOpacity>
 
+      {/* ── Multi-step Toggle ── */}
+      <View style={[s.switchRow, { marginBottom: 8 }]}>
+        <View>
+          <Text style={s.label}>Çoklu Adımlı Görev</Text>
+          <Text style={{ fontSize: 12, color: colors.textMuted }}>Soru-cevap veya resim karşılaştırma adımları ekle</Text>
+        </View>
+        <Switch value={multiStep} onValueChange={(v) => { setMultiStep(v); if (v && steps.length === 0) setSteps([emptyStep()]); }} trackColor={{ true: colors.primary }} />
+      </View>
+
+      {/* ── Steps ── */}
+      {multiStep && (
+        <View style={{ marginBottom: 8 }}>
+          {steps.map((step, i) => (
+            <View key={i} style={s.stepCard}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <Text style={{ fontWeight: '900', color: colors.text, fontSize: 15 }}>Adım {i + 1}</Text>
+                {steps.length > 1 && (
+                  <TouchableOpacity onPress={() => removeStep(i)}>
+                    <Text style={{ color: colors.red, fontWeight: '700' }}>✕ Sil</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {/* Soru-Cevap toggle */}
+              <View style={s.switchRow}>
+                <Text style={s.stepLabel}>Soru-Cevap</Text>
+                <Switch
+                  value={step.has_question}
+                  onValueChange={(v) => updateStep(i, { has_question: v })}
+                  trackColor={{ true: colors.primary }}
+                />
+              </View>
+              {step.has_question && (
+                <>
+                  <TextInput
+                    style={s.input}
+                    value={step.question}
+                    onChangeText={(v) => updateStep(i, { question: v })}
+                    placeholder="Soru"
+                    placeholderTextColor={colors.textMuted}
+                    multiline
+                  />
+                  <TextInput
+                    style={s.input}
+                    value={step.correct_answer}
+                    onChangeText={(v) => updateStep(i, { correct_answer: v })}
+                    placeholder="Doğru Cevap"
+                    placeholderTextColor={colors.textMuted}
+                  />
+                </>
+              )}
+
+              {/* Resim Karşılaştırma toggle */}
+              <View style={s.switchRow}>
+                <Text style={s.stepLabel}>📷 Resim Karşılaştırma</Text>
+                <Switch
+                  value={step.has_image}
+                  onValueChange={(v) => updateStep(i, { has_image: v })}
+                  trackColor={{ true: colors.primary }}
+                />
+              </View>
+              {step.has_image && (
+                <TouchableOpacity
+                  style={[s.btn, { backgroundColor: '#f0f2f4', marginBottom: 10 }]}
+                  onPress={() => pickAndUpload((url) => updateStep(i, { reference_photo_url: url }), 'quest-photos', `step${i}`)}
+                >
+                  <Text style={{ color: colors.text, fontWeight: '700' }}>
+                    {step.reference_photo_url ? '✅ Referans Fotoğraf Yüklendi' : '🖼️ Referans Fotoğraf Yükle'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              {/* Yaklaşma yarıçapı */}
+              <Text style={s.stepLabel}>Yaklaşma Yarıçapı (metre)</Text>
+              <TextInput
+                style={s.input}
+                value={String(step.approach_radius_meters)}
+                onChangeText={(v) => updateStep(i, { approach_radius_meters: parseInt(v) || 0 })}
+                keyboardType="numeric"
+                placeholder="500"
+                placeholderTextColor={colors.textMuted}
+              />
+
+              {/* Adım ipucu */}
+              <Text style={s.stepLabel}>Adım İpucu (opsiyonel)</Text>
+              <TextInput
+                style={s.input}
+                value={step.hint}
+                onChangeText={(v) => updateStep(i, { hint: v })}
+                placeholder="Bu adım için ipucu..."
+                placeholderTextColor={colors.textMuted}
+              />
+            </View>
+          ))}
+
+          <TouchableOpacity style={[s.btn, { backgroundColor: '#e8f5e9', marginBottom: 16 }]} onPress={() => setSteps(prev => [...prev, emptyStep()])}>
+            <Text style={{ color: '#2e7d32', fontWeight: '800' }}>+ Adım Ekle</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* ── Submit ── */}
       <TouchableOpacity style={[s.btn, loading && { opacity: 0.6 }]} onPress={submit} disabled={loading}>
         {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnText}>Görevi Oluştur ✅</Text>}
       </TouchableOpacity>
+
+      <View style={{ height: 32 }} />
     </ScrollView>
   );
 }
 
 const s = StyleSheet.create({
   label: { fontWeight: '700', color: colors.text, marginBottom: 6, fontSize: 14, marginTop: 4 },
+  stepLabel: { fontWeight: '600', color: colors.text, marginBottom: 4, fontSize: 13 },
   input: { backgroundColor: '#fff', borderRadius: 10, padding: 12, fontSize: 15, color: colors.text, borderWidth: 1, borderColor: colors.border, marginBottom: 12 },
   diffRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
   diffBtn: { flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: '#f0f2f4', alignItems: 'center' },
   diffBtnActive: { backgroundColor: colors.primary },
   diffText: { fontWeight: '700', color: colors.textMuted, fontSize: 12 },
   diffTextActive: { color: '#fff' },
-  switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
+  switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   catBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: '#f0f2f4', marginRight: 8 },
   catBtnActive: { backgroundColor: colors.primary },
   catText: { fontWeight: '700', color: colors.text, fontSize: 13 },
   btn: { backgroundColor: colors.primary, borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginBottom: 8 },
   btnText: { color: '#fff', fontWeight: '900', fontSize: 16 },
+  stepCard: {
+    backgroundColor: '#fff', borderRadius: 14, padding: 14,
+    borderWidth: 1, borderColor: colors.border, marginBottom: 12,
+  },
 });

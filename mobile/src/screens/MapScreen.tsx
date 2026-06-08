@@ -11,7 +11,7 @@ import { Quest } from '../types';
 // Free OpenStreetMap tiles via MapLibre — no API key needed
 MapLibreGL.setAccessToken(null);
 
-const STYLE_URL = 'https://demotiles.maplibre.org/style.json';
+const STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
 
 interface LiveUser {
   user_id: string;
