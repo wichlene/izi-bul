@@ -6,6 +6,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { supabase } from '../lib/supabase';
+import { uploadImage } from '../lib/uploadPhoto';
 import { useAuth } from '../AuthContext';
 import { colors } from '../theme';
 
@@ -63,41 +64,32 @@ export default function CreateQuestScreen({ navigation }: any) {
 
   // ── Photo upload ──────────────────────────────────────────────────────────
 
-  const uploadToSupabase = async (uri: string, bucket: string, prefix: string): Promise<string | null> => {
-    const ext = uri.split('.').pop() || 'jpg';
-    const fileName = `${prefix}_${Date.now()}.${ext}`;
-    const form = new FormData();
-    form.append('file', { uri, name: fileName, type: `image/${ext}` } as any);
-    const { data, error } = await supabase.storage.from(bucket).upload(fileName, form);
-    if (error) { Alert.alert('Hata', 'Fotoğraf yüklenemedi.'); return null; }
-    const { data: u } = supabase.storage.from(bucket).getPublicUrl(data.path);
-    return u.publicUrl;
-  };
-
-  const pickAndUpload = (onDone: (url: string) => void, bucket: string, prefix: string) => {
+  const pickAndUpload = (onDone: (url: string) => void, _bucket: string, prefix: string) => {
+    const handle = async (uri: string) => {
+      try {
+        const url = await uploadImage(uri, prefix);
+        onDone(url);
+      } catch (e: any) {
+        Alert.alert('Hata', e.message || 'Fotoğraf yüklenemedi.');
+      }
+    };
     Alert.alert('Fotoğraf Ekle', 'Kaynak seç', [
       {
         text: '📷 Kamera',
         onPress: async () => {
           const { status } = await ImagePicker.requestCameraPermissionsAsync();
-          if (status !== 'granted') return;
-          const result = await ImagePicker.launchCameraAsync({ quality: 0.8 });
-          if (!result.canceled && result.assets[0]) {
-            const url = await uploadToSupabase(result.assets[0].uri, bucket, prefix);
-            if (url) onDone(url);
-          }
+          if (status !== 'granted') { Alert.alert('İzin gerekli', 'Kamera izni ver.'); return; }
+          const result = await ImagePicker.launchCameraAsync({ quality: 0.6 });
+          if (!result.canceled && result.assets[0]) handle(result.assets[0].uri);
         },
       },
       {
         text: '🖼️ Galeri',
         onPress: async () => {
           const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-          if (status !== 'granted') return;
-          const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
-          if (!result.canceled && result.assets[0]) {
-            const url = await uploadToSupabase(result.assets[0].uri, bucket, prefix);
-            if (url) onDone(url);
-          }
+          if (status !== 'granted') { Alert.alert('İzin gerekli', 'Galeri izni ver.'); return; }
+          const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.6 });
+          if (!result.canceled && result.assets[0]) handle(result.assets[0].uri);
         },
       },
       { text: 'İptal', style: 'cancel' },

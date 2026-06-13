@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../lib/supabase';
+import { uploadImage } from '../lib/uploadPhoto';
 import { useAuth } from '../AuthContext';
 import { colors } from '../theme';
 import { Profile } from '../types';
@@ -76,20 +77,14 @@ export default function ProfileScreen({ navigation }: any) {
 
     if (result.canceled || !result.assets[0]) return;
     const asset = result.assets[0];
-    const ext = asset.uri.split('.').pop() || 'jpg';
-    const fileName = `avatar_${uid}_${Date.now()}.${ext}`;
 
     setUploadingPhoto(true);
     try {
-      const form = new FormData();
-      form.append('file', { uri: asset.uri, name: fileName, type: `image/${ext}` } as any);
-      const { data, error } = await supabase.storage.from('avatars').upload(fileName, form, { upsert: true });
-      if (error) throw error;
-      const { data: u } = supabase.storage.from('avatars').getPublicUrl(data.path);
-      await supabase.from('profiles').update({ avatar_url: u.publicUrl }).eq('id', uid);
+      const url = await uploadImage(asset.uri, `avatar_${uid}`);
+      await supabase.from('profiles').update({ avatar_url: url }).eq('id', uid);
       load();
-    } catch {
-      Alert.alert('Hata', 'Fotoğraf yüklenemedi.');
+    } catch (e: any) {
+      Alert.alert('Hata', e.message || 'Fotoğraf yüklenemedi.');
     } finally {
       setUploadingPhoto(false);
     }

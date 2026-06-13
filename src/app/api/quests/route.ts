@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { getUserFromRequest } from '@/lib/supabase/fromRequest';
 import { DIFFICULTIES, Difficulty } from '@/types';
 
 // Zorluğa göre son nokta yakınlık yarıçapı (metre)
@@ -23,9 +24,10 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUserFromRequest(req);
   if (!user) return NextResponse.json({ error: 'Giriş yapmalısın' }, { status: 401 });
+
+  const supabase = createAdminClient();
 
   const { data: profile } = await supabase
     .from('profiles')

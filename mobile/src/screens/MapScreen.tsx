@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Image,
+  View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Image, Alert,
 } from 'react-native';
 import MapLibreGL, { type CameraRef } from '@maplibre/maplibre-react-native';
 import * as Location from 'expo-location';
@@ -36,10 +36,13 @@ export default function MapScreen({ navigation }: any) {
   const [myCoords, setMyCoords] = useState<[number, number] | null>(null);
 
   const load = async () => {
+    // Only count users active in the last 3 minutes as "online"
+    const cutoff = new Date(Date.now() - 3 * 60 * 1000).toISOString();
     const [questRes, usersRes] = await Promise.all([
       supabase.from('quests').select('*').eq('is_active', true).limit(200),
       supabase.from('live_locations')
-        .select('user_id, latitude, longitude, profiles(username, avatar_url)')
+        .select('user_id, latitude, longitude, updated_at, profiles(username, avatar_url)')
+        .gte('updated_at', cutoff)
         .limit(200),
     ]);
 
@@ -59,6 +62,23 @@ export default function MapScreen({ navigation }: any) {
       setLiveUsers(others);
     }
     setLoading(false);
+  };
+
+  const onUserTap = (u: LiveUser) => {
+    Alert.alert(
+      `@${u.username || 'kullanıcı'}`,
+      'Bu kişiyle ne yapmak istersin?',
+      [
+        {
+          text: '💬 Mesaj Gönder',
+          onPress: () => navigation.navigate('Messages', {
+            screen: 'Chat',
+            params: { friendId: u.user_id, friendUsername: u.username || 'kullanıcı' },
+          }),
+        },
+        { text: 'Kapat', style: 'cancel' },
+      ]
+    );
   };
 
   // Get user location for auto-zoom
@@ -131,9 +151,10 @@ export default function MapScreen({ navigation }: any) {
       >
         <MapLibreGL.Camera
           ref={cameraRef}
-          zoomLevel={5}
-          centerCoordinate={[35.0, 39.0]}
-          animationDuration={0}
+          defaultSettings={{
+            zoomLevel: 5,
+            centerCoordinate: [35.0, 39.0],
+          }}
         />
 
         <MapLibreGL.UserLocation
@@ -169,12 +190,14 @@ export default function MapScreen({ navigation }: any) {
             coordinate={[u.longitude, u.latitude]}
             allowOverlap
           >
-            <View style={s.userPin}>
-              {u.avatar_url
-                ? <Image source={{ uri: u.avatar_url }} style={s.userPinAvatar} />
-                : <Text style={s.userPinIcon}>👤</Text>}
-              <View style={s.userPinDot} />
-            </View>
+            <TouchableOpacity onPress={() => onUserTap(u)} activeOpacity={0.8}>
+              <View style={s.userPin}>
+                {u.avatar_url
+                  ? <Image source={{ uri: u.avatar_url }} style={s.userPinAvatar} />
+                  : <Text style={s.userPinIcon}>👤</Text>}
+                <View style={s.userPinDot} />
+              </View>
+            </TouchableOpacity>
           </MapLibreGL.MarkerView>
         ))}
       </MapLibreGL.MapView>
