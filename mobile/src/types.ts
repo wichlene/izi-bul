@@ -29,4 +29,6 @@ export interface Quest {
   is_active: boolean;
   is_featured?: boolean;
   total_solved: number;
+  category_id?: string;
+  created_at: string;
 }
