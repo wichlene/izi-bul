@@ -46,6 +46,26 @@ jobs:
           GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
         run: npx expo prebuild --platform android --no-install
 
+      - name: Create google-services.json (FCM for push notifications)
+        working-directory: mobile
+        run: |
+          mkdir -p android/app
+          if [ -n "$GOOGLE_SERVICES_JSON_B64" ]; then
+            echo "$GOOGLE_SERVICES_JSON_B64" | base64 -d > android/app/google-services.json
+            echo "✅ Using real google-services.json from secret"
+          else
+            cat > android/app/google-services.json << 'EOF'
+          {
+            "project_info": { "project_number": "000000000000", "project_id": "izibul-placeholder", "storage_bucket": "izibul-placeholder.appspot.com" },
+            "client": [{ "client_info": { "mobilesdk_app_id": "1:000000000000:android:0000000000000000", "android_client_info": { "package_name": "com.izibul.app" } }, "oauth_client": [], "api_key": [{ "current_key": "placeholder" }], "services": { "appinvite_service": { "other_platform_oauth_client": [] } } }],
+            "configuration_version": "1"
+          }
+          EOF
+            echo "⚠️ Using placeholder google-services.json — add GOOGLE_SERVICES_JSON_B64 secret for real FCM push"
+          fi
+        env:
+          GOOGLE_SERVICES_JSON_B64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
+
       - name: Fix package declarations (Expo prebuild drops last segment)
         working-directory: mobile
         run: |

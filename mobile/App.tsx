@@ -27,6 +27,7 @@ import LeaderboardScreen from './src/screens/LeaderboardScreen';
 import BusinessStatsScreen from './src/screens/BusinessStatsScreen';
 import AdminScreen from './src/screens/AdminScreen';
 import LocationSync from './src/components/LocationSync';
+import NotificationService from './src/components/NotificationService';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -201,6 +202,7 @@ function Root() {
       {session ? (
         <>
           <LocationSync userId={session.user.id} />
+          <NotificationService userId={session.user.id} />
           <MainTabs />
         </>
       ) : <AuthScreen />}

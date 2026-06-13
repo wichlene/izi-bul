@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { getUserFromRequest } from '@/lib/supabase/fromRequest';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { notifyUsers, getFriendIds } from '@/lib/notify';
 
 export async function GET(req: NextRequest) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUserFromRequest(req);
+  const supabase = createAdminClient();
   const type = req.nextUrl.searchParams.get('type');
 
   let query = supabase
@@ -57,8 +57,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getUserFromRequest(req);
   if (!user) return NextResponse.json({ error: 'Giriş yapmalısın' }, { status: 401 });
 
   if (!checkRateLimit(`post:${user.id}`, 10, 60_000)) {
@@ -72,13 +71,13 @@ export async function POST(req: NextRequest) {
   const allowed = ['social', 'good_deed', 'announcement'];
   let type = allowed.includes(post_type) ? post_type : 'social';
 
+  const admin = createAdminClient();
+
   // Duyuru sadece adminler
   if (type === 'announcement') {
-    const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single();
+    const { data: profile } = await admin.from('profiles').select('is_admin').eq('id', user.id).single();
     if (!profile?.is_admin) type = 'social';
   }
-
-  const admin = createAdminClient();
   const { data, error } = await admin.from('posts').insert({
     user_id: user.id,
     post_type: type,

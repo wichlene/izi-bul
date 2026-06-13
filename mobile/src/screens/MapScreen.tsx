@@ -123,6 +123,10 @@ export default function MapScreen({ navigation }: any) {
         mapStyle={STYLE_URL}
         logoEnabled={false}
         attributionEnabled={false}
+        zoomEnabled
+        scrollEnabled
+        pitchEnabled={false}
+        rotateEnabled={false}
         onDidFinishLoadingMap={() => setMapReady(true)}
       >
         <MapLibreGL.Camera

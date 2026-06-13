@@ -7,5 +7,14 @@ module.exports = ({ config }) => ({
   plugins: [
     "expo-location",
     "expo-image-picker",
+    [
+      "expo-notifications",
+      {
+        "icon": "./assets/icon.png",
+        "color": "#ff6b2b",
+        "defaultChannel": "izibul",
+        "sounds": []
+      }
+    ]
   ],
 });
