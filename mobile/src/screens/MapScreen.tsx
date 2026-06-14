@@ -31,25 +31,30 @@ export default function MapScreen({ navigation }: any) {
   const [quests, setQuests] = useState<Quest[]>([]);
   const [liveUsers, setLiveUsers] = useState<LiveUser[]>([]);
   const [onlineCount, setOnlineCount] = useState(0);
+  const [totalPlayers, setTotalPlayers] = useState(0);
   const [loading, setLoading] = useState(true);
   const [mapReady, setMapReady] = useState(false);
   const [myCoords, setMyCoords] = useState<[number, number] | null>(null);
 
   const load = async () => {
-    // Only count users active in the last 3 minutes as "online"
-    const cutoff = new Date(Date.now() - 3 * 60 * 1000).toISOString();
-    const [questRes, usersRes] = await Promise.all([
+    // 30-minute window: anyone active in last 30 min shows on map
+    const cutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+
+    const [questRes, usersRes, totalRes] = await Promise.all([
       supabase.from('quests').select('*').eq('is_active', true).limit(200),
-      supabase.from('live_locations')
+      supabase
+        .from('live_locations')
         .select('user_id, latitude, longitude, updated_at, profiles(username, avatar_url)')
         .gte('updated_at', cutoff)
         .limit(200),
+      supabase.from('profiles').select('*', { count: 'exact', head: true }),
     ]);
 
     if (questRes.data) setQuests(questRes.data as Quest[]);
 
     if (usersRes.data) {
       setOnlineCount(usersRes.data.length);
+      // Show all OTHER users as markers (own position = native blue dot)
       const others: LiveUser[] = usersRes.data
         .filter((u: any) => u.user_id !== uid)
         .map((u: any) => ({
@@ -61,6 +66,8 @@ export default function MapScreen({ navigation }: any) {
         }));
       setLiveUsers(others);
     }
+
+    if (totalRes.count != null) setTotalPlayers(totalRes.count);
     setLoading(false);
   };
 
@@ -71,17 +78,17 @@ export default function MapScreen({ navigation }: any) {
       [
         {
           text: '💬 Mesaj Gönder',
-          onPress: () => navigation.navigate('Messages', {
-            screen: 'Chat',
-            params: { friendId: u.user_id, friendUsername: u.username || 'kullanıcı' },
-          }),
+          onPress: () =>
+            navigation.navigate('Messages', {
+              screen: 'Chat',
+              params: { friendId: u.user_id, friendUsername: u.username || 'kullanıcı' },
+            }),
         },
         { text: 'Kapat', style: 'cancel' },
-      ]
+      ],
     );
   };
 
-  // Get user location for auto-zoom
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -92,13 +99,12 @@ export default function MapScreen({ navigation }: any) {
     })();
   }, []);
 
-  // Zoom to user location when map is ready
   useEffect(() => {
     if (mapReady && myCoords) {
       cameraRef.current?.setCamera({
         centerCoordinate: myCoords,
-        zoomLevel: 14,
-        animationDuration: 800,
+        zoomLevel: 13,
+        animationDuration: 1000,
       });
     }
   }, [mapReady, myCoords]);
@@ -111,27 +117,19 @@ export default function MapScreen({ navigation }: any) {
 
   const goToMyLocation = () => {
     if (myCoords) {
-      cameraRef.current?.setCamera({
-        centerCoordinate: myCoords,
-        zoomLevel: 14,
-        animationDuration: 500,
-      });
+      cameraRef.current?.setCamera({ centerCoordinate: myCoords, zoomLevel: 14, animationDuration: 500 });
     }
   };
 
   const goToTurkey = () => {
-    cameraRef.current?.setCamera({
-      centerCoordinate: [35.0, 39.0],
-      zoomLevel: 5,
-      animationDuration: 500,
-    });
+    cameraRef.current?.setCamera({ centerCoordinate: [35.0, 39.0], zoomLevel: 5, animationDuration: 500 });
   };
 
   if (loading) {
     return (
       <View style={s.center}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={s.status}>Harita yükleniyor...</Text>
+        <Text style={s.loadText}>Harita yükleniyor...</Text>
       </View>
     );
   }
@@ -151,16 +149,11 @@ export default function MapScreen({ navigation }: any) {
       >
         <MapLibreGL.Camera
           ref={cameraRef}
-          defaultSettings={{
-            zoomLevel: 5,
-            centerCoordinate: [35.0, 39.0],
-          }}
+          defaultSettings={{ zoomLevel: 5, centerCoordinate: [35.0, 39.0] }}
         />
 
-        <MapLibreGL.UserLocation
-          visible
-          showsUserHeadingIndicator={false}
-        />
+        {/* Native blue dot for current user */}
+        <MapLibreGL.UserLocation visible showsUserHeadingIndicator={false} />
 
         {/* Quest markers */}
         {quests.map((q) => {
@@ -173,113 +166,211 @@ export default function MapScreen({ navigation }: any) {
             >
               <TouchableOpacity
                 onPress={() => navigation.navigate('QuestDetail', { questId: q.id })}
-                activeOpacity={0.8}
+                activeOpacity={0.85}
               >
                 <View style={[s.questPin, { backgroundColor: diff.color }]}>
-                  <Text style={s.questPinIcon}>📍</Text>
+                  <Text style={s.questPinIcon}>🗺️</Text>
                 </View>
               </TouchableOpacity>
             </MapLibreGL.MarkerView>
           );
         })}
 
-        {/* Live user markers */}
+        {/* Other players markers */}
         {liveUsers.map((u) => (
           <MapLibreGL.MarkerView
             key={u.user_id}
             coordinate={[u.longitude, u.latitude]}
             allowOverlap
           >
-            <TouchableOpacity onPress={() => onUserTap(u)} activeOpacity={0.8}>
+            <TouchableOpacity onPress={() => onUserTap(u)} activeOpacity={0.85}>
               <View style={s.userPin}>
-                {u.avatar_url
-                  ? <Image source={{ uri: u.avatar_url }} style={s.userPinAvatar} />
-                  : <Text style={s.userPinIcon}>👤</Text>}
-                <View style={s.userPinDot} />
+                {u.avatar_url ? (
+                  <Image source={{ uri: u.avatar_url }} style={s.userPinAvatar} />
+                ) : (
+                  <Text style={s.userPinIcon}>👤</Text>
+                )}
+                <View style={s.onlineBadge} />
               </View>
+              {u.username ? (
+                <View style={s.userLabel}>
+                  <Text style={s.userLabelText} numberOfLines={1}>@{u.username}</Text>
+                </View>
+              ) : null}
             </TouchableOpacity>
           </MapLibreGL.MarkerView>
         ))}
       </MapLibreGL.MapView>
 
-      {/* Stats overlay — respects status bar */}
-      <View style={[s.overlay, { top: insets.top + 8 }]}>
-        <Text style={s.overlayTitle}>🗺️ Harita</Text>
-        <Text style={s.overlayStat}>{quests.length} görev</Text>
-        <View style={s.onlineRow}>
-          <View style={s.onlineDot} />
-          <Text style={[s.overlayStat, { color: colors.green }]}>{onlineCount} online</Text>
+      {/* Google Maps-style top stats bar */}
+      <View style={[s.topBar, { top: insets.top + 8 }]}>
+        <View style={s.statsRow}>
+          <View style={s.statCol}>
+            <View style={s.onlineDotRow}>
+              <View style={s.onlineDot} />
+              <Text style={s.statLabel}>Online</Text>
+            </View>
+            <Text style={s.statValue}>{onlineCount}</Text>
+          </View>
+          <View style={s.statSep} />
+          <View style={s.statCol}>
+            <Text style={s.statLabel}>👥 Toplam</Text>
+            <Text style={s.statValue}>{totalPlayers}</Text>
+          </View>
+          <View style={s.statSep} />
+          <View style={s.statCol}>
+            <Text style={s.statLabel}>🗺️ Görev</Text>
+            <Text style={s.statValue}>{quests.length}</Text>
+          </View>
         </View>
       </View>
 
-      {/* My location button */}
-      <TouchableOpacity style={[s.myLocBtn, { bottom: 132 }]} onPress={goToMyLocation}>
-        <Text style={s.myLocIcon}>📍</Text>
-      </TouchableOpacity>
-
-      {/* Turkey overview button */}
-      <TouchableOpacity style={[s.myLocBtn, { bottom: 76 }]} onPress={goToTurkey}>
-        <Text style={s.myLocIcon}>🇹🇷</Text>
-      </TouchableOpacity>
-
-      {/* Refresh button */}
-      <TouchableOpacity style={[s.myLocBtn, { bottom: 20 }]} onPress={load}>
-        <Text style={s.myLocIcon}>🔄</Text>
-      </TouchableOpacity>
+      {/* Right side controls */}
+      <View style={[s.controls, { bottom: insets.bottom + 24 }]}>
+        <TouchableOpacity style={s.ctrlBtn} onPress={goToMyLocation}>
+          <Text style={s.ctrlIcon}>📍</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={s.ctrlBtn} onPress={goToTurkey}>
+          <Text style={s.ctrlIcon}>🇹🇷</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={s.ctrlBtn} onPress={load}>
+          <Text style={s.ctrlIcon}>🔄</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
 const s = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
-  status: { color: colors.textMuted, marginTop: 12, fontSize: 15 },
+  loadText: { color: colors.textMuted, marginTop: 12, fontSize: 15 },
+
+  topBar: {
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.14,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statCol: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statLabel: {
+    fontSize: 11,
+    color: colors.textMuted,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  statValue: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: colors.text,
+  },
+  statSep: {
+    width: 1,
+    height: 40,
+    backgroundColor: colors.border,
+  },
+  onlineDotRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 2,
+  },
+  onlineDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#22c55e',
+  },
+
+  controls: {
+    position: 'absolute',
+    right: 14,
+    alignItems: 'center',
+    gap: 10,
+  },
+  ctrlBtn: {
+    backgroundColor: '#fff',
+    borderRadius: 28,
+    width: 50,
+    height: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 6,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  ctrlIcon: { fontSize: 22 },
 
   questPin: {
-    width: 40, height: 40, borderRadius: 10,
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 3, borderColor: 'rgba(255,255,255,0.7)',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.35, shadowRadius: 4, elevation: 5,
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2.5,
+    borderColor: 'rgba(255,255,255,0.9)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
   },
   questPinIcon: { fontSize: 18 },
 
   userPin: {
-    width: 44, height: 44, borderRadius: 22,
-    backgroundColor: colors.green,
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 3, borderColor: '#fff',
-    shadowColor: colors.green, shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.5, shadowRadius: 6, elevation: 6,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#3b82f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: '#fff',
+    shadowColor: '#3b82f6',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.5,
+    shadowRadius: 6,
+    elevation: 7,
   },
-  userPinAvatar: { width: 38, height: 38, borderRadius: 19 },
-  userPinIcon: { fontSize: 22 },
-  userPinText: { color: '#fff', fontWeight: '900', fontSize: 17 },
-  userPinDot: {
-    position: 'absolute', bottom: 0, right: 0,
-    width: 12, height: 12, borderRadius: 6,
-    backgroundColor: '#22c55e', borderWidth: 2, borderColor: '#fff',
+  userPinAvatar: { width: 44, height: 44, borderRadius: 22 },
+  userPinIcon: { fontSize: 26 },
+  onlineBadge: {
+    position: 'absolute',
+    bottom: 1,
+    right: 1,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#22c55e',
+    borderWidth: 2,
+    borderColor: '#fff',
   },
-
-  overlay: {
-    position: 'absolute', left: 12,
-    backgroundColor: '#fff',
-    borderRadius: 16, paddingVertical: 10, paddingHorizontal: 14,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12, shadowRadius: 8, elevation: 5,
-    borderWidth: 1, borderColor: colors.border,
+  userLabel: {
+    marginTop: 3,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 8,
+    alignSelf: 'center',
+    maxWidth: 90,
   },
-  overlayTitle: { fontSize: 14, fontWeight: '900', color: colors.text, marginBottom: 4 },
-  overlayStat: { fontSize: 12, color: colors.textMuted },
-  onlineRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
-  onlineDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.green },
-
-  myLocBtn: {
-    position: 'absolute', right: 16,
-    backgroundColor: '#fff', borderRadius: 28, width: 48, height: 48,
-    alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15, shadowRadius: 6, elevation: 4,
-    borderWidth: 1, borderColor: colors.border,
-  },
-  myLocIcon: { fontSize: 22 },
+  userLabelText: { color: '#fff', fontSize: 10, fontWeight: '700' },
 });
