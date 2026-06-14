@@ -1,14 +1,16 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View, Text, FlatList, Image, StyleSheet, TouchableOpacity,
-  RefreshControl, ActivityIndicator, TextInput, ScrollView,
+  RefreshControl, ActivityIndicator, TextInput, ScrollView, Alert,
 } from 'react-native';
 import * as Location from 'expo-location';
+import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../AuthContext';
 import { colors, difficulties } from '../theme';
 import { distanceMeters, formatDistance } from '../lib/distance';
 import { Quest } from '../types';
+import { uploadImage } from '../lib/uploadPhoto';
 
 interface Category { id: string; name: string; icon: string }
 
@@ -49,6 +51,15 @@ export default function HomeScreen({ navigation }: any) {
   const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Composer state
+  const [showComposer, setShowComposer] = useState(false);
+  const [compContent, setCompContent] = useState('');
+  const [compType, setCompType] = useState<'social' | 'good_deed'>('social');
+  const [compPhoto, setCompPhoto] = useState('');
+  const [compCoords, setCompCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [compPosting, setCompPosting] = useState(false);
+  const [compUploading, setCompUploading] = useState(false);
 
   // Get user location for distance calc
   useEffect(() => {
@@ -105,6 +116,64 @@ export default function HomeScreen({ navigation }: any) {
   }, [uid]);
 
   useEffect(() => { load(); }, [load]);
+
+  const submitPost = async () => {
+    if (!compContent.trim() || !uid) return;
+    setCompPosting(true);
+    try {
+      const { error } = await supabase.from('posts').insert({
+        user_id: uid,
+        post_type: compType,
+        content: compContent.trim().slice(0, 500),
+        photo_url: compPhoto || null,
+        latitude: compCoords?.lat ?? null,
+        longitude: compCoords?.lng ?? null,
+      });
+      if (error) throw new Error(error.message);
+      setCompContent(''); setCompPhoto(''); setCompCoords(null); setShowComposer(false);
+      load();
+    } catch (e: any) {
+      Alert.alert('Hata', e.message || 'Paylaşılamadı');
+    } finally {
+      setCompPosting(false);
+    }
+  };
+
+  const pickCompPhoto = () => {
+    Alert.alert('Fotoğraf', 'Kaynak seç', [
+      { text: '📷 Kamera', onPress: async () => {
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status !== 'granted') return;
+        const r = await ImagePicker.launchCameraAsync({ quality: 0.6 });
+        if (!r.canceled && r.assets[0]) {
+          setCompUploading(true);
+          try { setCompPhoto(await uploadImage(r.assets[0].uri, 'post')); } catch {}
+          finally { setCompUploading(false); }
+        }
+      }},
+      { text: '🖼️ Galeri', onPress: async () => {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') return;
+        const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.6 });
+        if (!r.canceled && r.assets[0]) {
+          setCompUploading(true);
+          try { setCompPhoto(await uploadImage(r.assets[0].uri, 'post')); } catch {}
+          finally { setCompUploading(false); }
+        }
+      }},
+      { text: 'İptal', style: 'cancel' },
+    ]);
+  };
+
+  const markCompLocation = async () => {
+    if (compCoords) { setCompCoords(null); return; }
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== 'granted') return;
+    try {
+      const loc = await Location.getCurrentPositionAsync({});
+      setCompCoords({ lat: loc.coords.latitude, lng: loc.coords.longitude });
+    } catch {}
+  };
 
   // Unified feed: quests + posts mixed, newest first
   const feed = useMemo<FeedItem[]>(() => {
@@ -256,6 +325,64 @@ export default function HomeScreen({ navigation }: any) {
               );
             })}
           </ScrollView>
+          {/* Composer button / form */}
+          {!showComposer ? (
+            <TouchableOpacity
+              style={s.compOpen}
+              onPress={() => setShowComposer(true)}
+            >
+              <Text style={s.compOpenText}>💬 Bir şey paylaş...</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={s.compBox}>
+              <View style={s.compTypes}>
+                <TouchableOpacity
+                  style={[s.typeBtn, compType === 'social' && s.typeBtnActive]}
+                  onPress={() => setCompType('social')}
+                >
+                  <Text style={[s.typeBtnText, compType === 'social' && s.typeBtnTextActive]}>💬 Paylaşım</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[s.typeBtn, compType === 'good_deed' && s.typeBtnGood, compType === 'good_deed' && s.typeBtnActiveGood]}
+                  onPress={() => setCompType('good_deed')}
+                >
+                  <Text style={[s.typeBtnText, compType === 'good_deed' && s.typeBtnTextGood]}>💗 İyilik</Text>
+                </TouchableOpacity>
+              </View>
+              <TextInput
+                style={s.compInput}
+                value={compContent}
+                onChangeText={setCompContent}
+                placeholder={compType === 'good_deed' ? 'Bugün ne iyilik yaptın?' : 'Neler keşfediyorsun?'}
+                placeholderTextColor={colors.textMuted}
+                multiline
+                numberOfLines={3}
+                maxLength={500}
+              />
+              {compPhoto ? <Image source={{ uri: compPhoto }} style={s.compPhoto} /> : null}
+              <View style={s.compActions}>
+                <TouchableOpacity onPress={pickCompPhoto} disabled={compUploading}>
+                  <Text style={s.compActionIcon}>{compUploading ? '⏳' : compPhoto ? '✅📷' : '📷'}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={markCompLocation}>
+                  <Text style={s.compActionIcon}>{compCoords ? '✅📍' : '📍'}</Text>
+                </TouchableOpacity>
+                <View style={{ flex: 1 }} />
+                <TouchableOpacity onPress={() => { setShowComposer(false); setCompContent(''); setCompPhoto(''); setCompCoords(null); }}>
+                  <Text style={s.compCancel}>İptal</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[s.compSubmit, { backgroundColor: compType === 'good_deed' ? '#ec4899' : colors.primary }]}
+                  onPress={submitPost}
+                  disabled={compPosting || !compContent.trim()}
+                >
+                  {compPosting
+                    ? <ActivityIndicator color="#fff" size="small" />
+                    : <Text style={s.compSubmitText}>Paylaş</Text>}
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
         </View>
       }
       ListEmptyComponent={
@@ -327,4 +454,38 @@ const s = StyleSheet.create({
   postTime: { fontSize: 12, color: colors.textMuted, marginLeft: 'auto' },
   postContent: { fontSize: 15, color: colors.text, lineHeight: 21 },
   postImage: { width: '100%', height: 200, borderRadius: 12, marginTop: 10 },
+
+  compOpen: {
+    backgroundColor: '#f7f8f8', borderRadius: 24, padding: 12, marginTop: 8, marginBottom: 4,
+    borderWidth: 1, borderColor: colors.border,
+  },
+  compOpenText: { color: colors.textMuted, fontSize: 14 },
+  compBox: {
+    backgroundColor: '#fff', borderRadius: 16, padding: 14, marginTop: 8, marginBottom: 4,
+    borderWidth: 1, borderColor: colors.border,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
+  },
+  compTypes: { flexDirection: 'row', gap: 8, marginBottom: 10 },
+  typeBtn: {
+    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, backgroundColor: '#f7f8f8',
+    borderWidth: 1, borderColor: colors.border,
+  },
+  typeBtnActive: { backgroundColor: 'rgba(255,107,43,0.12)', borderColor: colors.primary },
+  typeBtnActiveGood: { backgroundColor: 'rgba(236,72,153,0.12)', borderColor: '#ec4899' },
+  typeBtnGood: {},
+  typeBtnText: { fontSize: 13, fontWeight: '700', color: colors.textMuted },
+  typeBtnTextActive: { color: colors.primary },
+  typeBtnTextGood: { color: '#ec4899' },
+  compInput: {
+    backgroundColor: '#f7f9fa', borderRadius: 10, padding: 10, fontSize: 15, color: colors.text,
+    minHeight: 72, textAlignVertical: 'top', marginBottom: 8,
+  },
+  compPhoto: { width: '100%', height: 140, borderRadius: 10, marginBottom: 8 },
+  compActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  compActionIcon: { fontSize: 22 },
+  compCancel: { color: colors.textMuted, fontWeight: '700', fontSize: 14 },
+  compSubmit: {
+    borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8,
+  },
+  compSubmitText: { color: '#fff', fontWeight: '900', fontSize: 14 },
 });

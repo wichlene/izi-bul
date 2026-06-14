@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, FlatList, StyleSheet, TouchableOpacity, Image,
-  ActivityIndicator, Alert, RefreshControl,
+  ActivityIndicator, Alert, RefreshControl, TextInput, ScrollView,
 } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../AuthContext';
@@ -24,7 +24,7 @@ interface AdminQuest {
   total_solved: number;
 }
 
-type Tab = 'pending' | 'quests';
+type Tab = 'pending' | 'quests' | 'users' | 'announce';
 
 export default function AdminScreen() {
   const { session } = useAuth();
@@ -33,12 +33,15 @@ export default function AdminScreen() {
   const [counts, setCounts] = useState({ users: 0, quests: 0, subs: 0, pending: 0 });
   const [pending, setPending] = useState<Sub[]>([]);
   const [quests, setQuests] = useState<AdminQuest[]>([]);
+  const [users, setUsers] = useState<{id:string;username:string;full_name:string|null;total_finds:number;is_business:boolean;is_admin:boolean}[]>([]);
+  const [announcement, setAnnouncement] = useState('');
+  const [announcing, setAnnouncing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const [users, qCount, subCount, pendCount, pend, qs] = await Promise.all([
+    const [usersCount, qCount, subCount, pendCount, pend, qs, us] = await Promise.all([
       supabase.from('profiles').select('id', { count: 'exact', head: true }),
       supabase.from('quests').select('id', { count: 'exact', head: true }),
       supabase.from('submissions').select('id', { count: 'exact', head: true }),
@@ -49,10 +52,12 @@ export default function AdminScreen() {
       supabase.from('quests')
         .select('id, title, is_active, is_featured, total_solved')
         .order('created_at', { ascending: false }).limit(100),
+      supabase.from('profiles').select('id, username, full_name, total_finds, is_business, is_admin').order('created_at', { ascending: false }).limit(50),
     ]);
-    setCounts({ users: users.count || 0, quests: qCount.count || 0, subs: subCount.count || 0, pending: pendCount.count || 0 });
+    setCounts({ users: usersCount.count || 0, quests: qCount.count || 0, subs: subCount.count || 0, pending: pendCount.count || 0 });
     setPending((pend.data as any) || []);
     setQuests((qs.data as AdminQuest[]) || []);
+    setUsers((us.data as any) || []);
     setLoading(false);
     setRefreshing(false);
   }, []);
@@ -100,6 +105,31 @@ export default function AdminScreen() {
     finally { setBusy(null); }
   };
 
+  const toggleBusiness = async (userId: string, isBusiness: boolean) => {
+    setBusy(userId);
+    try {
+      await api('/api/admin/users', 'PATCH', { user_id: userId, is_business: !isBusiness });
+      setUsers((list) => list.map((u) => u.id === userId ? { ...u, is_business: !isBusiness } : u));
+    } catch (e: any) { Alert.alert('Hata', e.message); }
+    finally { setBusy(null); }
+  };
+
+  const postAnnouncement = async () => {
+    if (!announcement.trim()) return;
+    setAnnouncing(true);
+    try {
+      const { error } = await supabase.from('posts').insert({
+        user_id: session?.user.id,
+        post_type: 'announcement',
+        content: announcement.trim(),
+      });
+      if (error) throw new Error(error.message);
+      setAnnouncement('');
+      Alert.alert('✅', 'Duyuru yayınlandı.');
+    } catch (e: any) { Alert.alert('Hata', e.message); }
+    finally { setAnnouncing(false); }
+  };
+
   if (loading) return <View style={s.center}><ActivityIndicator size="large" color={colors.primary} /></View>;
 
   const header = (
@@ -113,10 +143,16 @@ export default function AdminScreen() {
       </View>
       <View style={s.tabs}>
         <TouchableOpacity style={[s.tab, tab === 'pending' && s.tabActive]} onPress={() => setTab('pending')}>
-          <Text style={[s.tabText, tab === 'pending' && s.tabTextActive]}>Onay Bekleyenler ({counts.pending})</Text>
+          <Text style={[s.tabText, tab === 'pending' && s.tabTextActive]}>⏳ Bekleyen ({counts.pending})</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[s.tab, tab === 'quests' && s.tabActive]} onPress={() => setTab('quests')}>
-          <Text style={[s.tabText, tab === 'quests' && s.tabTextActive]}>Görevler</Text>
+          <Text style={[s.tabText, tab === 'quests' && s.tabTextActive]}>🗺️ Görevler</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[s.tab, tab === 'users' && s.tabActive]} onPress={() => setTab('users')}>
+          <Text style={[s.tabText, tab === 'users' && s.tabTextActive]}>👥 Kullanıcılar</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[s.tab, tab === 'announce' && s.tabActive]} onPress={() => setTab('announce')}>
+          <Text style={[s.tabText, tab === 'announce' && s.tabTextActive]}>📢 Duyuru</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -148,6 +184,70 @@ export default function AdminScreen() {
           );
         }}
       />
+    );
+  }
+
+  if (tab === 'users') {
+    return (
+      <FlatList
+        data={users}
+        keyExtractor={(u) => u.id}
+        contentContainerStyle={{ padding: 12 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} colors={[colors.primary]} />}
+        ListHeaderComponent={header}
+        ListEmptyComponent={<View style={s.center}><Text style={s.empty}>Kullanıcı yok</Text></View>}
+        renderItem={({ item }) => (
+          <View style={s.qRow}>
+            <View style={s.userAvatar}>
+              <Text style={s.userAvatarText}>{item.username?.[0]?.toUpperCase() ?? '?'}</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={s.qTitle} numberOfLines={1}>{item.full_name || item.username}</Text>
+              <Text style={s.sub}>@{item.username} · {item.total_finds} buluş</Text>
+            </View>
+            {item.is_admin && <View style={s.adminBadge}><Text style={s.adminBadgeText}>Admin</Text></View>}
+            <TouchableOpacity
+              style={[s.miniBtn, item.is_business && s.miniBtnOn]}
+              onPress={() => toggleBusiness(item.id, item.is_business)}
+              disabled={busy === item.id}
+            >
+              <Text style={{ fontSize: 11, fontWeight: '800', color: item.is_business ? '#92400e' : colors.textMuted }}>
+                {item.is_business ? '🏪' : '👤'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      />
+    );
+  }
+
+  if (tab === 'announce') {
+    return (
+      <ScrollView contentContainerStyle={{ padding: 12 }}>
+        {header}
+        <View style={s.announceBox}>
+          <Text style={s.announceTitle}>📢 Duyuru Yayınla</Text>
+          <TextInput
+            style={s.announceInput}
+            value={announcement}
+            onChangeText={setAnnouncement}
+            placeholder="Tüm kullanıcılara duyuru yaz..."
+            placeholderTextColor={colors.textMuted}
+            multiline
+            numberOfLines={4}
+            maxLength={500}
+          />
+          <TouchableOpacity
+            style={[s.approveBtn, { backgroundColor: '#3b82f6' }]}
+            onPress={postAnnouncement}
+            disabled={announcing || !announcement.trim()}
+          >
+            {announcing
+              ? <ActivityIndicator color="#fff" size="small" />
+              : <Text style={s.approveText}>📢 Duyuruyu Yayınla</Text>}
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     );
   }
 
@@ -205,4 +305,15 @@ const s = StyleSheet.create({
   miniText: { fontSize: 18 },
   miniTextOn: { fontSize: 18 },
   empty: { color: colors.textMuted, marginTop: 12, fontSize: 15 },
+  userAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.purple, alignItems: 'center', justifyContent: 'center' },
+  userAvatarText: { color: '#fff', fontWeight: '900', fontSize: 16 },
+  adminBadge: { backgroundColor: 'rgba(168,85,247,0.12)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
+  adminBadgeText: { color: colors.purple, fontSize: 11, fontWeight: '800' },
+  announceBox: { backgroundColor: '#fff', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border },
+  announceTitle: { fontSize: 18, fontWeight: '900', color: colors.text, marginBottom: 12 },
+  announceInput: {
+    backgroundColor: '#f7f9fa', borderRadius: 10, padding: 12, fontSize: 15, color: colors.text,
+    minHeight: 100, textAlignVertical: 'top', marginBottom: 12,
+    borderWidth: 1, borderColor: colors.border,
+  },
 });

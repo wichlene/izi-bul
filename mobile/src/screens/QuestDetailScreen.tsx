@@ -10,6 +10,7 @@ import { useAuth } from '../AuthContext';
 import { colors, difficulties } from '../theme';
 import { distanceMeters, formatDistance } from '../lib/distance';
 import { Quest } from '../types';
+import { uploadImage } from '../lib/uploadPhoto';
 
 interface Step {
   id: string;
@@ -89,19 +90,33 @@ export default function QuestDetailScreen({ route, navigation }: any) {
   }, [started]);
 
   const pickPhoto = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') { Alert.alert('İzin gerekli', 'Fotoğraf erişimi gerekiyor.'); return; }
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.7 });
-    if (result.canceled || !result.assets[0]) return;
-    const asset = result.assets[0];
-    const ext = asset.uri.split('.').pop() || 'jpg';
-    const fileName = `proof_${Date.now()}.${ext}`;
-    const formData = new FormData();
-    formData.append('file', { uri: asset.uri, name: fileName, type: `image/${ext}` } as any);
-    const { data, error } = await supabase.storage.from('quest-photos').upload(fileName, formData);
-    if (error) { Alert.alert('Hata', 'Fotoğraf yüklenemedi.'); return; }
-    const { data: urlData } = supabase.storage.from('quest-photos').getPublicUrl(data.path);
-    setPhotoUrl(urlData.publicUrl);
+    Alert.alert('Fotoğraf Ekle', 'Kaynak seç', [
+      {
+        text: '📷 Kamera',
+        onPress: async () => {
+          const { status } = await ImagePicker.requestCameraPermissionsAsync();
+          if (status !== 'granted') { Alert.alert('İzin gerekli', 'Kamera izni gerekli.'); return; }
+          const result = await ImagePicker.launchCameraAsync({ quality: 0.7 });
+          if (!result.canceled && result.assets[0]) {
+            try { setPhotoUrl(await uploadImage(result.assets[0].uri, 'proof')); }
+            catch (e: any) { Alert.alert('Hata', e.message || 'Yüklenemedi'); }
+          }
+        },
+      },
+      {
+        text: '🖼️ Galeri',
+        onPress: async () => {
+          const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (status !== 'granted') { Alert.alert('İzin gerekli', 'Galeri izni gerekli.'); return; }
+          const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.7 });
+          if (!result.canceled && result.assets[0]) {
+            try { setPhotoUrl(await uploadImage(result.assets[0].uri, 'proof')); }
+            catch (e: any) { Alert.alert('Hata', e.message || 'Yüklenemedi'); }
+          }
+        },
+      },
+      { text: 'İptal', style: 'cancel' },
+    ]);
   };
 
   const submit = async () => {
