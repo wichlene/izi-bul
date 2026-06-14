@@ -26,6 +26,7 @@ export default function ProfileScreen({ navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [myPosts, setMyPosts] = useState<any[]>([]);
+  const [submissions, setSubmissions] = useState<any[]>([]);
   const [postsLoading, setPostsLoading] = useState(false);
 
   const load = () => {
@@ -39,14 +40,22 @@ export default function ProfileScreen({ navigation }: any) {
   const loadPosts = async () => {
     if (!uid) return;
     setPostsLoading(true);
-    const { data } = await supabase
-      .from('posts')
-      .select('id, content, photo_url, created_at, like_count')
-      .eq('user_id', uid)
-      .eq('post_type', 'good_deed')
-      .order('created_at', { ascending: false })
-      .limit(6);
-    if (data) setMyPosts(data);
+    const [{ data: postsData }, { data: subsData }] = await Promise.all([
+      supabase
+        .from('posts')
+        .select('id, post_type, content, photo_url, created_at')
+        .eq('user_id', uid)
+        .order('created_at', { ascending: false })
+        .limit(10),
+      supabase
+        .from('submissions')
+        .select('id, status, distance_meters, created_at, quests(title, points, cash_reward)')
+        .eq('user_id', uid)
+        .order('created_at', { ascending: false })
+        .limit(15),
+    ]);
+    if (postsData) setMyPosts(postsData);
+    if (subsData) setSubmissions(subsData);
     setPostsLoading(false);
   };
 
@@ -192,30 +201,65 @@ export default function ProfileScreen({ navigation }: any) {
         <Text style={s.logoutText}>Çıkış Yap</Text>
       </TouchableOpacity>
 
-      {/* My Posts Section */}
+      {/* Posts Section */}
       <View style={s.postsSection}>
-        <Text style={s.postsSectionTitle}>❤️ Paylaşımlarım</Text>
+        <Text style={s.postsSectionTitle}>💬 Paylaşımlarım</Text>
         {postsLoading ? (
           <ActivityIndicator color={colors.primary} style={{ marginVertical: 16 }} />
         ) : myPosts.length === 0 ? (
-          <View style={s.postsEmpty}>
-            <Text style={s.postsEmptyText}>Henüz paylaşım yok</Text>
-          </View>
+          <View style={s.postsEmpty}><Text style={s.postsEmptyText}>Henüz paylaşım yok</Text></View>
         ) : (
-          myPosts.map((post) => (
-            <View key={post.id} style={s.postCard}>
-              {post.photo_url ? (
-                <Image source={{ uri: post.photo_url }} style={s.postImage} />
-              ) : null}
-              <View style={s.postBody}>
-                <Text style={s.postContent} numberOfLines={3}>{post.content}</Text>
-                <View style={s.postMeta}>
-                  <Text style={s.postLikes}>❤️ {post.like_count ?? 0}</Text>
+          myPosts.map((post) => {
+            const typeInfo =
+              post.post_type === 'good_deed' ? { icon: '💗', color: '#ec4899' }
+              : post.post_type === 'quest_complete' ? { icon: '🏆', color: '#f59e0b' }
+              : post.post_type === 'announcement' ? { icon: '📢', color: '#3b82f6' }
+              : { icon: '💬', color: '#536471' };
+            return (
+              <View key={post.id} style={s.postCard}>
+                {post.photo_url ? <Image source={{ uri: post.photo_url }} style={s.postImage} /> : null}
+                <View style={s.postBody}>
+                  <View style={[s.typePill, { backgroundColor: typeInfo.color + '20' }]}>
+                    <Text style={[s.typePillText, { color: typeInfo.color }]}>{typeInfo.icon}</Text>
+                  </View>
+                  <Text style={s.postContent} numberOfLines={3}>{post.content}</Text>
                   <Text style={s.postDate}>{new Date(post.created_at).toLocaleDateString('tr-TR')}</Text>
                 </View>
               </View>
-            </View>
-          ))
+            );
+          })
+        )}
+      </View>
+
+      {/* Submission history */}
+      <View style={s.postsSection}>
+        <Text style={s.postsSectionTitle}>🗺️ Görev Geçmişim</Text>
+        {submissions.length === 0 ? (
+          <View style={s.postsEmpty}><Text style={s.postsEmptyText}>Henüz görev tamamlanmamış</Text></View>
+        ) : (
+          submissions.map((sub) => {
+            const q = Array.isArray(sub.quests) ? sub.quests[0] : sub.quests;
+            const statusInfo =
+              sub.status === 'approved' || sub.status === 'winner'
+                ? { icon: '🏆', color: colors.green, label: 'Kazandı' }
+                : sub.status === 'rejected'
+                ? { icon: '❌', color: colors.red, label: 'Reddedildi' }
+                : { icon: '⏳', color: '#f59e0b', label: 'Bekliyor' };
+            return (
+              <View key={sub.id} style={s.subRow}>
+                <View style={[s.subStatus, { backgroundColor: statusInfo.color + '18' }]}>
+                  <Text style={{ fontSize: 20 }}>{statusInfo.icon}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.subTitle} numberOfLines={1}>{q?.title ?? 'Görev'}</Text>
+                  <Text style={s.sub}>{statusInfo.label} · {Math.round(sub.distance_meters ?? 0)}m</Text>
+                </View>
+                {(sub.status === 'approved' || sub.status === 'winner') && q?.cash_reward > 0 && (
+                  <Text style={s.subReward}>₺{q.cash_reward}</Text>
+                )}
+              </View>
+            );
+          })
         )}
       </View>
     </ScrollView>
@@ -327,6 +371,15 @@ const s = StyleSheet.create({
   postBody: { padding: 12 },
   postContent: { fontSize: 14, color: colors.text, lineHeight: 20 },
   postMeta: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
-  postLikes: { fontSize: 13, color: colors.red, fontWeight: '700' },
   postDate: { fontSize: 12, color: colors.textMuted },
+  typePill: { alignSelf: 'flex-start', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 2, marginBottom: 4 },
+  typePillText: { fontSize: 13, fontWeight: '800' },
+  subRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fff',
+    borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: colors.border,
+  },
+  subStatus: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  subTitle: { fontSize: 14, fontWeight: '800', color: colors.text },
+  sub: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  subReward: { fontSize: 15, fontWeight: '900', color: colors.green },
 });
