@@ -9,6 +9,7 @@ import { supabase } from '../lib/supabase';
 import { uploadImage } from '../lib/uploadPhoto';
 import { useAuth } from '../AuthContext';
 import { colors } from '../theme';
+import PostActions from '../components/PostActions';
 
 interface Post {
   id: string;
@@ -18,8 +19,9 @@ interface Post {
   longitude: number | null;
   created_at: string;
   user_id: string;
-  like_count?: number;
-  liked_by_me?: boolean;
+  like_count: number;
+  liked_by_me: boolean;
+  comment_count: number;
   profiles: { username: string; avatar_url?: string } | null;
 }
 
@@ -55,18 +57,26 @@ export default function GoodDeedScreen() {
     const list = (postRows || []) as Post[];
 
     if (list.length) {
-      const { data: likeRows } = await supabase
-        .from('post_likes')
-        .select('post_id, user_id')
-        .in('post_id', list.map((p) => p.id));
-
+      const ids = list.map((p) => p.id);
+      const [{ data: likeRows }, { data: commentRows }] = await Promise.all([
+        supabase.from('post_likes').select('post_id, user_id').in('post_id', ids),
+        supabase.from('post_comments').select('post_id').in('post_id', ids),
+      ]);
       const counts: Record<string, number> = {};
       const mine = new Set<string>();
+      const commentCounts: Record<string, number> = {};
       for (const r of likeRows || []) {
         counts[r.post_id] = (counts[r.post_id] || 0) + 1;
         if (r.user_id === uid) mine.add(r.post_id);
       }
-      list.forEach((p) => { p.like_count = counts[p.id] || 0; p.liked_by_me = mine.has(p.id); });
+      for (const r of commentRows || []) {
+        commentCounts[r.post_id] = (commentCounts[r.post_id] || 0) + 1;
+      }
+      list.forEach((p) => {
+        p.like_count = counts[p.id] || 0;
+        p.liked_by_me = mine.has(p.id);
+        p.comment_count = commentCounts[p.id] || 0;
+      });
     }
 
     setPosts(list);
@@ -143,18 +153,6 @@ export default function GoodDeedScreen() {
     }
   };
 
-  const toggleLike = async (post: Post) => {
-    if (!uid) return;
-    const liked = !!post.liked_by_me;
-    setPosts((prev) => prev.map((p) => p.id === post.id
-      ? { ...p, liked_by_me: !liked, like_count: (p.like_count || 0) + (liked ? -1 : 1) }
-      : p));
-    if (liked) {
-      await supabase.from('post_likes').delete().eq('post_id', post.id).eq('user_id', uid);
-    } else {
-      await supabase.from('post_likes').insert({ post_id: post.id, user_id: uid });
-    }
-  };
 
   if (loading) return <View style={s.center}><ActivityIndicator size="large" color={colors.primary} /></View>;
 
@@ -221,13 +219,14 @@ export default function GoodDeedScreen() {
             </View>
             <Text style={s.cardContent}>{item.content}</Text>
             {item.photo_url ? <Image source={{ uri: item.photo_url }} style={s.cardImg} /> : null}
-            <View style={s.actions}>
-              <TouchableOpacity style={s.actionBtn} onPress={() => toggleLike(item)}>
-                <Text style={[s.actionText, item.liked_by_me && { color: colors.red }]}>
-                  {item.liked_by_me ? '❤️' : '🤍'} {item.like_count || 0}
-                </Text>
-              </TouchableOpacity>
-            </View>
+            <PostActions
+              postId={item.id}
+              initialLikes={item.like_count}
+              initialLiked={item.liked_by_me}
+              initialCommentCount={item.comment_count}
+              latitude={item.latitude}
+              longitude={item.longitude}
+            />
           </View>
         );
       }}

@@ -11,6 +11,7 @@ import { colors, difficulties } from '../theme';
 import { distanceMeters, formatDistance } from '../lib/distance';
 import { Quest } from '../types';
 import { uploadImage } from '../lib/uploadPhoto';
+import PostActions from '../components/PostActions';
 
 interface Category { id: string; name: string; icon: string }
 
@@ -22,6 +23,10 @@ interface Post {
   created_at: string;
   quest_id?: string | null;
   latitude?: number | null;
+  longitude?: number | null;
+  like_count: number;
+  liked_by_me: boolean;
+  comment_count: number;
   profiles: { username?: string; avatar_url?: string | null } | null;
 }
 
@@ -92,7 +97,7 @@ export default function HomeScreen({ navigation }: any) {
       questQuery,
       supabase
         .from('posts')
-        .select('id, post_type, content, photo_url, created_at, quest_id, latitude, profiles(username, avatar_url)')
+        .select('id, post_type, content, photo_url, created_at, quest_id, latitude, longitude, profiles(username, avatar_url)')
         .order('created_at', { ascending: false })
         .limit(50),
       supabase.from('categories').select('id, name, icon'),
@@ -103,11 +108,31 @@ export default function HomeScreen({ navigation }: any) {
       setQuests(all);
       if (adminStatus) setInactiveCount(all.filter((q) => !q.is_active).length);
     }
-    if (postData) {
+    if (postData && postData.length > 0) {
+      const ids = postData.map((p: any) => p.id);
+      const [{ data: likeRows }, { data: commentCounts }] = await Promise.all([
+        supabase.from('post_likes').select('post_id, user_id').in('post_id', ids),
+        supabase.from('post_comments').select('post_id').in('post_id', ids),
+      ]);
+      const likeCounts: Record<string, number> = {};
+      const likedByMe = new Set<string>();
+      for (const r of likeRows || []) {
+        likeCounts[r.post_id] = (likeCounts[r.post_id] || 0) + 1;
+        if (r.user_id === uid) likedByMe.add(r.post_id);
+      }
+      const commentCountMap: Record<string, number> = {};
+      for (const r of commentCounts || []) {
+        commentCountMap[r.post_id] = (commentCountMap[r.post_id] || 0) + 1;
+      }
       setPosts(postData.map((p: any) => ({
         ...p,
         profiles: Array.isArray(p.profiles) ? p.profiles[0] ?? null : p.profiles,
+        like_count: likeCounts[p.id] || 0,
+        liked_by_me: likedByMe.has(p.id),
+        comment_count: commentCountMap[p.id] || 0,
       })) as Post[]);
+    } else if (postData) {
+      setPosts([]);
     }
     if (catData) setCategories(catData as Category[]);
 
@@ -277,6 +302,14 @@ export default function HomeScreen({ navigation }: any) {
         </View>
         <Text style={s.postContent}>{post.content}</Text>
         {post.photo_url ? <Image source={{ uri: post.photo_url }} style={s.postImage} /> : null}
+        <PostActions
+          postId={post.id}
+          initialLikes={post.like_count}
+          initialLiked={post.liked_by_me}
+          initialCommentCount={post.comment_count}
+          latitude={post.latitude}
+          longitude={post.longitude}
+        />
       </View>
     );
   }
